@@ -1,65 +1,63 @@
 const {
-    dbConstants,
-    db,
-    errorHandler,
-    responseHandler,
-    ResponseConstants,
-  } = require('../../../bootstart/header');
-  
-  const rideConstant = require('../../../constants/rideConstants');
-  const documentsConstant = require('../../../constants/document');
-  const rideHelper = require('../helper');
-  var Joi = require('joi');
-  var QueryBuilder = require('datatable');
+  dbConstants,
+  db,
+  errorHandler,
+  responseHandler,
+  ResponseConstants,
+} = require('../../../bootstart/header');
 
+const rideConstant = require('../../../constants/rideConstants');
+const documentsConstant = require('../../../constants/document');
+const rideHelper = require('../helper');
+var Joi = require('joi');
+var QueryBuilder = require('datatable');
 
-  exports.getPayouts = async function(req,res){
-    try {
-        let opts = req.body;
-        let stmt = ``;
-		let values = [];
-		var countQuery
-		let limitPlaceholder = '';
-        let searchPlaceholder = '';
-		let orderPlaceholder = `${opts.sSortDir_0 || 'DESC'}`;
+exports.getPayouts = async function (req, res) {
+  try {
+    let opts = req.body;
+    let stmt = ``;
+    let values = [];
+    var countQuery;
+    let limitPlaceholder = '';
+    let searchPlaceholder = '';
+    let orderPlaceholder = `${opts.sSortDir_0 || 'DESC'}`;
 
-		if (opts.iDisplayLength && opts.iDisplayStart) {
-            limitPlaceholder = `LIMIT ${parseInt(opts.iDisplayLength)} OFFSET ${parseInt(opts.iDisplayStart)}`;
-        }
-		if (opts.sSearch) {
-			searchPlaceholder = ` AND eng.engagement_id LIKE '%${opts.sSearch}%'`;
-		}
+    if (opts.iDisplayLength && opts.iDisplayStart) {
+      limitPlaceholder = `LIMIT ${parseInt(opts.iDisplayLength)} OFFSET ${parseInt(opts.iDisplayStart)}`;
+    }
+    if (opts.sSearch) {
+      searchPlaceholder = ` AND eng.engagement_id LIKE '%${opts.sSearch}%'`;
+    }
 
-
-        if (opts.driver && opts.city_id) {
-			var subConditions = `eng.city in( SELECT city_id from  tb_operator_cities where city_id = ${opts.city_id} )  AND
+    if (opts.driver && opts.city_id) {
+      var subConditions = `eng.city in( SELECT city_id from  tb_operator_cities where city_id = ${opts.city_id} )  AND
 						eng.status = 3`,
-				having = "";
-			if (opts.drivers) {
-				subConditions += ` AND eng.driver_id in (${opts.drivers})`;
-			}
-			if (opts.rideId) {
-				subConditions += ` AND eng.engagement_id in (${opts.rideId})`;
-			}
-			if (opts.dateTime) {
-				subConditions += ` AND eng.engagement_date >= date('${opts.dateTime}')`;
-			}
-			if (opts.dateTimeTo) {
-				subConditions += ` AND eng.engagement_date <= date('${opts.dateTimeTo}')`;
-			}
-			if (opts.payoutStatus) {
-				subConditions += ` AND eng.payout_status = ${opts.payoutStatus}`;
-			} else {
-				subConditions += ` AND eng.payout_status = 0`;
-			}
+        having = '';
+      if (opts.drivers) {
+        subConditions += ` AND eng.driver_id in (${opts.drivers})`;
+      }
+      if (opts.rideId) {
+        subConditions += ` AND eng.engagement_id in (${opts.rideId})`;
+      }
+      if (opts.dateTime) {
+        subConditions += ` AND eng.engagement_date >= date('${opts.dateTime}')`;
+      }
+      if (opts.dateTimeTo) {
+        subConditions += ` AND eng.engagement_date <= date('${opts.dateTimeTo}')`;
+      }
+      if (opts.payoutStatus) {
+        subConditions += ` AND eng.payout_status = ${opts.payoutStatus}`;
+      } else {
+        subConditions += ` AND eng.payout_status = 0`;
+      }
 
-			if (opts.CeilingAmount) {
-				having = ` HAVING daily_earnings - daily_venus_commission >= ${parseInt(
-					opts.CeilingAmount
-				)}  `;
-			}
+      if (opts.CeilingAmount) {
+        having = ` HAVING daily_earnings - daily_venus_commission >= ${parseInt(
+          opts.CeilingAmount,
+        )}  `;
+      }
 
-			stmt = `
+      stmt = `
 			SELECT
 				SUM(eng.calculated_driver_fare) AS total_earning,
 				SUM(eng.paid_by_customer) AS paid_by_customer,
@@ -99,9 +97,8 @@ const {
 				tbd.driver_id
 			${orderPlaceholder} ${limitPlaceholder};
 		`;
-		
 
-					countQuery = `SELECT COUNT(*) as count FROM tb_engagements eng
+      countQuery = `SELECT COUNT(*) as count FROM tb_engagements eng
 					LEFT JOIN tb_driver_bank_details tdbd ON
 							(
 									tdbd.driver_id = eng.driver_id
@@ -117,23 +114,22 @@ const {
 						${subConditions}
 					GROUP BY 
 				eng.driver_id`;
-		}
-		else if (opts.driver_id) {
-			var subConditions = "";
-			if (opts.rideId) {
-				subConditions += ` AND tbrp.engagement_id in(${opts.rideId})`;
-			}
-			if (opts.dateTime) {
-				subConditions += ` AND tbrp.engagement_date >= date('${opts.dateTime}')`;
-			}
-			if (opts.dateTimeTo) {
-				subConditions += ` AND tbrp.engagement_date <= date('${opts.dateTimeTo}')`;
-			}
-			if (opts.payoutStatus) {
-				subConditions += ` AND tbrp.payout_status = ${opts.payoutStatus}`;
-			}
+    } else if (opts.driver_id) {
+      var subConditions = '';
+      if (opts.rideId) {
+        subConditions += ` AND tbrp.engagement_id in(${opts.rideId})`;
+      }
+      if (opts.dateTime) {
+        subConditions += ` AND tbrp.engagement_date >= date('${opts.dateTime}')`;
+      }
+      if (opts.dateTimeTo) {
+        subConditions += ` AND tbrp.engagement_date <= date('${opts.dateTimeTo}')`;
+      }
+      if (opts.payoutStatus) {
+        subConditions += ` AND tbrp.payout_status = ${opts.payoutStatus}`;
+      }
 
-			stmt = ` SELECT
+      stmt = ` SELECT
 					tbrp.calculated_driver_fare AS total_amount,
 					(tbrp.calculated_driver_fare - tbrp.paid_by_customer ) as daily_earnings,
 					tbrp.paid_by_customer,
@@ -180,7 +176,7 @@ const {
 					ORDER BY tbrp.engagement_id 
 					${orderPlaceholder} ${limitPlaceholder}`;
 
-					countQuery = `SELECT COUNT(*) as count FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES} tbrp
+      countQuery = `SELECT COUNT(*) as count FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES} tbrp
 					LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAIN_BANK} tdbd ON(tdbd.driver_id = tbrp.driver_id)
 					LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} tbd ON(tbd.driver_id = tbrp.driver_id)
 					LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY} c on
@@ -197,22 +193,25 @@ const {
 					tbrp.driver_id = ${opts.driver_id} and
 					tbrp.status =3
 					${subConditions}`;
-		} else {
-			throw new Error("Parameters Missing");
-		}
-        
-		let payoutData =  await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, []) 
-		let payoutDataCount = await db.RunQuery(dbConstants.DBS.LIVE_DB, countQuery, [])
-        
-        var response ={
-            data: payoutData, 
-            iTotalRecords: payoutData.length , 
-            iTotalDisplayRecords:payoutDataCount.length
-        }
-        
-        return responseHandler.success(req, res, 'User Details Sents', response);
-
-    } catch (error) {
-        errorHandler.errorHandler(error, req, res);
+    } else {
+      throw new Error('Parameters Missing');
     }
+
+    let payoutData = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, []);
+    let payoutDataCount = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      countQuery,
+      [],
+    );
+
+    var response = {
+      data: payoutData,
+      iTotalRecords: payoutData.length,
+      iTotalDisplayRecords: payoutDataCount.length,
+    };
+
+    return responseHandler.success(req, res, 'User Details Sents', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
   }
+};

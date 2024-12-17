@@ -15,6 +15,7 @@ const { verifyDbConnections } = require('../db/connectionHealth');
 const adminRoutes = require('../app/admin');
 const ridesRoutes = require('../app/rides');
 const captainsRoutes = require('../app/captains');
+const clientsRoutes = require('../app/clients');
 
 module.exports = async function (app) {
   app.use(helmet());
@@ -58,6 +59,7 @@ module.exports = async function (app) {
   adminRoutes(app);
   ridesRoutes(app);
   captainsRoutes(app);
+  clientsRoutes(app);
 
   app.get('/health', (req, res) => {
     res.status(200).json({
