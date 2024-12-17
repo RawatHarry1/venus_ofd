@@ -13,6 +13,7 @@ const requestLogger = require('./logging');
 const { verifyDbConnections } = require('../db/connectionHealth');
 
 const adminRoutes = require('../app/admin');
+const ridesRoutes = require('../app/rides');
 
 module.exports = async function (app) {
   app.use(helmet());
@@ -54,6 +55,7 @@ module.exports = async function (app) {
    * Loading routes
    */
   adminRoutes(app);
+  ridesRoutes(app);
 
   app.get('/health', (req, res) => {
     res.status(200).json({

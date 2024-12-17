@@ -11,4 +11,8 @@ exports.ADMIN_AUHT = {
 };
 exports.LIVE_DB = {
   OPERATPRS: 'tb_operators',
+  RIDES: 'tb_engagements',
+  CAPTAINS: 'tb_drivers',
+  CUSTOMERS: 'tb_users',
+  IN_THE_AIR: 'tb_session',
 };

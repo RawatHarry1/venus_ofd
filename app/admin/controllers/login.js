@@ -61,19 +61,23 @@ exports.checkOperatorToken = async function (req, res) {
 
     return responseHandler.success(req, res, '', data);
   } catch (error) {
-    errorHandler.errorHandler(err, req, res);
+    errorHandler.errorHandler(error, req, res);
   }
 };
 
 exports.loginUsingToken = async function (req, res) {
-  var response = {};
-  const query = `SELECT status,id,operator_id,name,access_menu,email  FROM ${dbConstants.ADMIN_AUHT.ACL_USER} WHERE id = ?`;
-  var values = [req.user_id];
-  let uerData = await db.RunQuery(dbConstants.DBS.ADMIN_AUHT, query, values);
-  response.access_menu = JSON.parse(uerData[0].access_menu);
-  response.email = uerData[0].email;
-  response.name = uerData[0].name;
-  response.operator_id = req.operator_id;
-  response.vehicles = [];
-  return responseHandler.success(req, res, '', response);
+  try {
+    var response = {};
+    const query = `SELECT status,id,operator_id,name,access_menu,email  FROM ${dbConstants.ADMIN_AUHT.ACL_USER} WHERE id = ?`;
+    var values = [req.user_id];
+    let uerData = await db.RunQuery(dbConstants.DBS.ADMIN_AUHT, query, values);
+    response.access_menu = JSON.parse(uerData[0].access_menu);
+    response.email = uerData[0].email;
+    response.name = uerData[0].name;
+    response.operator_id = req.operator_id;
+    response.vehicles = [];
+    return responseHandler.success(req, res, '', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
 };
