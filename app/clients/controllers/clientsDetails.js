@@ -16,11 +16,12 @@ exports.getClients = async function (req, res) {
   var response = {};
   try {
     let operatorId = req.operator_id;
-    var requestRideType = req.request_ride_type
+    var requestRideType = req.request_ride_type;
 
     let cityId = req.query.city_id;
 
-    let whereClause = [], values = [];
+    let whereClause = [],
+      values = [];
 
     whereClause.push(`${dbConstants.LIVE_DB.CUSTOMERS}.operator_id = ? `);
     values.push(operatorId);
@@ -33,20 +34,20 @@ exports.getClients = async function (req, res) {
     values.push(1);
 
     if (req.query.sSearch) {
-        whereClause.push(`${dbConstants.LIVE_DB.CUSTOMERS}.user_name LIKE ?`);
-        values.push('%' + req.query.sSearch + '%');
+      whereClause.push(`${dbConstants.LIVE_DB.CUSTOMERS}.user_name LIKE ?`);
+      values.push('%' + req.query.sSearch + '%');
     }
 
     if (whereClause.length) {
-        whereClause = ' ' + whereClause.join(" AND ");
+      whereClause = ' ' + whereClause.join(' AND ');
     } else {
-        whereClause = '';
+      whereClause = '';
     }
 
     let limit = Number(req.query.iDisplayLength || 50);
-    let offset = Number((req.query.iDisplayStart) || 0);
-    let orderDirection   = req.query.sSortDir_0 || "DESC"
-    orderDirection = (orderDirection.toUpperCase() == 'ASC') ? 'ASC' : 'DESC';
+    let offset = Number(req.query.iDisplayStart || 0);
+    let orderDirection = req.query.sSortDir_0 || 'DESC';
+    orderDirection = orderDirection.toUpperCase() == 'ASC' ? 'ASC' : 'DESC';
 
     let queryTotalCount = `
         SELECT 
@@ -56,7 +57,11 @@ exports.getClients = async function (req, res) {
         WHERE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS}.operator_id = ? 
         AND ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS}.reg_as = 0
     `;
-    let totalRecords = await db.RunQuery(dbConstants.DBS.LIVE_DB, queryTotalCount, [operatorId]);
+    let totalRecords = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      queryTotalCount,
+      [operatorId],
+    );
 
     values.push(limit);
     values.push(offset);
@@ -81,12 +86,16 @@ exports.getClients = async function (req, res) {
             ${dbConstants.LIVE_DB.CUSTOMERS}.user_id ${orderDirection}
         LIMIT ? OFFSET ?
     `;
-    
-    let paginatedRecords = await db.RunQuery(dbConstants.DBS.LIVE_DB, queryData,values);
-     response = {
-        aaData: paginatedRecords,
-        iTotalDisplayRecords: paginatedRecords.length,
-        iTotalRecords: totalRecords[0].total_count
+
+    let paginatedRecords = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      queryData,
+      values,
+    );
+    response = {
+      aaData: paginatedRecords,
+      iTotalDisplayRecords: paginatedRecords.length,
+      iTotalRecords: totalRecords[0].total_count,
     };
     return responseHandler.success(req, res, 'User Details Sent', response);
   } catch (error) {
