@@ -1,0 +1,5 @@
+# Project Name: VENUS_OFD
+
+## Project Structure
+
+VENUS_OFD/ │ ├── app/ # Core application logic │ ├── admin/ # Admin-related modules │ ├── controllers/ # API Controllers │ │ └── login.js # Login controller logic │ ├── helpers/ # Utility/helper functions │ ├── index.js # Main helpers file │ └── middleware.js # Custom middleware logic │ ├── bootstart/ # Startup/Initialization scripts │ ├── index.js # Main entry point for initialization │ ├── logger.js # Logging logic │ ├── logging.js # Log configurations or handlers │ └── routes.js # Application routing logic │ ├── db/ # Database connection and utilities │ ├── connection.js # Database connection setup │ ├── connectionHealth.js # Health check logic for DB │ ├── helper.js # DB helper functions │ └── queries.js # Raw SQL queries or query management │ ├── middlewares/ # Custom middlewares │ └── errorHandler.js # Error handling middleware │ ├── .env # Environment variables ├── .eslintrc.json # ESLint configuration ├── package.json # Project metadata and scripts └── server.js # Main server entry file
