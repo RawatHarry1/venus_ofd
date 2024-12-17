@@ -38,11 +38,11 @@ exports.admin = {
         FROM 
             ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATPRS} tbo
         INNER JOIN
-            ${dbConstants.DBS.ADMIN_AUHT}.${dbConstants.ADMIN_AUHT.ACL_USER} tau
+            ${dbConstants.DBS.ADMIN_AUTH}.${dbConstants.ADMIN_AUTH.ACL_USER} tau
         ON
             tbo.operator_id = tau.operator_id
         INNER JOIN
-            ${dbConstants.DBS.ADMIN_AUHT}.${dbConstants.ADMIN_AUHT.TOKENS} tat
+            ${dbConstants.DBS.ADMIN_AUTH}.${dbConstants.ADMIN_AUTH.TOKENS} tat
         ON
             tat.user_id = tau.id
         WHERE

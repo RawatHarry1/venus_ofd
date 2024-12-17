@@ -2,10 +2,10 @@
     ACL_USER:'tb_acl_users'
 } */
 exports.DBS = {
-  ADMIN_AUHT: 'venus_acl',
+  ADMIN_AUTH: 'venus_acl',
   LIVE_DB: 'venus_live',
 };
-exports.ADMIN_AUHT = {
+exports.ADMIN_AUTH = {
   ACL_USER: 'tb_acl_users',
   TOKENS: 'tb_acl_tokens',
 };

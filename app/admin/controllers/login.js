@@ -3,29 +3,51 @@ const {
   db,
   errorHandler,
   responseHandler,
+  ResponseConstants
 } = require('../../../bootstart/header');
+const Helper = require('../helper');
 
 exports.adminLogin = async (req, res) => {
   try {
     console.log('here now ?');
-    /* const { username, password } = req.body;
-        if (!username || !password) return responseHandler.error(req, res, 'Username and password are required', 400); */
+    const { email, password, TTL, is_delivery_panel } = req.body;
 
-    // Parameterized query to prevent SQL injection
-    /* const query = `SELECT * FROM ${dbConstants.tables.ACL_USER} WHERE username = ? AND password = ?`;
-        const [user] = await db.RunQuery('venus_acl', query, [username, password]); */
+    if (!email || !password) {
+      return responseHandler.error(req, res, 'Email and password are required', ResponseConstants.RESPONSE_STATUS.PARAMETER_MISSING);
+    }
 
-    const query = `SELECT * FROM ${dbConstants.ADMIN_AUHT.ACL_USER}`;
-    const users = await db.RunQuery('venus_acl', query, []);
+    const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
+    const isDeliveryPanel = Number(is_delivery_panel) || 0;
 
-    // No user found or invalid credentials
-    if (!users)
-      return responseHandler.error(
-        req,
-        res,
-        'Invalid username or password',
-        401,
-      );
+    const query = `SELECT password, status, id, is_infinite_TTL, oath_taken, operator_id, name, access_menu FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE email = ?`;
+
+    const [userDetails] = await db.RunQuery('venus_acl', query, [email]);
+
+        // Check if user exists
+        if (!userDetails) {
+          return responseHandler.error(req, res, 'Invalid email or password', 401);
+        }
+
+            // Check if user is active
+    if (userDetails.status !== 'ACTIVE') {
+      return responseHandler.error(req, res, 'User is INACTIVE, please verify with Admin', 403);
+    }
+
+        // Generate token
+        const tokenData = {
+          user_id: userDetails.id,
+          is_infinite_TTL: userDetails.is_infinite_TTL,
+          TTL: TTL || null,
+        };
+        Helper.getTokenString
+        const token = await tokens.createToken(tokenData);
+
+
+            // Check if password matches
+    if (userDetails.password !== hashedPassword) {
+      return responseHandler.error(req, res, 'Invalid email or password', 401);
+    }
+
 
     // Return success with the found user
     return responseHandler.success(req, res, 'Login successful', users);
