@@ -10,7 +10,11 @@ const ResponseConstants = require('../constants/responesConstans');
 
 // Importing database connections
 const dbConnection = require('../db/connection');
-const dbHelper = require('../db/helper');
+const {
+  executeQuery,
+  insertIntoTable,
+  selectFromTable,
+} = require('../db/helper');
 const dbQueries = require('../db/queries');
 
 // Import other utilities or modules as needed
@@ -22,7 +26,9 @@ module.exports = {
   dbConstants,
   db: {
     connection: dbConnection,
-    RunQuery: dbHelper,
+    RunQuery: executeQuery,
+    InsertIntoTable: insertIntoTable,
+    SelectFromTable: selectFromTable,
     queries: dbQueries,
   },
   errorHandler,
