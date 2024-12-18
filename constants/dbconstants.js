@@ -24,4 +24,5 @@ exports.LIVE_DB = {
   O_CITY: 'tb_operator_cities',
   PAYMENT_LOGS: 'tb_driver_payment_log',
   WALLET_NUMBER: 'tb_driver_wallet_number',
+  GLOBAL_PROMO:'tb_ride_promotions'
 };
