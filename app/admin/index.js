@@ -9,9 +9,8 @@ module.exports = function (app) {
     Middlewares.admin.isLoggedIn,
     loginController.loginUsingToken,
   );
-  app.get(
+  app.post(
     '/v1/acl/operator/login',
-    Middlewares.admin.domainToken,
     loginController.adminLogin,
   );
 };

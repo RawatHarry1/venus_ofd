@@ -3,9 +3,11 @@ const {
   db,
   errorHandler,
   responseHandler,
-  ResponseConstants
+  ResponseConstants,
+  authConstants
 } = require('../../../bootstart/header');
 const Helper = require('../helper');
+const crypto = require('crypto');
 
 exports.adminLogin = async (req, res) => {
   try {
@@ -19,38 +21,49 @@ exports.adminLogin = async (req, res) => {
     const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
     const isDeliveryPanel = Number(is_delivery_panel) || 0;
 
+    var data = {
+      email: email,
+      password: hashedPassword,
+      is_delivery_panel: isDeliveryPanel,
+      is_login: 1
+    };
+
     const query = `SELECT password, status, id, is_infinite_TTL, oath_taken, operator_id, name, access_menu FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE email = ?`;
 
-    const [userDetails] = await db.RunQuery('venus_acl', query, [email]);
+    const [userDetails] = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [email]);
 
-        // Check if user exists
-        if (!userDetails) {
-          return responseHandler.error(req, res, 'Invalid email or password', 401);
-        }
-
-            // Check if user is active
-    if (userDetails.status !== 'ACTIVE') {
-      return responseHandler.error(req, res, 'User is INACTIVE, please verify with Admin', 403);
+    // Check if user exists
+    if (!userDetails) {
+      return responseHandler.error(req, res, 'Invalid email or password', 401);
     }
 
-        // Generate token
-        const tokenData = {
-          user_id: userDetails.id,
-          is_infinite_TTL: userDetails.is_infinite_TTL,
-          TTL: TTL || null,
-        };
-        Helper.getTokenString
-        const token = await tokens.createToken(tokenData);
-
-
-            // Check if password matches
+    // Check if password matches
     if (userDetails.password !== hashedPassword) {
       return responseHandler.error(req, res, 'Invalid email or password', 401);
     }
 
+    // Check if user is active
+    if (userDetails.status !== 'ACTIVE') {
+      return responseHandler.error(req, res, 'User is INACTIVE, please verify with Admin', 403);
+    }
 
-    // Return success with the found user
-    return responseHandler.success(req, res, 'Login successful', users);
+    // Generate token
+    const tokenData = {
+      user_id: userDetails.id,
+      is_infinite_TTL: userDetails.is_infinite_TTL,
+      TTL: TTL || null,
+    };
+    const token = await createToken(tokenData);
+    
+
+    data.user_name = userDetails.name;
+    data.user_id =  userDetails.id;
+    data.token = token;
+    data.TTL = TTL;
+    data.access_menu = JSON.parse(userDetails.access_menu)
+    delete data.password
+
+    return responseHandler.success(req, res, 'Login successful', data);
   } catch (err) {
     errorHandler.errorHandler(err, req, res);
   }
@@ -90,9 +103,9 @@ exports.checkOperatorToken = async function (req, res) {
 exports.loginUsingToken = async function (req, res) {
   try {
     var response = {};
-    const query = `SELECT status,id,operator_id,name,access_menu,email  FROM ${dbConstants.ADMIN_AUHT.ACL_USER} WHERE id = ?`;
+    const query = `SELECT status,id,operator_id,name,access_menu,email  FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE id = ?`;
     var values = [req.user_id];
-    let uerData = await db.RunQuery(dbConstants.DBS.ADMIN_AUHT, query, values);
+    let uerData = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
     response.access_menu = JSON.parse(uerData[0].access_menu);
     response.email = uerData[0].email;
     response.name = uerData[0].name;
@@ -102,4 +115,24 @@ exports.loginUsingToken = async function (req, res) {
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
+};
+
+const createToken = async (data) => {
+  const { user_id, is_infinite_TTL } = data;
+
+  if (!user_id) {
+    throw new Error('User ID is required!');
+  }
+
+  const TTL = is_infinite_TTL
+    ? authConstants.AUTH_CONSTANTS.infinite_TTL
+    : authConstants.AUTH_CONSTANTS.default_TTL;
+
+  const token = await Helper.getTokenString();
+  const query = `
+    INSERT INTO ${dbConstants.ADMIN_AUTH.TOKENS} (user_id, token, TTL)
+    VALUES (?, ?, ?)
+  `;
+  await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [user_id, token, TTL]);
+  return token;
 };
