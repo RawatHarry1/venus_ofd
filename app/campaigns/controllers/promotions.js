@@ -1,0 +1,309 @@
+const {
+    dbConstants,
+    db,
+    errorHandler,
+    responseHandler,
+    ResponseConstants,
+} = require('../../../bootstart/header');
+
+const PromoConstant = require('../../../constants/campaings');
+const Helper = require('../helper');
+var Joi = require('joi');
+var QueryBuilder = require('datatable');
+var moment     = require('moment');
+
+exports.insertPomotions = async function(req,res){
+    try {
+        var response={};
+        var benefitType = req.body.benefit_type;
+    var promoType = req.body.promo_type;
+    var endDate = req.body.end_date;
+    var startDate = req.body.start_date;
+    var operatorId = req.operator_id;
+    var value = req.body.value;
+    var city = req.body.city;
+    var title = req.body.title;
+    var tnc = req.body.tnc;
+    var perDayLimit = req.body.per_day_limit;
+    var maxValue = req.body.max_value;
+    var userId = req.user_id;
+    req.body.created_by = req.email_from_acl;
+    
+    var fareFixed = req.body.fare_fixed;
+    var fareThresholdDistance = req.body.fare_threshold_distance;
+    var farePerKmThresholdDistance = req.body.fare_per_km_threshold_distance;
+    var farePerKmBeforeThresholdDistance = req.body.fare_per_km_before_threshold;
+    var farePerKmAfterThresholdDistance = req.body.fare_per_km_after_threshold;
+    var regionId = req.body.region_id;
+    var requestRideType = req.request_ride_type
+    req.body.service_type = requestRideType
+
+    req.body.allowed_vehicles = Helper.PROMO.formatAllowedVehiclesString(req.body.allowed_vehicles);
+
+    var allowedVehicles = req.body.allowed_vehicles; //invalid allowed_vehicles will result is an empty string
+    
+    var mandatoryFields = [city, benefitType, promoType, endDate, startDate, title, tnc, perDayLimit, operatorId];
+    
+    if(benefitType == PromoConstant.BENEFIT_TYPE.MARKETING_FARE){      
+        mandatoryFields.push(fareFixed, fareThresholdDistance, farePerKmThresholdDistance, farePerKmBeforeThresholdDistance, farePerKmAfterThresholdDistance, regionId);
+    }else{
+        mandatoryFields.push(value, maxValue);
+    }
+    if(req.body.is_pass == 1 ) {        
+        if (!req.body.validity || !req.body.amount) {
+            
+            response = {
+                flag: ResponseConstants.RESPONSE_STATUS.SHOW_ERROR_MESSAGE,
+                message: "Validity or Amount can not be null for Passes"
+            };
+            return res.send(response);
+        }        
+        var start = moment(startDate, 'YYYY-MM-DD HH:mm:ss');
+        var end = moment(endDate, 'YYYY-MM-DD HH:mm:ss');
+        var validity = req.body.validity;
+        var minimumEndDate = moment(start).add(validity, 'days');
+        
+        if (end < minimumEndDate) {
+            response = {
+                flag: ResponseConstants.RESPONSE_STATUS.SHOW_ERROR_MESSAGE,
+                message: 'End Date should be greater than the validity'
+            };
+            return res.send(response);
+        }
+    }
+    if(!Helper.PROMO.isPromoValid(handlerInfo, req.body, PromoConstant.PROMOTION_TYPE.PROMOS)) {
+        response = {
+            flag: ResponseConstants.RESPONSE_STATUS.ACTION_FAILED,
+            message: "Trying to add wrong promo. Please try again."
+        };
+        return res.send(response);
+    }
+    var promoObject =  makePromo(operatorId, req.body);
+    if(benefitType == PromoConstant.BENEFIT_TYPE.MARKETING_FARE || benefitType == PromoConstant.BENEFIT_TYPE.SUBSCRIPTION_FARE){
+        var fareObject = await makeFare(handlerInfo, operatorId, req.body);
+        yield insertMarketingFarePromo(handlerInfo, fareObject, "tb_ride_promotions", promoObject);
+    }else{
+        yield utils.insertIntoTable(handlerInfo, "tb_ride_promotions", promoObject);
+    }
+
+    //insert logs for promos
+    var logObject = {
+        "user_id" : userId,
+        "promo_type" : constants.PROMOTION_TYPE.PROMOS,
+        "event_type" : constants.PROMOTION_EVENT.CREATED,
+        "operator_id" : operatorId,
+        "meta_data" : JSON.stringify(req.body)
+    }
+    connection_logs.query('insert into tb_promotion_logs set ? ', logObject, function() {});
+    response = {
+        flag : constants.responseFlags.ACTION_COMPLETE,
+        message : "Promo added successfully."
+    };
+    return response;
+
+        return responseHandler.success(req, res, 'User Details Sents', response);
+    } catch (error) {
+        errorHandler.errorHandler(error, req, res);
+    }
+}
+
+async function makePromo() {
+    var locationsCoordinates = 0;
+    var multipleLocationsAllowed = 0;
+    var latitude = 0;
+    var longitude = 0;
+
+    if(promoObj.promo_type != PromoConstant.PROMO_TYPE.LOCATION_INSENSITIVE){
+        locationsCoordinates = JSON.parse(promoObj.locations_coordinates);
+        if(locationsCoordinates.length == 1){ 
+            latitude = locationsCoordinates[0].lat;
+            longitude = locationsCoordinates[0].lng;
+            locationsCoordinates = 0;
+        }else if(locationsCoordinates.length > 1){
+            locationsCoordinates = Helper.PROMO.formatMultipleLocationsCoordinates(locationsCoordinates);
+            multipleLocationsAllowed = 1;
+        }
+    }
+    var promo = {
+        "operator_id": operatorId,
+        "is_active": 1,
+        "title": promoObj.title,
+        "promo_type": promoObj.promo_type,
+        "promo_provider": 0,
+        "benefit_type" : promoObj.benefit_type,
+        "allowed_vehicles": promoObj.allowed_vehicles,
+        "multiple_locations_allowed": multipleLocationsAllowed,
+        "discount_percentage": (promoObj.benefit_type == PromoConstant.BENEFIT_TYPE.DISCOUNT ? promoObj.value : 0),
+        "discount_maximum": (promoObj.benefit_type == PromoConstant.BENEFIT_TYPE.DISCOUNT ? promoObj.max_value : 0),
+        "cashback_percentage": (promoObj.benefit_type == PromoConstant.BENEFIT_TYPE.CASHBACK ? promoObj.value : 0),
+        "cashback_maximum": (promoObj.benefit_type == PromoConstant.BENEFIT_TYPE.CASHBACK ? promoObj.max_value : 0),
+        "capped_fare": (promoObj.benefit_type == PromoConstant.BENEFIT_TYPE.CAPPED_FARE ? promoObj.value : -1),
+        "capped_fare_maximum": (promoObj.benefit_type == PromoConstant.BENEFIT_TYPE.CAPPED_FARE ? promoObj.max_value : -1),
+        "city": promoObj.city,
+        "pickup_latitude" : (promoObj.promo_type == PromoConstant.PROMO_TYPE.PICK_UP_BASED ? latitude : 0),
+        "pickup_longitude" : (promoObj.promo_type == PromoConstant.PROMO_TYPE.PICK_UP_BASED ? longitude : 0),
+        "pickup_radius" : (promoObj.promo_type == PromoConstant.PROMO_TYPE.PICK_UP_BASED ? promoObj.pickup_radius : 0),
+        "drop_latitude" : (promoObj.promo_type == PromoConstant.PROMO_TYPE.DROP_BASED ? latitude : 0),
+        "drop_longitude" : (promoObj.promo_type == PromoConstant.PROMO_TYPE.DROP_BASED ? longitude : 0),
+        "drop_radius" : (promoObj.promo_type == PromoConstant.PROMO_TYPE.DROP_BASED ? promoObj.drop_radius : 0),
+        "is_location_based" : (promoObj.promo_type == PromoConstant.PROMO_TYPE.LOCATION_INSENSITIVE ? 0 : 1),
+        "locations_coordinates" : locationsCoordinates,
+        "max_allowed" : promoObj.max_allowed,
+        "current_usage_count" :0,
+        "per_user_limit" :promoObj.per_user_limit || 1,
+        "per_day_limit" : promoObj.per_day_limit || 1,
+        "terms_n_conds": promoObj.tnc,
+        "start_from": promoObj.start_date,
+        "end_on" : promoObj.end_date,
+        "comments" : promoObj.comments || "",
+        "created_by" : promoObj.created_by,
+        "is_pass" : promoObj.is_pass,
+        "amount" : promoObj.amount,
+        "validity" : promoObj.validity,
+        "is_selected" : (promoObj.is_pass ? 1 : 0),
+        "service_type": promoObj.service_type
+
+    };
+    return promo;
+}
+async function makeFare(operatorId, fareObj){
+    try{
+        var rideAndVehicleType = {};
+        var requiredKeys = ["vehicle_type", "ride_type"];
+        var criterion    = [{key: 'region_id', value : fareObj.region_id}, {key: 'operator_id', value : operatorId}];
+        yield utils.fetchDataPromisified('tb_city_sub_regions', requiredKeys, criterion, rideAndVehicleType);
+
+        rideAndVehicleType =  await db.RunQuery(
+            dbConstants.DBS.LIVE_DB,
+            queries.select,
+            values,
+          );
+        if(!rideAndVehicleType.data || !rideAndVehicleType.data.length){
+            throw new Error('Could not find ride and vehicle types.')
+        }
+
+        var fare = {
+            is_applicable: 1,
+            fare_fixed: fareObj.fare_fixed,
+            fare_threshold_distance: fareObj.fare_threshold_distance,
+            fare_per_km_threshold_distance: fareObj.fare_per_km_threshold_distance,
+            fare_per_km_after_threshold: fareObj.fare_per_km_after_threshold,
+            fare_per_km_before_threshold: fareObj.fare_per_km_before_threshold,
+            fare_per_min: fareObj.fare_per_min || 0,
+            fare_threshold_time: fareObj.fare_threshold_time || 0,
+            fare_per_waiting_min: fareObj.fare_per_waiting_min || 0,
+            fare_threshold_waiting_time: fareObj.fare_threshold_waiting_time || 0,
+            type: 0, //0:customer 1: driver
+            city: fareObj.city,
+            operator_id: operatorId,
+            business_id: BENEFIT_TYPE_BUSINESS_FARE[fareObj.benefit_type] || BENEFIT_TYPE_BUSINESS_FARE.DEFAULT,
+            region_id: fareObj.region_id,
+            vehicle_type: rideAndVehicleType.data[0].vehicle_type,
+            start_time: '00:00:00',
+            end_time: '23:59:59',
+            ride_type: rideAndVehicleType.data[0].ride_type,
+            fare_per_xmin: fareObj.fare_per_xmin || 0,
+            no_of_xmin: fareObj.no_of_xmin || 1
+        }
+        return Promise.resolve(fare);
+    }catch(error){
+        return Promise.reject(error);
+    }
+}
+
+exports.promotionList = async function (req, res) {
+    try {
+
+        let promoType = req.query.promo_type;
+        let operatorId = req.operator_id;
+        let requestRideType = req.request_ride_type
+        let cityId = parseInt(req.query.city_id);
+
+        let response = {};
+        let promoList;
+
+        switch (+promoType) {
+            case 1:
+                promoList = await getCityWidePromos(cityId, operatorId, requestRideType);
+                break;
+            case 2:
+                promoList = await getCoupons(operatorId, undefined, requestRideType);
+                break;
+            case 3:
+                promoList = await getAuthCoupons(operatorId, cityId, requestRideType);
+                break;
+        }
+
+        return responseHandler.success(req, res, 'User Details Sents', promoList);
+    } catch (error) {
+        errorHandler.errorHandler(error, req, res);
+    }
+};
+
+
+async function getCityWidePromos(cityId, operatorId, requestRideType) {
+
+    let promosQuery = `SELECT promo_id, title, promo_type, multiple_locations_allowed, benefit_type, discount_percentage, discount_maximum, capped_fare, 
+            capped_fare_maximum, cashback_percentage,cashback_maximum, is_active, promo_provider,
+            city, start_time, end_time, start_from, end_on, locations_coordinates, max_allowed, terms_n_conds, per_user_limit, current_usage_count, is_selected,
+            allowed_vehicles, per_day_limit,
+            pickup_radius, pickup_latitude, pickup_longitude,  drop_radius, drop_latitude, drop_longitude, fare_id,
+            CASE
+            WHEN is_active = 1 AND  start_from < NOW() AND end_on >= NOW() THEN 1
+            ELSE 0 END AS is_promo_active
+            FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.GLOBAL_PROMO} 
+            WHERE city =? AND operator_id = ? AND service_type = ? `;
+
+    let cityWidePromos = await db.RunQuery(
+        dbConstants.DBS.LIVE_DB,
+        promosQuery,
+        [cityId,operatorId, requestRideType],
+    );
+
+    let finalCityWidePromos = filterPromotionsList(cityWidePromos);
+    return finalCityWidePromos;
+}
+
+function filterPromotionsList(promoObject) {
+    for (let i in promoObject) {
+
+        promoObject[i].discount_type = Helper.PROMO.getDiscountType(promoObject[i].discount_percentage,
+            promoObject[i].cashback_percentage,
+            promoObject[i].capped_fare,
+            promoObject[i].benefit_type);
+
+        promoObject[i].value = Helper.PROMO.getDiscountValue(promoObject[i].capped_fare,
+            promoObject[i].cashback_percentage,
+            promoObject[i].cashback_maximum,
+            promoObject[i].discount_percentage,
+            promoObject[i].discount_maximum);
+        promoObject[i].latitude = 0;
+        promoObject[i].longitude = 0;
+        promoObject[i].radius = 0;
+        if (promoObject[i].promo_type == PromoConstant.PROMO_TYPE.PICK_UP_BASED) {
+            if (!promoObject[i].locations_coordinates || promoObject[i].locations_coordinates === "0") {
+                promoObject[i].latitude = promoObject[i].pickup_latitude;
+                promoObject[i].longitude = promoObject[i].pickup_longitude;
+            } else {
+                promoObject[i].locations_coordinates = Helper.PROMO.parseLocationsCoordinates(promoObject[i].locations_coordinates);
+            }
+            promoObject[i].radius = promoObject[i].pickup_radius;
+        }
+        if (promoObject[i].promo_type == PromoConstant.PROMO_TYPE.DROP_BASED) {
+            if (!promoObject[i].locations_coordinates || promoObject[i].locations_coordinates === "0") {
+                promoObject[i].latitude = promoObject[i].drop_latitude;
+                promoObject[i].longitude = promoObject[i].drop_longitude;
+            } else {
+                promoObject[i].locations_coordinates = Helper.PROMO.parseLocationsCoordinates(promoObject[i].locations_coordinates);
+            }
+            promoObject[i].radius = promoObject[i].drop_radius;
+        }
+        delete promoObject[i].drop_latitude;
+        delete promoObject[i].drop_longitude;
+        delete promoObject[i].drop_radius;
+        delete promoObject[i].pickup_latitude;
+        delete promoObject[i].pickup_longitude;
+        delete promoObject[i].pickup_radius;
+    }
+    return promoObject;
+}
