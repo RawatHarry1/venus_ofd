@@ -15,4 +15,13 @@ exports.LIVE_DB = {
   CAPTAINS: 'tb_drivers',
   CUSTOMERS: 'tb_users',
   IN_THE_AIR: 'tb_session',
+  CAPTAIN_DOCUMENTS: 'tb_driver_documents',
+  CITY_DOC: 'tb_city_documents',
+  CITY_REQ_DOC: 'tb_required_documents',
+  FLEET: 'tb_vehicle_fleet',
+  CAPTAIN_BANK: 'tb_driver_bank_details',
+  CITY: 'tb_cities',
+  O_CITY: 'tb_operator_cities',
+  PAYMENT_LOGS: 'tb_driver_payment_log',
+  WALLET_NUMBER: 'tb_driver_wallet_number',
 };
