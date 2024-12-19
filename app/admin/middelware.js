@@ -13,7 +13,7 @@ exports.admin = {
       req.user_id = isLoginIn[0].user_id;
       let validOpertor = await Helper.isValidOperator(isLoginIn[0].user_id);
       req.operator_id = validOpertor[0].operator_id;
-      var requestRideType = req.headers.request_ride_type || '1'
+      var requestRideType = req.headers.request_ride_type || '1';
       req.request_ride_type = requestRideType;
       next();
     } else {

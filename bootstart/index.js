@@ -51,7 +51,7 @@ module.exports = async function (app) {
    */
   Object.keys(routes).forEach((routeName) => {
     const route = routes[routeName];
-    route(app); 
+    route(app);
   });
 
   app.get('/health', (req, res) => {

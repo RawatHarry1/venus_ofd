@@ -4,4 +4,5 @@ module.exports = {
   captains: require('../app/captains'),
   clients: require('../app/clients'),
   campaigns: require('../app/campaigns'),
+  tickets: require('../app/tickets'),
 };
