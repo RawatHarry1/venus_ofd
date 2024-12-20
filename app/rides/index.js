@@ -1,4 +1,5 @@
 const RidesController = require('./controllers/rides');
+const vehicleTypesController = require('./controllers/vehicle')
 const AdminMiddlewares = require('../admin/middelware');
 
 module.exports = function (app) {
@@ -7,5 +8,23 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     RidesController.getRides,
+  );
+  app.get(
+    '/get_city_info_operator_wise',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    vehicleTypesController.get_city_info_operator_wise,
+  );
+  app.get(
+    '/fetch_vehicles',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    vehicleTypesController.fetchVehicles,
+  );
+  app.get(
+    '/fetch_vehicle_make',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    vehicleTypesController.fetchVehicleMake,
   );
 };

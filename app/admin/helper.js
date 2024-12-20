@@ -17,7 +17,7 @@ exports.tokenVailed = async function (token) {
 
 exports.isValidOperator = async function (userId) {
   try {
-    let query = `SELECT operator_id FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE id =?`;
+    let query = `SELECT id, name, email, operator_id, city,fleet_id FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE id =?`;
     return db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [userId]);
   } catch (error) {
     return [];
