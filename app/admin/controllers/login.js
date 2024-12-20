@@ -4,6 +4,7 @@ const {
   errorHandler,
   responseHandler,
 } = require('../../../bootstart/header');
+const GeneralConstant = require('../../../constants/general');
 
 exports.adminLogin = async (req, res) => {
   try {
@@ -77,6 +78,27 @@ exports.loginUsingToken = async function (req, res) {
     response.operator_id = req.operator_id;
     response.vehicles = [];
     return responseHandler.success(req, res, '', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.getAdminDetails = async function (req, res) {
+  var response = {};
+  try {
+    let isDeliveryPanel = Number(req.query.is_delivery_panel);
+    let panelId = GeneralConstant.PANELS.SUPER_ADMIN_PANEL;
+    if (isDeliveryPanel) {
+      panelId = GeneralConstant.PANELS.SUPER_ADMIN_surya_PANEL;
+    }
+
+    const query = `SELECT name,
+    email,id as user_id,
+    email,created_at,status
+    FROM ${dbConstants.ADMIN_AUHT.ACL_USER} WHERE operator_id = ?`;
+    var values = [req.operator_id];
+    let uerData = await db.RunQuery(dbConstants.DBS.ADMIN_AUHT, query, values);
+    return responseHandler.success(req, res, '', uerData);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

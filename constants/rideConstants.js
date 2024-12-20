@@ -21,3 +21,13 @@ exports.ENGAGEMENT_STATUS = {
   ARRIVED: 14,
   RIDE_CANCELLED_BY_CUSTOMER: 13,
 };
+
+exports.CLIENTS = {
+  VENUS_TAXI: 1,
+  MARS: 2,
+};
+
+exports.CLIENTS_RIDE_TYPE = {
+  VENUS_TAXI: 0,
+  MARS: 10,
+};

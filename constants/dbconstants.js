@@ -4,6 +4,7 @@
 exports.DBS = {
   ADMIN_AUHT: 'venus_acl',
   LIVE_DB: 'venus_live',
+  LIVE_LOGS: 'venus_live_addn',
 };
 exports.ADMIN_AUHT = {
   ACL_USER: 'tb_acl_users',
@@ -27,4 +28,11 @@ exports.LIVE_DB = {
   GLOBAL_PROMO: 'tb_ride_promotions',
   PROMOTION_LOGS: 'tb_promotion_logs',
   TICKETS: 'tb_support_tickets',
+  VEHICLES: 'tb_vehicles',
+  SUB_REGIONS: 'tb_city_sub_regions',
+  COUNTRY: 'tb_countries',
+};
+
+exports.LIVE_LOGS = {
+  CITIES: 'tb_cities',
 };

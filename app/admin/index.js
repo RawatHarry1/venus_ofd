@@ -9,4 +9,10 @@ module.exports = function (app) {
     Middlewares.admin.isLoggedIn,
     loginController.loginUsingToken,
   );
+  app.get(
+    '/v1/acl/user/details_with_permissions',
+    Middlewares.admin.domainToken,
+    Middlewares.admin.isLoggedIn,
+    loginController.getAdminDetails,
+  );
 };
