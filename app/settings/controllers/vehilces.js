@@ -23,7 +23,7 @@ exports.fetchVehicles = async function (req, res) {
       'vehicle_type',
       'region_id',
       'region_name',
-      'ride_type'
+      'ride_type',
     ];
 
     var vehicleCriteria = [

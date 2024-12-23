@@ -8,8 +8,9 @@ const Helper = require('./helper');
 exports.admin = {
   isLoggedIn: async function (req, res, next) {
     var token = req.query.token || req.body.token;
-    var cityId = req.query.city || req.body.city || req.query.city_id || req.body.city_id
-    if(!token){
+    var cityId =
+      req.query.city || req.body.city || req.query.city_id || req.body.city_id;
+    if (!token) {
       return responseHandler.unauthorized(req, res);
     }
     let isLoginIn = await Helper.tokenVailed(token);

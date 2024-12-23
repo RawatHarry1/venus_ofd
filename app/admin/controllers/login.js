@@ -4,7 +4,7 @@ const {
   errorHandler,
   responseHandler,
   ResponseConstants,
-  authConstants
+  authConstants,
 } = require('../../../bootstart/header');
 const Helper = require('../helper');
 const crypto = require('crypto');
@@ -16,22 +16,32 @@ exports.adminLogin = async (req, res) => {
     const { email, password, TTL, is_delivery_panel } = req.body;
 
     if (!email || !password) {
-      return responseHandler.error(req, res, 'Email and password are required', ResponseConstants.RESPONSE_STATUS.PARAMETER_MISSING);
+      return responseHandler.error(
+        req,
+        res,
+        'Email and password are required',
+        ResponseConstants.RESPONSE_STATUS.PARAMETER_MISSING,
+      );
     }
 
-    const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
+    const hashedPassword = crypto
+      .createHash('md5')
+      .update(password)
+      .digest('hex');
     const isDeliveryPanel = Number(is_delivery_panel) || 0;
 
     var data = {
       email: email,
       password: hashedPassword,
       is_delivery_panel: isDeliveryPanel,
-      is_login: 1
+      is_login: 1,
     };
 
     const query = `SELECT password, status, id, is_infinite_TTL, oath_taken, operator_id, name, access_menu FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE email = ?`;
 
-    const [userDetails] = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [email]);
+    const [userDetails] = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [
+      email,
+    ]);
 
     // Check if user exists
     if (!userDetails) {
@@ -45,7 +55,12 @@ exports.adminLogin = async (req, res) => {
 
     // Check if user is active
     if (userDetails.status !== 'ACTIVE') {
-      return responseHandler.error(req, res, 'User is INACTIVE, please verify with Admin', 403);
+      return responseHandler.error(
+        req,
+        res,
+        'User is INACTIVE, please verify with Admin',
+        403,
+      );
     }
 
     // Generate token
@@ -55,14 +70,13 @@ exports.adminLogin = async (req, res) => {
       TTL: TTL || null,
     };
     const token = await createToken(tokenData);
-    
 
     data.user_name = userDetails.name;
-    data.user_id =  userDetails.id;
+    data.user_id = userDetails.id;
     data.token = token;
     data.TTL = TTL;
-    data.access_menu = JSON.parse(userDetails.access_menu)
-    delete data.password
+    data.access_menu = JSON.parse(userDetails.access_menu);
+    delete data.password;
 
     return responseHandler.success(req, res, 'Login successful', data);
   } catch (err) {
@@ -136,7 +150,7 @@ const createToken = async (data) => {
   `;
   await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [user_id, token, TTL]);
   return token;
-}
+};
 
 exports.getAdminDetails = async function (req, res) {
   var response = {};
@@ -159,91 +173,120 @@ exports.getAdminDetails = async function (req, res) {
   }
 };
 
-
 exports.addAdmin = async function (req, res) {
   var response = {};
   try {
-    
-    if(!req.body.email || !req.body.password || !req.body.name){
-      return responseHandler.parameterMissingResponse(res, ['email','password','name']);
+    if (!req.body.email || !req.body.password || !req.body.name) {
+      return responseHandler.parameterMissingResponse(res, [
+        'email',
+        'password',
+        'name',
+      ]);
     }
-    const { email, password, city ,name,phone_number,status} = req.body;    
-    const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
+    const { email, password, city, name, phone_number, status } = req.body;
+    const hashedPassword = crypto
+      .createHash('md5')
+      .update(password)
+      .digest('hex');
 
     // Check if user already exists
     const query = `SELECT id FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE email = ?`;
-    const [existingUser] = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [email]);
+    const [existingUser] = await db.RunQuery(
+      dbConstants.DBS.ADMIN_AUTH,
+      query,
+      [email],
+    );
     if (existingUser) {
-      return responseHandler.error( res, 'User already exists', 409);
+      return responseHandler.error(res, 'User already exists', 409);
     }
 
     const insertQuery = `INSERT INTO ${dbConstants.ADMIN_AUTH.ACL_USER} (email, password, name, city, phone_number, status,operator_id) VALUES (?,?,?,?,?,?,?)`;
-    const values = [email, hashedPassword, name, city, phone_number, status,req.operator_id];
+    const values = [
+      email,
+      hashedPassword,
+      name,
+      city,
+      phone_number,
+      status,
+      req.operator_id,
+    ];
     await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, insertQuery, values);
 
-    return responseHandler.success(req, res, 'User added successfully', response);
+    return responseHandler.success(
+      req,
+      res,
+      'User added successfully',
+      response,
+    );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
-    
   }
-}
+};
 exports.updateAdmin = async function (req, res) {
   var response = {};
   try {
-
-    if(!req.body.email || !req.body.name){
-      return responseHandler.parameterMissingResponse(res, ['email','name']);
+    if (!req.body.email || !req.body.name) {
+      return responseHandler.parameterMissingResponse(res, ['email', 'name']);
     }
 
-    const { email, name} = req.body;
+    const { email, name } = req.body;
     const query = `UPDATE ${dbConstants.ADMIN_AUTH.ACL_USER} SET name = ? WHERE email = ?`;
     const values = [name, email];
     await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
 
-    return responseHandler.success(req, res, 'User Updated successfully', response);
+    return responseHandler.success(
+      req,
+      res,
+      'User Updated successfully',
+      response,
+    );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
-    
   }
-}
+};
 
 exports.suspendAdmin = async function (req, res) {
   var response = {};
   try {
-
-    if(!req.body.user_id){
+    if (!req.body.user_id) {
       return responseHandler.parameterMissingResponse(res, ['user_id']);
     }
 
-    const { user_id} = req.body;
+    const { user_id } = req.body;
     const query = `UPDATE ${dbConstants.ADMIN_AUTH.ACL_USER} SET status = 'INACTIVE' WHERE id = ?`;
     const values = [user_id];
     await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
 
-    return responseHandler.success(req, res, 'User Updated successfully', response);
+    return responseHandler.success(
+      req,
+      res,
+      'User Updated successfully',
+      response,
+    );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
-    
   }
-
-}
+};
 
 exports.getPageWithPermission = async function (req, res) {
   var response = {};
   try {
-
-    if(!req.body.admin_id){
+    if (!req.body.admin_id) {
       return responseHandler.parameterMissingResponse(res, ['admin_id']);
     }
 
-    const { admin_id} = req.body;
+    const { admin_id } = req.body;
     const query = `SELECT access_menu FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE id = ?`;
     const values = [admin_id];
-    const [userData] = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
+    const [userData] = await db.RunQuery(
+      dbConstants.DBS.ADMIN_AUTH,
+      query,
+      values,
+    );
     response.access_menu = JSON.parse(userData.access_menu);
 
     return responseHandler.success(req, res, '', response);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
-}
+};

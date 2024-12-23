@@ -24,8 +24,6 @@ exports.isValidOperator = async function (userId) {
   }
 };
 
-
-
 exports.getTokenString = async () => {
   while (true) {
     // Generate a 32-byte hexadecimal token
@@ -34,7 +32,9 @@ exports.getTokenString = async () => {
     // Query to check if the token already exists
     const query = `
       SELECT id FROM ${dbConstants.ADMIN_AUTH.TOKENS} WHERE token = ?`;
-    const result = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [token]);
+    const result = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [
+      token,
+    ]);
 
     // If the token is unique, return it
     if (result.length === 0) {

@@ -362,41 +362,43 @@ exports.getRides = async function (req, res) {
   }
 };
 
-
-exports.dataAggregation = async function(req,res) {
+exports.dataAggregation = async function (req, res) {
   const requestBody = req.body;
   requestBody.operator_id = req.operator_id || req.body.operator_id;
-  var requestRideType = req.request_ride_type
-  requestBody.request_ride_type = requestRideType
+  var requestRideType = req.request_ride_type;
+  requestBody.request_ride_type = requestRideType;
   try {
-    if (!requestBody.operator_id || !requestBody.start_date || !requestBody.end_date) {
+    if (
+      !requestBody.operator_id ||
+      !requestBody.start_date ||
+      !requestBody.end_date
+    ) {
       const missingParams = [];
       if (!requestBody.operator_id) missingParams.push('operator_id');
       if (!requestBody.start_date) missingParams.push('start_date');
       if (!requestBody.end_date) missingParams.push('end_date');
-     return  responseHandler.parameterMissingResponse(res,missingParams);
-  }
+      return responseHandler.parameterMissingResponse(res, missingParams);
+    }
 
     const result = await Promise.all([
       rideHelper.getTripsData(requestBody),
       rideHelper.getDriversData(requestBody),
       rideHelper.getCustomersData(requestBody),
       rideHelper.getRideStatistics(requestBody),
-      rideHelper.getActiveUsersData(requestBody)
+      rideHelper.getActiveUsersData(requestBody),
     ]);
 
-    return responseHandler.success(req, res, '',{
+    return responseHandler.success(req, res, '', {
       trips: result[0],
       drivers: result[1],
       customers: result[2],
       ride_stats: result[3],
-      active_users: result[4]
+      active_users: result[4],
     });
-
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
-}
+};
 
 function replaceDriverName(rides) {
   rides.forEach((ride) => {

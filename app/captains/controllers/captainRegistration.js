@@ -1,4 +1,10 @@
-const {dbConstants, db,errorHandler,responseHandler,ResponseConstants} = require('../../../bootstart/header');
+const {
+  dbConstants,
+  db,
+  errorHandler,
+  responseHandler,
+  ResponseConstants,
+} = require('../../../bootstart/header');
 
 const rideConstant = require('../../../constants/rideConstants');
 const documentsConstant = require('../../../constants/document');
@@ -8,11 +14,19 @@ var QueryBuilder = require('datatable');
 
 var notUploadedDocs = function (driver, mandatoryDocCount) {
   return (
-    driver.pending_submitted_docs +driver.pending_not_submitted_docs +driver.approved_docs < mandatoryDocCount && driver.verification_status == -1);
+    driver.pending_submitted_docs +
+      driver.pending_not_submitted_docs +
+      driver.approved_docs <
+      mandatoryDocCount && driver.verification_status == -1
+  );
 };
 var mandDocsUploaded = function (driver, mandatoryDocCount) {
   return (
-    driver.pending_submitted_docs +driver.pending_not_submitted_docs +driver.approved_docs >= mandatoryDocCount && driver.verification_status == -1);
+    driver.pending_submitted_docs +
+      driver.pending_not_submitted_docs +
+      driver.approved_docs >=
+      mandatoryDocCount && driver.verification_status == -1
+  );
 };
 var activeDrivers = function (driver, mandatoryDocCount) {
   return driver.verification_status == 1;
@@ -30,8 +44,24 @@ exports.getCaptainEnrollment = async function (req, res) {
     orderDirection = orderDirection.toUpperCase() == 'ASC' ? 'ASC' : 'DESC';
     var tab = req.body.tab;
 
-    var drivers = await fetchTotalDrivers(vehicleType,operatorId,cityId,fleetId,tab,requestRideType,orderDirection);
-    var totalCount = await fetchTotalDriversCount(vehicleType,operatorId,cityId,fleetId,tab,requestRideType,orderDirection);
+    var drivers = await fetchTotalDrivers(
+      vehicleType,
+      operatorId,
+      cityId,
+      fleetId,
+      tab,
+      requestRideType,
+      orderDirection,
+    );
+    var totalCount = await fetchTotalDriversCount(
+      vehicleType,
+      operatorId,
+      cityId,
+      fleetId,
+      tab,
+      requestRideType,
+      orderDirection,
+    );
     var mandatory_docs = await fetchMandatoryDocsCount(
       vehicleType,
       operatorId,

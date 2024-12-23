@@ -1,5 +1,5 @@
 const RidesController = require('./controllers/rides');
-const vehicleTypesController = require('./controllers/vehicle')
+const vehicleTypesController = require('./controllers/vehicle');
 const AdminMiddlewares = require('../admin/middelware');
 
 module.exports = function (app) {

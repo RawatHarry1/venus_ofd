@@ -12,7 +12,7 @@ exports.userRegistrationStatus = {
   CUSTOMER: 0,
   DRIVER: 1,
   DEDICATED_DRIVER: 2,
-}
+};
 exports.PANELS = {
   SUPER_ADMIN_PANEL: 32,
   CORPORATE_PANEL: 34,

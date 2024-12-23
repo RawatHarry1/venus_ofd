@@ -23,7 +23,7 @@ exports.errorHandler = async (err, req, res, next) => {
   fs.appendFileSync(logFilePath, JSON.stringify(errorLog) + '\n', 'utf8');
 
   // Respond to the client with a generic message
- return  res.status(500).json({
+  return res.status(500).json({
     message: 'An unexpected error occurred. Please try again later.',
   });
 };

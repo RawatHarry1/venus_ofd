@@ -1,5 +1,13 @@
-const { dbConstants, db, errorHandler, responseHandler, ResponseConstants,rideConstants,generalConstants } = require('../../bootstart/header');
-var moment      = require('moment');
+const {
+  dbConstants,
+  db,
+  errorHandler,
+  responseHandler,
+  ResponseConstants,
+  rideConstants,
+  generalConstants,
+} = require('../../bootstart/header');
+var moment = require('moment');
 
 exports.ridesQueryHelper = async function (
   corporateId,
@@ -10,24 +18,27 @@ exports.ridesQueryHelper = async function (
   return true;
 };
 
-exports.checkBlank = function(arr){
+exports.checkBlank = function (arr) {
   var arrlength = arr.length;
-  for (var i = 0; i < arrlength; i++)
-  {
-      if (arr[i] === '' || arr[i] === "" || arr[i] == undefined)
-      {
-          return 1;
-      }
+  for (var i = 0; i < arrlength; i++) {
+    if (arr[i] === '' || arr[i] === '' || arr[i] == undefined) {
+      return 1;
+    }
   }
   return 0;
-}
+};
 
-
-exports.getTripsData = async function(data) {
+exports.getTripsData = async function (data) {
   try {
     const numberOfDays = diffInDates(data.start_date, data.end_date, 'days');
-    const previousTripsStartDate = subtractDaysFromDate(data.start_date, numberOfDays);
-    const previousTripsEndDate = subtractDaysFromDate(data.end_date, numberOfDays);
+    const previousTripsStartDate = subtractDaysFromDate(
+      data.start_date,
+      numberOfDays,
+    );
+    const previousTripsEndDate = subtractDaysFromDate(
+      data.end_date,
+      numberOfDays,
+    );
 
     const tripsQuery = `
       SELECT 
@@ -75,8 +86,16 @@ exports.getTripsData = async function(data) {
 
     const previousTotalCash = _.get(previoustrips, [0, 'cash_sum'], 0);
     const previousTotalCount = _.get(previoustrips, [0, 'total_count'], 0);
-    const previousCompletedTrips = _.get(previoustrips, [0, 'completed_trips'], 0);
-    const previousCanceledTrips = _.get(previoustrips, [0, 'cancelled_trips'], 0);
+    const previousCompletedTrips = _.get(
+      previoustrips,
+      [0, 'completed_trips'],
+      0,
+    );
+    const previousCanceledTrips = _.get(
+      previoustrips,
+      [0, 'cancelled_trips'],
+      0,
+    );
 
     const totalCash = _.get(trips, [0, 'cash_sum'], 0);
     const totalTrips = _.get(trips, [0, 'total_count'], 0);
@@ -88,21 +107,29 @@ exports.getTripsData = async function(data) {
       total_trips: totalTrips,
       total_completed_trips: totalCompletedTrips,
       total_canceled_trips: totalCanceledTrips,
-      cash_change: !previousTotalCash ? 0 : ((totalCash - previousTotalCash) / previousTotalCash) * 100,
-      trip_change: !previousTotalCount ? 0 : ((totalTrips - previousTotalCount) / previousTotalCount) * 100,
+      cash_change: !previousTotalCash
+        ? 0
+        : ((totalCash - previousTotalCash) / previousTotalCash) * 100,
+      trip_change: !previousTotalCount
+        ? 0
+        : ((totalTrips - previousTotalCount) / previousTotalCount) * 100,
       completed_trip_change: !previousCompletedTrips
         ? 0
-        : ((totalCompletedTrips - previousCompletedTrips) / previousCompletedTrips) * 100,
+        : ((totalCompletedTrips - previousCompletedTrips) /
+            previousCompletedTrips) *
+          100,
       canceled_trip_change: !previousCanceledTrips
         ? 0
-        : ((totalCanceledTrips - previousCanceledTrips) / previousCanceledTrips) * 100,
+        : ((totalCanceledTrips - previousCanceledTrips) /
+            previousCanceledTrips) *
+          100,
     };
   } catch (error) {
     throw new Error(error.message);
   }
-}
+};
 
-exports.getDriversData = async function(data) {
+exports.getDriversData = async function (data) {
   try {
     const query = `
       SELECT
@@ -138,10 +165,9 @@ exports.getDriversData = async function(data) {
   } catch (error) {
     throw new Error(error.message);
   }
-}
+};
 
-
-exports.getCustomersData = async function(data) {
+exports.getCustomersData = async function (data) {
   try {
     const query = `
       SELECT
@@ -177,11 +203,11 @@ exports.getCustomersData = async function(data) {
   } catch (error) {
     throw new Error(error.message);
   }
-}
+};
 
-
-exports.getRideStatistics = async function(data) {
-  const { operator_id, start_date, end_date, utc_offset, request_ride_type } = data;
+exports.getRideStatistics = async function (data) {
+  const { operator_id, start_date, end_date, utc_offset, request_ride_type } =
+    data;
   try {
     const startDate = new Date(start_date);
     const endDate = new Date(end_date);
@@ -191,7 +217,7 @@ exports.getRideStatistics = async function(data) {
     let query;
     let groupByClause;
     if (timeDifference <= oneDayInMillis) {
-      groupByClause = "HOUR(DATE_ADD(e.current_time, INTERVAL ? MINUTE))";
+      groupByClause = 'HOUR(DATE_ADD(e.current_time, INTERVAL ? MINUTE))';
       query = `
           SELECT 
               HOUR(DATE_ADD(e.current_time, INTERVAL ? MINUTE)) AS time_frame,
@@ -206,8 +232,8 @@ exports.getRideStatistics = async function(data) {
           AND s.service_type = ?
           GROUP BY ${groupByClause}
       `;
-  } else if (timeDifference <= oneMonthInMillis) {
-      groupByClause = "DATE(e.current_time)";
+    } else if (timeDifference <= oneMonthInMillis) {
+      groupByClause = 'DATE(e.current_time)';
       query = `
           SELECT 
               DATE(e.current_time) AS time_frame,
@@ -219,10 +245,9 @@ exports.getRideStatistics = async function(data) {
           WHERE e.operator_id_x = ? 
           AND (e.drop_time BETWEEN ? AND ? OR e.current_time BETWEEN ? AND ?)
           AND s.service_type = ?
-          GROUP BY ${groupByClause}`
-      ;
-  } else {
-      groupByClause = "YEAR(e.current_time), MONTH(e.current_time)";
+          GROUP BY ${groupByClause}`;
+    } else {
+      groupByClause = 'YEAR(e.current_time), MONTH(e.current_time)';
       query = `
           SELECT 
               CONCAT(YEAR(e.current_time), '-', LPAD(MONTH(e.current_time), 2, '0')) AS time_frame,
@@ -234,34 +259,51 @@ exports.getRideStatistics = async function(data) {
           WHERE e.operator_id_x = ? 
           AND (e.drop_time BETWEEN ? AND ? OR e.current_time BETWEEN ? AND ?)
           AND s.service_type = ?
-          GROUP BY ${groupByClause}`
-      ;
-  }
+          GROUP BY ${groupByClause}`;
+    }
 
-    let values
+    let values;
 
     if (timeDifference <= oneDayInMillis) {
       values = [
-        utc_offset, operator_id, utc_offset, start_date, end_date, utc_offset, start_date, end_date, request_ride_type, utc_offset
+        utc_offset,
+        operator_id,
+        utc_offset,
+        start_date,
+        end_date,
+        utc_offset,
+        start_date,
+        end_date,
+        request_ride_type,
+        utc_offset,
       ];
     } else {
-      values = [operator_id, start_date, end_date, start_date, end_date, request_ride_type]
+      values = [
+        operator_id,
+        start_date,
+        end_date,
+        start_date,
+        end_date,
+        request_ride_type,
+      ];
     }
-    const results =  await db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
+    const results = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
 
-    return results.map(row => ({
-      time_frame: row.time_frame instanceof Date ? row.time_frame.toISOString().split('T')[0] : row.time_frame,
+    return results.map((row) => ({
+      time_frame:
+        row.time_frame instanceof Date
+          ? row.time_frame.toISOString().split('T')[0]
+          : row.time_frame,
       completed_rides: row.completed_rides || 0,
       cancelled_rides: row.cancelled_rides || 0,
-      missed_rides: row.missed_rides || 0
-  }));
+      missed_rides: row.missed_rides || 0,
+    }));
   } catch (error) {
     throw new Error(error.message);
   }
-}
+};
 
-
-exports.getActiveUsersData = async function(data) {
+exports.getActiveUsersData = async function (data) {
   const { operator_id, city_id, request_ride_type } = data;
   try {
     let query = `
@@ -275,26 +317,23 @@ exports.getActiveUsersData = async function(data) {
             u.operator_id = ? AND 
             u.city = ?
     `;
-    let values = [request_ride_type,operator_id, city_id];
-    const results =  await db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
+    let values = [request_ride_type, operator_id, city_id];
+    const results = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
 
-    return results.map(row => ({
+    return results.map((row) => ({
       total_drivers: row.total_driversCount || 0,
-      total_users: row.total_usersCount || 0
-  }));
+      total_users: row.total_usersCount || 0,
+    }));
   } catch (error) {
     throw new Error(error.message);
   }
-}
-
-
+};
 
 function subtractDaysFromDate(dateString, days) {
   const date = new Date(dateString);
   date.setDate(date.getDate() - days);
   return date.toISOString().slice(0, 10);
 }
-
 
 function diffInDates(startDt, endDt, diffType) {
   var startDate = moment(startDt, 'YYYY-MM-DD HH:mm Z'); // HH:mm:ss
