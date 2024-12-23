@@ -9,6 +9,10 @@ module.exports = function (app) {
     Middlewares.admin.isLoggedIn,
     loginController.loginUsingToken,
   );
+  app.post(
+    '/v1/acl/operator/login',
+    loginController.adminLogin,
+  )
   app.get(
     '/v1/acl/user/details_with_permissions',
     Middlewares.admin.domainToken,
