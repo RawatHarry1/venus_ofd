@@ -11,14 +11,16 @@ const responseHandler = {
    */
   success: (req, res, message = 'Success', data, statusCode = 200) => {
     const secretKey = req.query.secret_key || req.body.secret_key;
-    if (secretKey) {
+    console.log(secretKey);
+    
+    if (secretKey == 1) {
       return res.status(statusCode).json({
         status: 'success',
         message,
-        data,
+        data: data.data,
       });
     }
-    const encryptedData = encryptData(JSON.stringify(data));
+    const encryptedData = encryptData(JSON.stringify(data.data));
     return res.status(statusCode).json({
       status: 'success',
       message,

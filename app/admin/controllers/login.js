@@ -8,6 +8,7 @@ const {
 } = require('../../../bootstart/header');
 const Helper = require('../helper');
 const crypto = require('crypto');
+const GeneralConstant = require('../../../constants/general');
 
 exports.adminLogin = async (req, res) => {
   try {
@@ -135,4 +136,25 @@ const createToken = async (data) => {
   `;
   await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [user_id, token, TTL]);
   return token;
+}
+
+exports.getAdminDetails = async function (req, res) {
+  var response = {};
+  try {
+    let isDeliveryPanel = Number(req.query.is_delivery_panel);
+    let panelId = GeneralConstant.PANELS.SUPER_ADMIN_PANEL;
+    if (isDeliveryPanel) {
+      panelId = GeneralConstant.PANELS.SUPER_ADMIN_surya_PANEL;
+    }
+
+    const query = `SELECT name,
+    email,id as user_id,
+    email,created_at,status
+    FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE operator_id = ?`;
+    var values = [req.operator_id];
+    let uerData = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
+    return responseHandler.success(req, res, '', uerData);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
 };

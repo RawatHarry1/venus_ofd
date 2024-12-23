@@ -7,6 +7,7 @@ const {
 } = require('../../../bootstart/header');
 
 const PromoConstant = require('../../../constants/campaings');
+const GeneralConstant = require('../../../constants/general');
 const Helper = require('../helper');
 var Joi = require('joi');
 var QueryBuilder = require('datatable');
@@ -331,3 +332,71 @@ function filterPromotionsList(promoObject) {
   }
   return promoObject;
 }
+
+exports.createAuthPromo = async function (req, res) {
+  try {
+    let operatorId = (req.body.operator_id = req.operator_id);
+    let couponId = req.body.coupon_id_autos;
+    let bonusType = +req.body.bonus_type;
+    let count = req.body.count;
+    let loginType = (req.body.user_type =
+      req.body.user_type || GeneralConstant.loginType.CUSTOMER);
+    let startDate = moment(req.body.start_date, 'YYYY-MM-DD');
+    let endDate = moment(req.body.end_date, 'YYYY-MM-DD');
+    let walletSerialNumber = req.body.wallet_serial_number;
+    let requestRideType = req.request_ride_type;
+
+    if (loginType == GeneralConstant.loginType.DRIVER) {
+      req.body.coupons_validity_autos = moment
+        .duration(endDate.diff(startDate))
+        .asDays();
+    }
+    const schema = Joi.object({
+      token: Joi.string().required(),
+      operator_id: Joi.number().integer().positive().required(),
+      bonus_type: Joi.number().required(),
+      user_type: Joi.number().required(),
+      coupon_id_autos: Joi.number().when('bonus_type', {
+        is: PromoConstant.authPromotionBonusType.COUPON,
+        then: Joi.number().required(),
+        otherwise: Joi.forbidden(),
+      }),
+      amount: Joi.number().when('bonus_type', {
+        is: PromoConstant.authPromotionBonusType.CASH,
+        then: Joi.number().positive().required(),
+        otherwise: Joi.forbidden(),
+      }),
+      max_number: Joi.number().positive().required(),
+      start_date: Joi.string().required(),
+      end_date: Joi.string().required(),
+      promo_code: Joi.string().when('user_type', {
+        is: GeneralConstant.loginType.CUSTOMER,
+        then: Joi.string().required(),
+        otherwise: Joi.forbidden(),
+      }),
+      coupons_validity_autos: Joi.number().positive().required(),
+      offering_type: Joi.number().optional(),
+      count: Joi.number().when('user_type', {
+        is: GeneralConstant.loginType.DRIVER,
+        then: Joi.number().required(),
+        otherwise: Joi.forbidden(),
+      }),
+      city_id: Joi.optional(),
+      wallet_serial_number: Joi.string().length(4).optional(),
+      service_type: Joi.string().allow('').optional(),
+    });
+
+    const result = schema.validate(req.body);
+    if (result.error) {
+      let response = {
+        flag: ResponseConstants.RESPONSE_STATUS.ACTION_FAILED,
+        message: 'Some parameters are not valid.',
+      };
+      return res.send(response);
+    }
+
+    return responseHandler.success(req, res, 'User Details Sents', []);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};

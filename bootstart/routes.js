@@ -5,4 +5,5 @@ module.exports = {
   clients: require('../app/clients'),
   campaigns: require('../app/campaigns'),
   tickets: require('../app/tickets'),
+  settings: require('../app/settings'),
 };

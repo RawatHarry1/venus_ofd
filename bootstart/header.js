@@ -21,6 +21,8 @@ const dbQueries = require('../db/queries');
 const errorHandler = require('../middlewares/errorHandler');
 const responseHandler = require('../middlewares/responseHandler');
 const authConstants   = require('../constants/authConstants')
+const rideConstants = require('../constants/rideConstants')
+const generalConstants = require('../constants/general')
 
 // Exporting everything as a single object
 module.exports = {
@@ -35,5 +37,7 @@ module.exports = {
   errorHandler,
   responseHandler,
   ResponseConstants,
-  authConstants
+  authConstants,
+  rideConstants,
+  generalConstants
 };

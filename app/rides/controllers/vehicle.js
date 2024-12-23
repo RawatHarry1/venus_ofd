@@ -71,7 +71,7 @@ exports.get_city_info_operator_wise = async function (req, res) {
       ORDER BY
         city_name ASC`;
 
-        var cityData = await db.RunQuery(dbConstants.DBS.LIVE_ADDN, get_query, cityIds);
+        var cityData = await db.RunQuery(dbConstants.DBS.LIVE_LOGS, get_query, cityIds);
 
         var vehicle_extra = ' ';
         var ride_type = ' '
@@ -183,6 +183,8 @@ exports.get_city_info_operator_wise = async function (req, res) {
             return responseHandler.success(req, res, '', response);
 		}
     } catch (error) {
+        console.log(error);
+        
         errorHandler.errorHandler(error, req, res);
     }
 }

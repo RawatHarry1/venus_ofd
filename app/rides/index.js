@@ -27,4 +27,11 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     vehicleTypesController.fetchVehicleMake,
   );
+
+  app.post(
+    '/analytics/data_aggregation',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    RidesController.dataAggregation,
+  );
 };
