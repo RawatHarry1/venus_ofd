@@ -19,4 +19,31 @@ module.exports = function (app) {
     Middlewares.admin.isLoggedIn,
     loginController.getAdminDetails,
   );
+  app.post(
+    '/v1/acl/operator/add',
+    Middlewares.admin.domainToken,
+    Middlewares.admin.isLoggedIn,
+    loginController.addAdmin,
+  );
+  app.post(
+    '/v1/acl/permissions/update',
+    Middlewares.admin.domainToken,
+    Middlewares.admin.isLoggedIn,
+    loginController.addAdmin,
+  );
+  app.post(
+    '/v1/acl/user/suspend',
+    Middlewares.admin.domainToken,
+    Middlewares.admin.isLoggedIn,
+    loginController.suspendAdmin,
+  );
+  app.post(
+    '/get_page_with_permission',
+    Middlewares.admin.domainToken,
+    Middlewares.admin.isLoggedIn,
+    loginController.getPageWithPermission,
+  );
+
+  
+  
 };

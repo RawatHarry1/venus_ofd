@@ -158,3 +158,92 @@ exports.getAdminDetails = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+
+exports.addAdmin = async function (req, res) {
+  var response = {};
+  try {
+    
+    if(!req.body.email || !req.body.password || !req.body.name){
+      return responseHandler.parameterMissingResponse(res, ['email','password','name']);
+    }
+    const { email, password, city ,name,phone_number,status} = req.body;    
+    const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
+
+    // Check if user already exists
+    const query = `SELECT id FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE email = ?`;
+    const [existingUser] = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, [email]);
+    if (existingUser) {
+      return responseHandler.error( res, 'User already exists', 409);
+    }
+
+    const insertQuery = `INSERT INTO ${dbConstants.ADMIN_AUTH.ACL_USER} (email, password, name, city, phone_number, status,operator_id) VALUES (?,?,?,?,?,?,?)`;
+    const values = [email, hashedPassword, name, city, phone_number, status,req.operator_id];
+    await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, insertQuery, values);
+
+    return responseHandler.success(req, res, 'User added successfully', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+    
+  }
+}
+exports.updateAdmin = async function (req, res) {
+  var response = {};
+  try {
+
+    if(!req.body.email || !req.body.name){
+      return responseHandler.parameterMissingResponse(res, ['email','name']);
+    }
+
+    const { email, name} = req.body;
+    const query = `UPDATE ${dbConstants.ADMIN_AUTH.ACL_USER} SET name = ? WHERE email = ?`;
+    const values = [name, email];
+    await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
+
+    return responseHandler.success(req, res, 'User Updated successfully', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+    
+  }
+}
+
+exports.suspendAdmin = async function (req, res) {
+  var response = {};
+  try {
+
+    if(!req.body.user_id){
+      return responseHandler.parameterMissingResponse(res, ['user_id']);
+    }
+
+    const { user_id} = req.body;
+    const query = `UPDATE ${dbConstants.ADMIN_AUTH.ACL_USER} SET status = 'INACTIVE' WHERE id = ?`;
+    const values = [user_id];
+    await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
+
+    return responseHandler.success(req, res, 'User Updated successfully', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+    
+  }
+
+}
+
+exports.getPageWithPermission = async function (req, res) {
+  var response = {};
+  try {
+
+    if(!req.body.admin_id){
+      return responseHandler.parameterMissingResponse(res, ['admin_id']);
+    }
+
+    const { admin_id} = req.body;
+    const query = `SELECT access_menu FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE id = ?`;
+    const values = [admin_id];
+    const [userData] = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
+    response.access_menu = JSON.parse(userData.access_menu);
+
+    return responseHandler.success(req, res, '', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+}

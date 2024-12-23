@@ -20,7 +20,7 @@ const responseHandler = {
         data: data.data,
       });
     }
-    const encryptedData = encryptData(JSON.stringify(data.data));
+    const encryptedData = encryptData(JSON.stringify(data));
     return res.status(statusCode).json({
       status: 'success',
       message,
