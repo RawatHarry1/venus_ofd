@@ -4,12 +4,13 @@ const {
   errorHandler,
   responseHandler,
   ResponseConstants,
+  rideConstants,
 } = require('../../../bootstart/header');
 var moment = require('moment');
 var QueryBuilder = require('datatable');
 var Joi = require('joi');
 const Helper = require('../helper');
-const rideConstant = require('../../../constants/rideConstants');
+const rideHelper  = require('../../rides/helper');
 
 exports.fetchVehicles = async function (req, res) {
   try {
@@ -253,6 +254,62 @@ exports.operatorCityInfo = async function (req, res) {
     };
 
     return responseHandler.success(req, res, response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.fetchOperatorVehicleType = async function (req, res) {
+  try {
+    var operatorId = req.operator_id;
+    var requestRideType = req.request_ride_type
+    var city       = parseInt(req.body.city_id) || 0;
+    var values = [operatorId];
+
+    var queryToFetchOperatorVehicleType = `SELECT region_name, display_order, convenience_charge, waiting_charges_applicable, max_people,destination_mandatory, fare_mandatory, convenience_charge_waiver, convenience_venus_cut,vehicle_tax, fixed_commission, subscription_charge, images, region_id, ride_type, city_id, min_driver_balance,vehicle_type, is_active, customer_notes_enabled, reverse_bidding_enabled, applicable_gender FROM ${dbConstants.DBS.LIVE_DB}.tb_city_sub_regions WHERE operator_id = ?`;
+
+    if (city > 0) {
+      queryToFetchOperatorVehicleType += ' AND city_id = ?';
+      values.push(city);
+    }
+    if (requestRideType == rideConstants.CLIENTS.MARS) {
+      queryToFetchOperatorVehicleType += ' AND ride_type = ?';
+      values.push(rideConstants.CLIENTS_RIDE_TYPE.MARS);
+    } else {
+      queryToFetchOperatorVehicleType += ' AND ride_type = ?';
+      values.push(rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI);
+    }
+    queryToFetchOperatorVehicleType += ' ORDER BY is_active DESC';
+    var result = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      queryToFetchOperatorVehicleType,
+      values,
+    );
+    return responseHandler.success(req,res, '',result);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.insertUpdatedFareLogs = async function (req, res) {
+  try {
+    var options = req.body, response = {}, fareWrapper = [], package = {};
+
+    var operatorId = req.operator_id;
+    var businessId = 1;
+
+    options.created_by = req.user_id;
+
+    var fares = req.body.fares;
+    fares = JSON.parse(fares);
+
+    if (rideHelper.checkBlank(fares) === 1) {
+      responseHandler.parameterMissingResponse(res, '');
+    }
+
+
+
+    return responseHandler.success(req,res, '',result);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

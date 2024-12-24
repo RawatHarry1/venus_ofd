@@ -14,4 +14,16 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     VehicleController.operatorCityInfo,
   );
+  app.post(
+    '/internal/fetch_operator_vehicle_type',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    VehicleController.fetchOperatorVehicleType,
+  );
+  app.post(
+    '/internal/update_operator_fares',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    VehicleController.insertUpdatedFareLogs,
+  );
 };
