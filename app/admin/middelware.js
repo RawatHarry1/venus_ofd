@@ -3,8 +3,10 @@ const {
   db,
   errorHandler,
   responseHandler,
+  generalConstants
 } = require('../../bootstart/header');
 const Helper = require('./helper');
+
 exports.admin = {
   isLoggedIn: async function (req, res, next) {
     var token = req.query.token || req.body.token;
@@ -71,6 +73,12 @@ exports.admin = {
       errorHandler.errorHandler(error, req, res);
     }
   },
+  useControlPanelApi: async function (req, res, next) {
+    req.body.cp_operator_id = req.operator_id;
+    req.body.operator_id = -1;
+    req.body.super_admin_panel = generalConstants.SUPER_ADMIN_PANEL;
+    next()
+  }
 };
 
 exports.permissions = {};

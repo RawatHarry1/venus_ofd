@@ -22,6 +22,11 @@ exports.ENGAGEMENT_STATUS = {
   RIDE_CANCELLED_BY_CUSTOMER: 13,
 };
 
+exports.serverFlag = {
+  AUTOS: 0,
+  AUTH: 1
+}
+
 exports.CLIENTS = {
   VENUS_TAXI: 1,
   MARS: 2,

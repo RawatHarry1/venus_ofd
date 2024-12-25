@@ -17,7 +17,7 @@ const responseHandler = {
       return res.status(statusCode).json({
         status: 'success',
         message,
-        data: data.data,
+        data: data,
       });
     }
     const encryptedData = encryptData(JSON.stringify(data));

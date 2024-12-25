@@ -257,10 +257,7 @@ exports.fetchVehicles = async function (req, res) {
       dbConstants.DBS.LIVE_DB,
       `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS}`,
       requiredVehicleKeys,
-      vehicleCriteria,
-      [],
-      false,
-      {},
+      vehicleCriteria
     );
     return responseHandler.success(
       req,

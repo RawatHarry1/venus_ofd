@@ -93,3 +93,56 @@ exports.selectFromTable = async function (
   }
   return exports.executeQuery(dbName, stmt, values);
 };
+
+exports.updateTable = async function (
+  dbName,
+  tableName,
+  updateFields = {},
+  criteria = [],
+  orderByCriteria = [],
+  orderDesc = false,
+  limit = null
+) {
+  // Ensure required parameters are provided
+  if (!dbName || !tableName || Object.keys(updateFields).length === 0) {
+    throw new Error('Database name, table name, and update fields are required.');
+  }
+
+  const setClause = Object.keys(updateFields)
+    .map((key) => `${key} = ?`)
+    .join(', ');
+  const values = Object.values(updateFields);
+
+  let stmt = `UPDATE ${tableName} SET ${setClause}`;
+
+  // WHERE clause
+  if (criteria && criteria.length) {
+    const whereClause = criteria
+      .map((field) => {
+        const operator = Array.isArray(field.value) ? 'IN (?)' : '= ?';
+        values.push(field.value);
+        return `${field.key} ${operator}`;
+      })
+      .join(' AND ');
+    stmt += ` WHERE ${whereClause}`;
+  }
+
+  // ORDER BY clause
+  if (orderByCriteria && orderByCriteria.length) {
+    const orderClause = orderByCriteria.join(', ');
+    stmt += ` ORDER BY ${orderClause} ${orderDesc ? 'DESC' : ''}`;
+  }
+
+  // Limit clause
+  if (limit) {
+    stmt += ` LIMIT ?`;
+    values.push(limit);
+  }
+
+  try {
+    return await exports.executeQuery(dbName, stmt, values);
+  } catch (error) {
+    console.error('Error executing updateTable:', error);
+    throw new Error('Failed to execute update query.');
+  }
+};
