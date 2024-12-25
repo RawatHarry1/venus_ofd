@@ -14,8 +14,8 @@ const encryptData = (data) => {
 
     const cipher = crypto.createCipheriv(algorithm, key, iv);
 
-    let encryptedData = cipher.update(JSON.stringify(data), 'utf8', 'hex');
-    encryptedData += cipher.final('hex');
+    let encryptedData = cipher.update(JSON.stringify(data), 'utf8', 'base64');
+    encryptedData += cipher.final('base64');
     return { data: encryptedData };
   } catch (err) {
     console.error('Encryption error:', err);
