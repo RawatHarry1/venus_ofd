@@ -14,7 +14,8 @@ const {
   executeQuery,
   insertIntoTable,
   selectFromTable,
-  updateTable
+  updateTable,
+  selectFromTableInArray
 } = require('../db/helper');
 const dbQueries = require('../db/queries');
 
@@ -34,6 +35,7 @@ module.exports = {
     InsertIntoTable: insertIntoTable,
     SelectFromTable: selectFromTable,
     updateTable: updateTable,
+    SelectFromTableIn: selectFromTableInArray,
     queries: dbQueries,
   },
   errorHandler,

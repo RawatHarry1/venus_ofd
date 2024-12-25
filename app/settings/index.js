@@ -1,6 +1,7 @@
 const VehicleController = require('./controllers/vehilces');
 const AdminMiddlewares = require('../admin/middelware');
 const CitiesController = require('./controllers/cities')
+const fareSettingsController = require('./controllers/fareSettings')
 var multer       =     require('multer');
 const { generalConstants } = require('../../bootstart/header');
 
@@ -52,5 +53,54 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     CitiesController.updateVehicleMake,
+  );
+
+  app.post(
+    '/internal/fetch_operator_vehicle_type',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.fetchOperatorVehicleType,
+  );
+
+  app.post(
+    '/internal/update_operator_vehicle_type',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.updateOperatorVehicleType,
+  );
+
+  app.get(
+    '/fetch_vehicle_set',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.fetchVehicleSet,
+  );
+
+  app.post(
+    '/internal/fetch_operator_request_radius',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.fetchOperatorRequestRadius,
+  );
+
+  app.post(
+    '/internal/update_operator_request_radius',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.updateOperatorRequestRadius,
+  );
+
+  app.post(
+    '/internal/fetch_vehicle_images_fares',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.fetchVehicleImagesNfares,
+  );
+
+  app.post(
+    '/internal/update_operator_fares',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.insertUpdatedFareLogs,
   );
 };
