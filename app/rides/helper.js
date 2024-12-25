@@ -207,7 +207,7 @@ exports.getCustomersData = async function (data) {
 };
 
 exports.getRideStatistics = async function (data) {
-  const { operator_id, start_date, end_date, utc_offset, request_ride_type } =
+  const { operator_id, start_date, end_date, utc_offset = 0, request_ride_type } =
     data;
   try {
     const startDate = new Date(start_date);
@@ -305,7 +305,7 @@ exports.getRideStatistics = async function (data) {
 };
 
 exports.getActiveUsersData = async function (data) {
-  const { operator_id, city_id, request_ride_type } = data;
+  const { operator_id, city_id = 0, request_ride_type } = data;
   try {
     let query = `
         SELECT 

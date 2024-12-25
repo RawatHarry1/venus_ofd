@@ -22,7 +22,7 @@ exports.ENGAGEMENT_STATUS = {
   RIDE_CANCELLED_BY_CUSTOMER: 13,
 };
 
-exports.serverFlag = {
+exports.SERVER_FLAG = {
   AUTOS: 0,
   AUTH: 1
 }
@@ -42,7 +42,7 @@ exports.LOGIN_TYPE   = {
   DRIVER : 1
 };
 
-exports.rideType   =   {
+exports.RIDE_TYPE   =   {
   "NORMAL"    :   0,
   "PR"        :   1,
   "POOL"      :   2,
@@ -56,14 +56,47 @@ exports.rideType   =   {
 };
 
 
-exports.allowedRideTypesForVehicleSet = [
-  exports.rideType.NORMAL,
-  exports.rideType.OUTSTATION,
-  exports.rideType.RENTAL,
-  exports.rideType.DELIVERYV8
+exports.ALLOWED_RIDE_TYPES_FOR_VEHICLE_SET = [
+  exports.RIDE_TYPE.NORMAL,
+  exports.RIDE_TYPE.OUTSTATION,
+  exports.RIDE_TYPE.RENTAL,
+  exports.RIDE_TYPE.DELIVERYV8
 ];
 
-exports.fareType = {
+exports.FARE_TYPE = {
   CUSTOMER : 0,
   DRIVER   : 1
 };
+
+exports.USER_GENDER = {
+  MALE            : 1,
+  FEMALE          : 2,
+  OTHERS          : 3
+};
+
+exports.DOCUMENT_TYPES = {
+  NORMAL        :   0,
+  IMAGE         :   1,
+  BRANDING      :   2,
+  DRIVER_TEST   :   3,
+  VEHICLE_IMAGE :   4
+};
+
+exports.DRIVER_DOCUMENTS_IS_REQUIRED = {
+  OPTIONAL           : 0,
+  MANDATORY_DRIVE    : 1,
+  MANDATORY_REGISTER : 3,
+  POST_DRIVING       : 4,
+  QUASI_STATE        : 5,
+  DRIVER_BRANDING    : 6,
+  MAP_IMAGES         : 7
+};
+
+exports.CITIES = {
+  DEFAULT_CITY_ID: 0
+}
+
+exports.STATUS = {
+  ACTIVE : 1,
+  INACTIVE: 0
+}

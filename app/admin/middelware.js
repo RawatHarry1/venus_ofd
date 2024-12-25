@@ -96,7 +96,7 @@ exports.city = {
               }],
           e = null;
 
-      if (!utils.verifyPermissions(req.permissions, required_permissions)) {
+      if (!Helper.verifyPermissions(req.permissions, required_permissions)) {
           e = new Error('Not permitted, contact panel admin!');
           e.status = 403;
           return next(e);

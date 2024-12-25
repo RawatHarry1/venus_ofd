@@ -2,6 +2,7 @@ const VehicleController = require('./controllers/vehilces');
 const AdminMiddlewares = require('../admin/middelware');
 const CitiesController = require('./controllers/cities')
 const fareSettingsController = require('./controllers/fareSettings')
+const documentSettingsController = require('./controllers/document')
 var multer       =     require('multer');
 const { generalConstants } = require('../../bootstart/header');
 
@@ -63,6 +64,13 @@ module.exports = function (app) {
   );
 
   app.post(
+    '/internal/insert_operator_vehicle_type',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.insertOperatorVehicleType,
+  );
+
+  app.post(
     '/internal/update_operator_vehicle_type',
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
@@ -102,5 +110,13 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     fareSettingsController.insertUpdatedFareLogs,
+  );
+
+  app.get(
+    '/fetchCityDocuments',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.city.exec,
+    documentSettingsController.fetchCityDocuments,
   );
 };

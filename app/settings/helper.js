@@ -40,7 +40,7 @@ exports.fetchParameterValues = async function fetchParameterValues (operatorId, 
         fetchParamQuery += ` WHERE pr.param_id IN (?) `;
         values.push(paramIds);
     }
-    if(serverType == rideConstants.serverFlag.AUTH){
+    if(serverType == rideConstants.SERVER_FLAG.AUTH){
         var result = await db.RunQuery(
             dbConstants.DBS.AUTH_DB,
             fetchParamQuery,
@@ -189,7 +189,7 @@ async function fetchVehiclesImagesFaresData(body,operatorId) {
             vehicle_type: parseInt(body.vehicle_type),
             ride_type: parseInt(body.ride_type),
             business_id: 1,
-            type: rideConstants.fareType.CUSTOMER
+            type: rideConstants.FARE_TYPE.CUSTOMER
         };
 
         const driverFareCriteria = {
@@ -198,7 +198,7 @@ async function fetchVehiclesImagesFaresData(body,operatorId) {
             vehicle_type: parseInt(body.vehicle_type),
             ride_type: parseInt(body.ride_type),
             business_id: 1,
-            type: rideConstants.fareType.DRIVER
+            type: rideConstants.FARE_TYPE.DRIVER
         };
 
         // Fetch data concurrently
@@ -231,7 +231,7 @@ async function fetchVehiclesImagesFaresData(body,operatorId) {
                     {},
                     ['scheduled_ride_fare_enabled'],
                     [],
-                    rideConstants.serverFlag.AUTOS
+                    rideConstants.SERVER_FLAG.AUTOS
                 );
             })()
         ]);
@@ -247,8 +247,8 @@ async function fetchVehiclesImagesFaresData(body,operatorId) {
             fares.message = 'no driver fare found';
         } else {
             const isOutstationOrRental =
-                body.ride_type === rideConstants.rideType.OUTSTATION ||
-                body.ride_type === rideConstants.rideType.RENTAL;
+                body.ride_type === rideConstants.RIDE_TYPE.OUTSTATION ||
+                body.ride_type === rideConstants.RIDE_TYPE.RENTAL;
 
             customerFareWrapper.data.forEach((customerFare) => {
                 driverFareWrapper.data.forEach((driverFare) => {
@@ -272,7 +272,7 @@ async function fetchVehiclesImagesFaresData(body,operatorId) {
                             end_time: customerFare.end_time
                         };
 
-                        if (body.ride_type === rideConstants.rideType.RENTAL) {
+                        if (body.ride_type === rideConstants.RIDE_TYPE.RENTAL) {
                             delete fareObj.from_city_id;
                             delete fareObj.to_city_id;
                             delete fareObj.return_trip;
@@ -303,11 +303,11 @@ async function fetchFareData(fareCriteria, resultWrapper) {
         let select = '';
 
         // Conditional query for rental and outstation fares
-        if ((fareCriteria.ride_type == rideConstants.rideType.RENTAL || fareCriteria.ride_type == rideConstants.rideType.OUTSTATION) && fareCriteria.type == 0) {
+        if ((fareCriteria.ride_type == rideConstants.RIDE_TYPE.RENTAL || fareCriteria.ride_type == rideConstants.RIDE_TYPE.OUTSTATION) && fareCriteria.type == 0) {
             placeholder += ` JOIN  ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_RENTAL} r ON f.id = r.customer_fare_id  `;
             select += ` ,IFNULL(r.package_name, "") AS package_name, r.id, r.customer_fare_id, r.driver_fare_id, r.from_city_id, r.to_city_id, r.return_trip `;
             condition += ` AND r.is_active = 1 `;
-        } else if ((fareCriteria.ride_type == rideConstants.rideType.RENTAL || fareCriteria.ride_type == rideConstants.rideType.OUTSTATION) && fareCriteria.type == 1) {
+        } else if ((fareCriteria.ride_type == rideConstants.RIDE_TYPE.RENTAL || fareCriteria.ride_type == rideConstants.RIDE_TYPE.OUTSTATION) && fareCriteria.type == 1) {
             placeholder += ` JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_RENTAL} r ON f.id = r.driver_fare_id  `;
             select += ` ,IFNULL(r.package_name, "") AS package_name, r.id, r.customer_fare_id, r.driver_fare_id, r.from_city_id, r.to_city_id, r.return_trip `;
             condition += ` AND r.is_active = 1 `;
@@ -384,7 +384,7 @@ async function fetchParameterValues(operatorId, resultWrapper, paramList, paramI
         fetchParamQuery += ` WHERE pr.param_id IN (?) `;
         values.push(paramIds);
     }
-    if (serverType == rideConstants.serverFlag.AUTH) {
+    if (serverType == rideConstants.SERVER_FLAG.AUTH) {
         var result = await db.RunQuery(
             dbConstants.DBS.AUTH_DB,
             fetchParamQuery,
@@ -403,6 +403,36 @@ async function fetchParameterValues(operatorId, resultWrapper, paramList, paramI
         }
     }
     return result
+}
+
+function insertRequiredDocument(handlerInfo, requiredFields) {
+    var insertObj = {
+        operator_id: requiredFields.operator_id,
+        document_name: requiredFields.document_name,
+        document_type: requiredFields.document_type
+    };
+    if(requiredFields.num_images_required) {
+        insertObj.num_images_required = requiredFields.num_images_required;
+    }
+    if(requiredFields.instructions){
+        insertObj.instructions = requiredFields.instructions;
+    }
+    if(requiredFields.gallery_restricted){
+        insertObj.gallery_restricted = requiredFields.gallery_restricted;
+    }
+    if(requiredFields.document_category){
+        insertObj.document_category = requiredFields.document_category;
+    }
+    if(requiredFields.bank_details){
+        insertObj.bank_details = requiredFields.bank_details;
+    }
+    if(requiredFields.include_expiry){
+        insertObj.include_expiry = requiredFields.include_expiry;
+    }
+    if(requiredFields.text_doc_category){
+        insertObj.text_doc_category = requiredFields.text_doc_category;
+    }
+    return commonfunctions.insertIntoTable(handlerInfo, "tb_required_documents", insertObj);
 }
 
 module.exports = {fetchFareData,fetchVehiclesImagesFaresData}
