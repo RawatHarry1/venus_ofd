@@ -24,4 +24,12 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     PayoutController.getPayouts,
   );
+  app.post(
+    '/schedule-ride-auth/driver_info',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.getDriverInfo,
+  );
+
+  
 };
