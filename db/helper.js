@@ -20,7 +20,6 @@ exports.executeQuery = async (dbName, query, params = []) => {
           chalk.default.cyan(JSON.stringify(params)),
       ); // Parameters in cyan
     }
-
     try {
       const [rows] = await connection.execute(query, params);
       return rows; // Return query results
@@ -93,6 +92,56 @@ exports.selectFromTable = async function (
   }
   return exports.executeQuery(dbName, stmt, values);
 };
+
+exports.selectFromTableInArray = async function (
+  dbName,
+  tableName,
+  requiredKeys = ['*'],
+  criteria = [],
+  orderByCriteria = [],
+  orderDesc = false,
+  pagination = {},
+) {
+  const fields = requiredKeys.join(', ');
+  let stmt = `SELECT ${fields} FROM ${tableName}`;
+  const values = [];
+
+  // WHERE clause
+  if (criteria.length) {
+    const whereClause = criteria
+      .map((field) => {
+        if (Array.isArray(field.value)) {
+          const placeholders = field.value.map(() => '?').join(', ');
+          values.push(...field.value);
+          return `${field.key} IN (${placeholders})`;
+        } else {
+          values.push(field.value);
+          return `${field.key} = ?`;
+        }
+      })
+      .join(' AND ');
+    stmt += ` WHERE ${whereClause}`;
+  }
+
+  // ORDER BY clause
+  if (orderByCriteria.length) {
+    const orderClause = orderByCriteria.join(', ');
+    stmt += ` ORDER BY ${orderClause} ${orderDesc ? 'DESC' : ''}`;
+  }
+
+  // Pagination
+  if (pagination.limit) {
+    stmt += ` LIMIT ?`;
+    values.push(pagination.limit);
+  }
+  if (pagination.offset) {
+    stmt += ` OFFSET ?`;
+    values.push(pagination.offset);
+  }
+
+  return exports.executeQuery(dbName, stmt, values);
+};
+
 
 exports.updateTable = async function (
   dbName,

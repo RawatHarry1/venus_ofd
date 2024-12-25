@@ -36,3 +36,34 @@ exports.CLIENTS_RIDE_TYPE = {
   VENUS_TAXI: 0,
   MARS: 10,
 };
+
+exports.LOGIN_TYPE   = {
+  CUSTOMER: 0,
+  DRIVER : 1
+};
+
+exports.rideType   =   {
+  "NORMAL"    :   0,
+  "PR"        :   1,
+  "POOL"      :   2,
+  "DELIVERY"  :   3,
+  "DELIVERY POOL" : 4,
+  "TRACKER"   :   5,
+  "RENTAL"	:   6,
+  "OUTSTATION":   7,
+  "SHUTTLE"   :   8,
+  "DELIVERYV8"  : 10,
+};
+
+
+exports.allowedRideTypesForVehicleSet = [
+  exports.rideType.NORMAL,
+  exports.rideType.OUTSTATION,
+  exports.rideType.RENTAL,
+  exports.rideType.DELIVERYV8
+];
+
+exports.fareType = {
+  CUSTOMER : 0,
+  DRIVER   : 1
+};

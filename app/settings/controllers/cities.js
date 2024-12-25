@@ -305,15 +305,17 @@ const {
         var vehicleDetails;
         for (var index = 0; index < output.length; index += batchSize) {
             vehicleDetails = output.slice(index, index + batchSize);
-            var query = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.tb_vehicle_make (brand, city_id, image, model_name, no_of_doors, no_of_seat_belts, operator_id, vehicle_type) VALUES ?`
+            // Dynamically construct placeholders
+            var placeholders = vehicleDetails.map(() => '(?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+            var query = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_MAKE} (brand, city_id, image, model_name, no_of_doors, no_of_seat_belts, operator_id, vehicle_type) VALUES ${placeholders}`
 
-            // console.log("With parameters:", JSON.stringify(vehicleDetails, null, 2));
+            var flattenedParams = vehicleDetails.flat();
 
             var result = await db.RunQuery(
                 dbConstants.DBS.LIVE_DB,
                 query,
-                [vehicleDetails],
-              );
+                flattenedParams,
+            );
         }
         return responseHandler.success(
             req,

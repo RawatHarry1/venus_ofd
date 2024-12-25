@@ -3,15 +3,15 @@ const {
   db,
   errorHandler,
   responseHandler,
-  generalConstants
+  generalConstants,
+  authConstants
 } = require('../../bootstart/header');
 const Helper = require('./helper');
 
 exports.admin = {
   isLoggedIn: async function (req, res, next) {
     var token = req.query.token || req.body.token;
-    var cityId =
-      req.query.city || req.body.city || req.query.city_id || req.body.city_id;
+    var cityId = req.query.city || req.body.city || req.query.city_id || req.body.city_id;
     if (!token) {
       return responseHandler.unauthorized(req, res);
     }
@@ -37,10 +37,7 @@ exports.admin = {
   domainToken: async function (req, res, next) {
     try {
       const token = req.body.token || req.query.token;
-      const domainToken =
-        req.headers.domain_token ||
-        req.body.domain_token ||
-        req.query.domain_token;
+      const domainToken = req.headers.domain_token || req.body.domain_token || req.query.domain_token;
 
       if (!token || !domainToken) {
         return responseHandler.unauthorized(req, res);
@@ -80,5 +77,33 @@ exports.admin = {
     next()
   }
 };
+
+exports.city = {
+  exec: function (req, res, next) {
+      var required_permissions =
+              [{
+                  panel_id: authConstants.PANEL.SMP,
+                  city_id: req.body.city || req.body.city_id || req.query.city || req.query.city_id,
+                  level_id: [
+                    authConstants.LEVEL.SUPER_ADMIN,
+                    authConstants.LEVEL.ADMIN,
+                    authConstants.LEVEL.CITY_SUPPLY_MANAGER,
+                    authConstants.LEVEL.ASSISTANT_MANAGER,
+                    authConstants.LEVEL.SENIOR_EXECUTIVE,
+                    authConstants.LEVEL.EXECUTIVE,
+                    authConstants.LEVEL.ALL
+                  ]
+              }],
+          e = null;
+
+      if (!utils.verifyPermissions(req.permissions, required_permissions)) {
+          e = new Error('Not permitted, contact panel admin!');
+          e.status = 403;
+          return next(e);
+      }
+      next();
+  }
+};
+
 
 exports.permissions = {};
