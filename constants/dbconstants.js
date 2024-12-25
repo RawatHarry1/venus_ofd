@@ -5,6 +5,7 @@ exports.DBS = {
   ADMIN_AUTH: 'venus_acl',
   LIVE_DB: 'venus_live',
   LIVE_LOGS: 'venus_live_addn',
+  AUTH_DB: 'venus_auth'
 };
 exports.ADMIN_AUTH = {
   ACL_USER: 'tb_acl_users',
@@ -32,6 +33,7 @@ exports.LIVE_DB = {
   VEHICLES: 'tb_vehicles',
   SUB_REGIONS: 'tb_city_sub_regions',
   COUNTRY: 'tb_countries',
+  VEHICLE_MAKE: 'tb_vehicle_make'
 };
 
 exports.LIVE_LOGS = {

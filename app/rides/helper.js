@@ -8,6 +8,7 @@ const {
   generalConstants,
 } = require('../../bootstart/header');
 var moment = require('moment');
+const _ = require('lodash');
 
 exports.ridesQueryHelper = async function (
   corporateId,

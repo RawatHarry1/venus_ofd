@@ -15,12 +15,12 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     vehicleTypesController.get_city_info_operator_wise,
   );
-  app.get(
-    '/fetch_vehicles',
-    AdminMiddlewares.admin.isLoggedIn,
-    AdminMiddlewares.admin.domainToken,
-    vehicleTypesController.fetchVehicles,
-  );
+  // app.get(
+  //   '/fetch_vehicles',
+  //   AdminMiddlewares.admin.isLoggedIn,
+  //   AdminMiddlewares.admin.domainToken,
+  //   vehicleTypesController.fetchVehicles,
+  // );
   app.get(
     '/fetch_vehicle_make',
     AdminMiddlewares.admin.isLoggedIn,

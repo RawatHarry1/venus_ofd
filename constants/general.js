@@ -27,3 +27,12 @@ exports.PANELS = {
   surya: 28,
   MENUS: 24,
 };
+
+exports.MAX_ALLOWED_FILE_SIZE = 2048000;
+
+exports.SUPER_ADMIN_PANEL = 1
+
+exports.PASSWORDS = {
+  OPERATIONS_PASSWORD : "gJJi0mlw2iVU5Syu58ImglbNYm0tJKyB",
+  SUPER_ADMIN_PASSWORD: "gJJi0mlw2iVU5Syu58ImglbNYm0tJKyB"
+}
