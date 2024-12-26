@@ -36,9 +36,14 @@ exports.LIVE_DB = {
   VEHICLE_MAKE: 'tb_vehicle_make',
   VEHICLE_SETS: 'tb_vehicle_sets',
   VEHICLE_FARE: 'tb_fare',
-  VEHICLE_RENTAL: 'tb_rental_packages'
+  VEHICLE_RENTAL: 'tb_rental_packages',
+  BUSINESS_USER: 'tb_business_users',
 };
 
 exports.LIVE_LOGS = {
   CITIES: 'tb_cities',
+  SUSPEND_LOGS:'tb_driver_suspension_logs',
+  SUSPEND_REASON:'tb_driver_suspension_reasons',
+  CASE_LOGS:'tb_case_logs',
+  REFOUND_REQUESTS:'tb_csp_refund_requests'
 };
