@@ -162,22 +162,28 @@ const { checkBlank } = require('../../rides/helper');
         cityImageTypeDocument = await fetchImageTypeDocument(operatorId, parseInt(body.vehicle_type));
 
         if(!cityImageTypeDocument.length) {
-            var document = await commonfunctions.insertRequiredDocument(handlerInfo, requiredDocFields);
+            var document = await Helper.insertRequiredDocument(requiredDocFields);
 
             cityDocFields.document_id = document.insertId;
 
-            yield commonfunctions.insertCityDocument(handlerInfo, cityDocFields);
+            await Helper.insertCityDocument(cityDocFields);
         }
 
+        body.images = vehicleTypeWrapper[0].images;
         
+        let regionId = await Helper.insertCitySubRegion(body);
 
+        body.region_id = regionId;
 
+        if(body.ride_type != rideConstants.RIDE_TYPE.SHUTTLE) {
 
+           /* TODO Have to done */
+        }
 
-
-
-
-      return responseHandler.success(req,res, '',result);
+        response = {
+            region_id: regionId,
+        };
+      return responseHandler.success(req,res, 'Inserted new vehicle type!',response);
     } catch (error) {
       errorHandler.errorHandler(error, req, res);
     }

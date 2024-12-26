@@ -3,6 +3,8 @@ const AdminMiddlewares = require('../admin/middelware');
 const CitiesController = require('./controllers/cities')
 const fareSettingsController = require('./controllers/fareSettings')
 const documentSettingsController = require('./controllers/document')
+const polygonController = require('./controllers/polygon')
+const bannersController = require('./controllers/banners')
 var multer       =     require('multer');
 const { generalConstants } = require('../../bootstart/header');
 
@@ -11,42 +13,24 @@ const { generalConstants } = require('../../bootstart/header');
 var upload       =     multer({dest : 'uploads/', limits: { fileSize: generalConstants.MAX_ALLOWED_FILE_SIZE }});
 
 module.exports = function (app) {
-  app.get(
-    '/fetch_vehicles',
-    AdminMiddlewares.admin.domainToken,
-    AdminMiddlewares.admin.isLoggedIn,
-    VehicleController.fetchVehicles,
-  );
-  app.get(
-    '/get_city_info_operator_wise',
-    AdminMiddlewares.admin.domainToken,
-    AdminMiddlewares.admin.isLoggedIn,
-    VehicleController.operatorCityInfo,
-  );
 
-  app.post(
-    '/fetch/operator/city/fields',
-    AdminMiddlewares.admin.domainToken,
-    AdminMiddlewares.admin.isLoggedIn,
-    AdminMiddlewares.admin.useControlPanelApi,
-    CitiesController.fetchOprCitiesFields,
-  );
 
-  app.post(
-    '/update/operator/city/fields',
-    AdminMiddlewares.admin.domainToken,
-    AdminMiddlewares.admin.isLoggedIn,
-    AdminMiddlewares.admin.useControlPanelApi,
-    CitiesController.updateTbOperatorCities,
-  );
+   /* 
+  Global settings API's
+  */
+  app.get('/fetch_vehicles', AdminMiddlewares.admin.domainToken, AdminMiddlewares.admin.isLoggedIn, VehicleController.fetchVehicles);
 
-  app.post(
-    '/add_vehicle_make',
-    upload.single('file'),
-    AdminMiddlewares.admin.domainToken,
-    AdminMiddlewares.admin.isLoggedIn,
-    CitiesController.addVehicleMake,
-  );
+  app.get('/get_city_info_operator_wise', AdminMiddlewares.admin.domainToken, AdminMiddlewares.admin.isLoggedIn, VehicleController.operatorCityInfo);
+
+  app.post('/fetch/operator/city/fields', AdminMiddlewares.admin.domainToken, AdminMiddlewares.admin.isLoggedIn, AdminMiddlewares.admin.useControlPanelApi, CitiesController.fetchOprCitiesFields);
+
+  app.post('/update/operator/city/fields', AdminMiddlewares.admin.domainToken, AdminMiddlewares.admin.isLoggedIn, AdminMiddlewares.admin.useControlPanelApi, CitiesController.updateTbOperatorCities);
+
+  /* 
+  Vehicle fare settings API's
+  */
+  app.post('/add_vehicle_make', upload.single('file'), AdminMiddlewares.admin.domainToken, AdminMiddlewares.admin.isLoggedIn,
+    CitiesController.addVehicleMake);
 
   app.post(
     '/update_vehicle_make',
@@ -112,11 +96,108 @@ module.exports = function (app) {
     fareSettingsController.insertUpdatedFareLogs,
   );
 
+
+  /* 
+  Document settings API's
+  */
+
+  app.post(
+    '/insert_document',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.documents.checkMultipleVehicleEnableHelper,
+    documentSettingsController.insertDocument,
+  );
+
   app.get(
     '/fetchCityDocuments',
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     AdminMiddlewares.city.exec,
     documentSettingsController.fetchCityDocuments,
+  );
+
+  app.post(
+    '/update_document',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    documentSettingsController.updateDocument,
+  );
+
+
+   /* 
+  Polygon settings API's
+  */
+  app.get(
+    '/fetch_polygon',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.city.checkUserLevel,
+    polygonController.fetchPolygon,
+  );
+
+  app.post(
+    '/update_polygon',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.city.checkUserLevel,
+    polygonController.updatePolygon,
+  );
+
+
+   /* 
+  Banners settings API's
+  */
+  app.post(
+    '/internal/create_banner_type',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    bannersController.createBannerType,
+  );
+
+  app.get(
+    '/internal/fetch_banner_types',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    bannersController.fetchBannerTypes,
+  );
+
+  app.post(
+    '/internal/update_banner_type',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    bannersController.updateBannerType,
+  );
+
+  app.post(
+    '/internal/delete_banner_type',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    bannersController.deleteBannerType,
+  );
+
+  app.post(
+    '/internal/create_banner',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    bannersController.createBanner,
+  );
+  app.get(
+    '/internal/fetch_banners',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    bannersController.fetchBanners,
+  );
+  app.post(
+    '/internal/update_banner',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    bannersController.updateBanner,
+  );
+  app.post(
+    '/internal/delete_banner',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    bannersController.deleteBanner,
   );
 };

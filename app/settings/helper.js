@@ -405,7 +405,7 @@ async function fetchParameterValues(operatorId, resultWrapper, paramList, paramI
     return result
 }
 
-function insertRequiredDocument(handlerInfo, requiredFields) {
+async function insertRequiredDocument(requiredFields) {
     var insertObj = {
         operator_id: requiredFields.operator_id,
         document_name: requiredFields.document_name,
@@ -423,16 +423,87 @@ function insertRequiredDocument(handlerInfo, requiredFields) {
     if(requiredFields.document_category){
         insertObj.document_category = requiredFields.document_category;
     }
-    if(requiredFields.bank_details){
+    if (requiredFields.bank_details) {
         insertObj.bank_details = requiredFields.bank_details;
     }
-    if(requiredFields.include_expiry){
+    if (requiredFields.include_expiry) {
         insertObj.include_expiry = requiredFields.include_expiry;
     }
-    if(requiredFields.text_doc_category){
+    if (requiredFields.text_doc_category) {
         insertObj.text_doc_category = requiredFields.text_doc_category;
     }
-    return commonfunctions.insertIntoTable(handlerInfo, "tb_required_documents", insertObj);
+    // Extract keys and values from insertObj
+    const keys = Object.keys(insertObj);
+    const values = Object.values(insertObj);
+
+    // Build the SET part dynamically
+    const setClause = keys.map(key => `\`${key}\` = ?`).join(", ");
+    var insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REQ_DOC} SET ${setClause}`;
+
+    var result = await db.RunQuery(
+        dbConstants.DBS.LIVE_DB,
+        insertQuery,
+        values,
+    );
+    return result
 }
 
-module.exports = {fetchFareData,fetchVehiclesImagesFaresData}
+async function insertCityDocument(cityDocFields) {
+    var insertObj = {
+        city_id: cityDocFields.city_id,
+        vehicle_type: cityDocFields.vehicle_type,
+        document_id: cityDocFields.document_id,
+        is_required: cityDocFields.is_required,
+        is_active: 1
+    };
+
+    // Extract keys and values from insertObj
+    const keys = Object.keys(insertObj);
+    const values = Object.values(insertObj);
+
+    // Build the SET part dynamically
+    const setClause = keys.map(key => `\`${key}\` = ?`).join(", ");
+
+    var insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_DOC} SET ${setClause}`;
+
+    var result = await db.RunQuery(
+        dbConstants.DBS.LIVE_DB,
+        insertQuery,
+        values,
+    );
+
+    return result
+}
+
+async function insertCitySubRegion(requiredFields) {
+    var queryToInsertIntoTable = 'INSERT INTO tb_city_sub_regions SET ?';
+    var tableRow = {
+        city_id             : parseInt(body.city_id),
+        operator_id         : body.operatorId,
+        region_name         : body.region_name,
+        vehicle_type        : parseInt(body.vehicle_type),
+        vehicle_color       : constants.iconSetVehicleMap[parseInt(body.vehicle_type)] 
+                                || constants.iconSetVehicleMap[constants.vehicleType.TAXI],
+        ride_type           : parseInt(body.ride_type),
+        max_people          : parseInt(body.max_people),
+        destination_mandatory: parseInt(body.destination_mandatory),
+        fare_mandatory      : parseInt(body.fare_mandatory),
+        show_fare_estimate  : parseInt(body.show_fare_estimate) || 0,
+        display_order       : parseInt(body.display_order) || 0,
+        vehicle_tax         : parseFloat(body.vehicle_tax) || 0,
+        reverse_bidding_enabled: parseInt(body.reverse_bidding_enabled) || 0,
+        bid_config          : parseInt(body.bid_config) || constants.bidConfig.AUTO_CANCEL,
+        images              : body.images,
+        applicable_gender   : body.applicable_gender || null
+    };
+
+    var result = await db.RunQuery(
+        dbConstants.DBS.LIVE_DB,
+        queryToInsertIntoTable,
+        tableRow,
+    );
+
+    return result
+}
+
+module.exports = {fetchFareData,fetchVehiclesImagesFaresData,insertRequiredDocument,insertCityDocument,insertCitySubRegion}
