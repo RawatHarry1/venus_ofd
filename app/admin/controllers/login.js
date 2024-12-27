@@ -14,6 +14,7 @@ exports.adminLogin = async (req, res) => {
   try {
     console.log('here now ?');
     const { email, password, TTL, is_delivery_panel } = req.body;
+    var paramsWrapper = {};
 
     if (!email || !password) {
       return responseHandler.error(
@@ -70,12 +71,23 @@ exports.adminLogin = async (req, res) => {
       TTL: TTL || null,
     };
     const token = await createToken(tokenData);
+    let stmt = `SELECT operator_id FROM venus_live.tb_operators WHERE token = ? `
+    let values = [req.headers.domain_token]
+    let operatorId = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, values);
+
+    var vehicleDetails = await Helper.getVehicle(0, operatorId[0].operator_id);
+    var finalVehicleList = Helper.makeDataForVehicles(vehicleDetails);
+    let google_key_name = 'google_api_key';
+
+    await Helper.getOperatorParameters( google_key_name, operatorId[0].operator_id, paramsWrapper)
 
     data.user_name = userDetails.name;
-    data.user_id = userDetails.id;
+    data.user_id = userDetails.id || 0;
     data.token = token;
     data.TTL = TTL;
     data.access_menu = JSON.parse(userDetails.access_menu);
+    data.google_key = paramsWrapper.google_api_key  || '',
+    data.vehicles = finalVehicleList
     delete data.password;
 
     return responseHandler.success(req, res, 'Login successful', data);
@@ -118,14 +130,28 @@ exports.checkOperatorToken = async function (req, res) {
 exports.loginUsingToken = async function (req, res) {
   try {
     var response = {};
+    var paramsWrapper = {};
     const query = `SELECT status,id,operator_id,name,access_menu,email  FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE id = ?`;
     var values = [req.user_id];
     let uerData = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
     response.access_menu = JSON.parse(uerData[0].access_menu);
+    let stmt = `SELECT operator_id FROM venus_live.tb_operators WHERE token = ? `
+    var values = [req.headers.domain_token]
+    let operatorId = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, values);
+
+    var vehicleDetails = await Helper.getVehicle(0, operatorId[0].operator_id);
+    var finalVehicleList = Helper.makeDataForVehicles(vehicleDetails);
+    let google_key_name = 'google_api_key';
+
+    await Helper.getOperatorParameters( google_key_name, operatorId[0].operator_id, paramsWrapper)
+
+    response.user_id = req.user_id || 0;
+
     response.email = uerData[0].email;
     response.name = uerData[0].name;
     response.operator_id = req.operator_id;
-    response.vehicles = [];
+    response.google_key = paramsWrapper.google_api_key  || '',
+    response.vehicles = finalVehicleList
     return responseHandler.success(req, res, '', response);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
