@@ -33,15 +33,15 @@ exports.fetchVehicles = async function (req, res) {
       { key: 'is_active', value: 1 },
     ];
 
-    if (requestRideType == rideConstant.CLIENTS.MARS) {
+    if (requestRideType == rideConstants.CLIENTS.MARS) {
       vehicleCriteria.push({
         key: 'ride_type',
-        value: rideConstant.CLIENTS_RIDE_TYPE.MARS,
+        value: rideConstants.CLIENTS_RIDE_TYPE.MARS,
       });
     } else {
       vehicleCriteria.push({
         key: 'ride_type',
-        value: rideConstant.CLIENTS_RIDE_TYPE.VENUS_TAXI,
+        value: rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI,
       });
     }
     var vehicleValues = await db.SelectFromTable(
