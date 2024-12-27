@@ -10,7 +10,7 @@ const responseHandler = {
    * @param {Object} req - Express request object
    */
   success: (req, res, message = 'Success', data, statusCode = 200) => {
-    const secretKey = req.query.secret_key || req.body.secret_key;
+    const secretKey = req.query.secret_key || req.body.secret_key || req.headers.secret_key;
     console.log(secretKey);
 
     if (secretKey == 1) {

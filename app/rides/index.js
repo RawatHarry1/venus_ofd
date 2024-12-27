@@ -34,4 +34,12 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     RidesController.dataAggregation,
   );
+
+  app.post(
+    '/schedule-ride-auth/get_engagement_info',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.city.getEngagementInfo,
+    RidesController.getEngagementInfo,
+  );
 };
