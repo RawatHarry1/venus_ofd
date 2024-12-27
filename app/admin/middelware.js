@@ -4,7 +4,8 @@ const {
   errorHandler,
   responseHandler,
   generalConstants,
-  authConstants
+  authConstants,
+  rideConstants
 } = require('../../bootstart/header');
 const Helper = require('./helper');
 
@@ -28,6 +29,7 @@ exports.admin = {
       req.email_from_acl = validOpertor[0].email;
       req.name_from_acl = validOpertor[0].name;
       req.fleet_id = validOpertor[0].fleet_id;
+      req.operator_token = req.headers.domain_token || req.body.domain_token || req.query.domain_token;
       req.token = token;
       next();
     } else {
@@ -96,12 +98,51 @@ exports.city = {
               }],
           e = null;
 
-      if (!utils.verifyPermissions(req.permissions, required_permissions)) {
+      if (!Helper.verifyPermissions(req.permissions, required_permissions)) {
           e = new Error('Not permitted, contact panel admin!');
           e.status = 403;
           return next(e);
       }
       next();
+  },
+  checkUserLevel: function (req, res, next) {
+    var permissions_required =
+      [{
+        "panel_id": authConstants.PANEL.AUTOS_PANEL,
+        "level_id": [authConstants.LEVEL.ADMIN],
+        "city_id": rideConstants.CITIES.DEFAULT_CITY_ID
+      }];
+    req.reference_id = '';
+    var e = null;
+    if (!Helper.verifyPermissions(req.permissions, permissions_required)) {
+      e = new Error('Not permitted, contact panel admin!');
+      e.status = 403;
+      return next(e);
+    }
+    next();
+  }
+};
+
+exports.documents = {
+  checkMultipleVehicleEnableHelper: async function (req, res, next) {
+    var cityId = req.query.city_id || req.body.city_id || req.params.city_id || "";
+
+    if (cityId) {
+      var sql = `SELECT * FROM ${dbConstants.LIVE_DB.O_CITY} where city_id = ?`;
+
+      var data = await db.RunQuery(dbConstants.DBS.LIVE_DB, sql, [cityId]);
+      if (data.length) {
+        req.multipleVehicleEnable = data[0].multiple_vehicles;
+      }
+      else {
+        req.multipleVehicleEnable = 0;
+      }
+      next();
+    }
+    else {
+        req.multipleVehicleEnable = 0;
+        next();
+    }
   }
 };
 

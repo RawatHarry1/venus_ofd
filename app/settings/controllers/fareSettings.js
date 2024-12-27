@@ -43,6 +43,152 @@ const { checkBlank } = require('../../rides/helper');
     }
   };
 
+  exports.insertOperatorVehicleType = async function (req, res) {
+    try {
+
+        var body = req.body;
+        var operatorId = req.operator_id ? req.operator_id : body.operator_id;
+        var response = {};
+        
+        body.operatorId = operatorId;
+        var applicableGender = +body.applicable_gender || null;
+    
+        var checkValues = checkBlank([body.city_id, operatorId, body.vehicle_type, body.ride_type]);
+        if (checkValues === 1) {
+            return responseHandler.parameterMissingResponse(res, '');
+        }
+    
+        if (body.city_id <= 0) {
+            throw new Error("A required URL parameter or required request body JSON property is missing.");
+        }
+        
+        var allowableGenderValues = [rideConstants.USER_GENDER.MALE, rideConstants.USER_GENDER.FEMALE, rideConstants.USER_GENDER.OTHERS];
+        if(applicableGender && !~allowableGenderValues.indexOf(applicableGender)) {
+            throw new Error("Invalid Parameters.");
+        }
+
+        var fareWrapper = {}, subRegionsWrapper = {}, cityOperatorWrapper = {}, vehicleTypeWrapper = {}, customerDefaultFare = {}, driverDefaultFare = {}, cityImageTypeDocument = {};
+
+        var subRegionsReqdKeys = ['region_id', 'ride_type', 'applicable_gender'];
+        var fareReqKeys = ['id', 'type'];
+        var vehicleTypeReqKeys = ['images'];
+        var cityReqKeys = ['operator_id', 'city_id'];
+
+        var vehicleTypeCriteria = [
+            {key: 'vehicle_type', value: parseInt(body.vehicle_type)},
+            {key: 'is_active', value: 1}];
+        var subRegionsCriteria = [
+            {key: 'city_id', value: parseInt(body.city_id)},
+            {key: 'operator_id', value: operatorId},
+            {key: 'vehicle_type', value: parseInt(body.vehicle_type)},
+            {key: 'ride_type', value: parseInt(body.ride_type)}];
+        var fareCriteria = [
+            {key: 'city', value: parseInt(body.city_id)},
+            {key: 'operator_id', value: operatorId},
+            {key: 'vehicle_type', value: parseInt(body.vehicle_type)},
+            {key: 'ride_type', value: parseInt(body.ride_type)},
+            {key: 'business_id', value: 1}];
+        var cityCriteria = [
+            {key: 'city_id', value: body.city_id},
+            {key: 'operator_id', value: body.operator_id}];
+        const requiredDocFields = {
+            operator_id: operatorId,
+            document_name: 'Driver Image',
+            document_type: rideConstants.DOCUMENT_TYPES.IMAGE
+        };
+        const cityDocFields = {
+            city_id: rideConstants.CITIES.DEFAULT_CITY_ID,
+            vehicle_type: parseInt(body.vehicle_type),
+            is_required: rideConstants.DRIVER_DOCUMENTS_IS_REQUIRED.MANDATORY_REGISTER
+        };
+
+        // Fetch data concurrently
+        await Promise.all([
+            (async () => {
+                vehicleTypeWrapper = await db.SelectFromTableIn(
+                    dbConstants.DBS.LIVE_DB,
+                    `${dbConstants.DBS.LIVE_DB}.tb_vehicle_type`,
+                    vehicleTypeReqKeys,
+                    vehicleTypeCriteria
+                );
+            })(),
+            (async () => {
+                subRegionsWrapper = await db.SelectFromTableIn(
+                    dbConstants.DBS.LIVE_DB,
+                    `${dbConstants.DBS.LIVE_DB}.tb_city_sub_regions`,
+                    subRegionsReqdKeys,
+                    subRegionsCriteria
+                );
+            })(),
+            (async () => {
+                fareWrapper = await db.SelectFromTableIn(
+                    dbConstants.DBS.LIVE_DB,
+                    `${dbConstants.DBS.LIVE_DB}.tb_fare`,
+                    fareReqKeys,
+                    fareCriteria
+                );
+            })(),
+            (async () => {
+                cityOperatorWrapper = await db.SelectFromTableIn(
+                    dbConstants.DBS.LIVE_DB,
+                    `${dbConstants.DBS.LIVE_DB}.tb_operator_cities`,
+                    cityReqKeys,
+                    cityCriteria
+                );
+            })()
+        ]);
+
+        if(body.ride_type == rideConstants.RIDE_TYPE.OUTSTATION) {
+            var cityList = await checkIfOperatorCityExists([body.from_city_id, body.to_city_id], operatorId);
+            if(cityList.length < 2) {
+                throw new Error("Sorry! You are not active in these cities.");
+            }
+        }
+        
+        if (subRegionsWrapper.length) {
+            throw new Error("Sorry! Provided information already exists.");
+        }
+
+        if (subRegionsWrapper.length && subRegionsWrapper[0].applicable_gender != applicableGender) {
+            throw new Error("Please take care of gender associated with the vehicle.");
+        }
+        if (!cityOperatorWrapper.length) {
+            throw new Error("Sorry! You are not active in this city.");
+        }
+        if (!vehicleTypeWrapper.length) {
+            throw new Error("This vehicle type is no more active.");
+        }
+
+        cityImageTypeDocument = await fetchImageTypeDocument(operatorId, parseInt(body.vehicle_type));
+
+        if(!cityImageTypeDocument.length) {
+            var document = await Helper.insertRequiredDocument(requiredDocFields);
+
+            cityDocFields.document_id = document.insertId;
+
+            await Helper.insertCityDocument(cityDocFields);
+        }
+
+        body.images = vehicleTypeWrapper[0].images;
+        
+        let regionId = await Helper.insertCitySubRegion(body);
+
+        body.region_id = regionId;
+
+        if(body.ride_type != rideConstants.RIDE_TYPE.SHUTTLE) {
+
+           /* TODO Have to done */
+        }
+
+        response = {
+            region_id: regionId,
+        };
+      return responseHandler.success(req,res, 'Inserted new vehicle type!',response);
+    } catch (error) {
+      errorHandler.errorHandler(error, req, res);
+    }
+  };
+
   exports.updateOperatorVehicleType = async function (req, res) {
     try {
         var body = req.body;
@@ -181,10 +327,10 @@ exports.fetchVehicleSet = async function (req, res) {
         { key: 'is_active', value: 1 }, { key: 'city_id', value: cityId }];
 
         // Handle `ride_type` explicitly
-        if (Array.isArray(rideConstants.allowedRideTypesForVehicleSet) && rideConstants.allowedRideTypesForVehicleSet.length > 0) {
+        if (Array.isArray(rideConstants.ALLOWED_RIDE_TYPES_FOR_VEHICLE_SET) && rideConstants.ALLOWED_RIDE_TYPES_FOR_VEHICLE_SET.length > 0) {
             criteriaKeys.push({
                 key: 'ride_type',
-                value: rideConstants.allowedRideTypesForVehicleSet,
+                value: rideConstants.ALLOWED_RIDE_TYPES_FOR_VEHICLE_SET,
                 isArray: true // Custom property to indicate array handling
             });
         }
@@ -227,9 +373,9 @@ exports.fetchOperatorRequestRadius = async function (req, res) {
         var operatorId = parseInt(req.operator_id);
         var city = parseInt(req.body.city_id) || 0;
         var vehicleType = parseInt(req.body.vehicle_type);
-        var rideType = parseInt(req.body.ride_type);
+        var RIDE_TYPE = parseInt(req.body.ride_type);
 
-        var values = [city, operatorId, vehicleType, rideType];
+        var values = [city, operatorId, vehicleType, RIDE_TYPE];
 
         var queryToFetchOperatorVehicleType = `SELECT region_id, IFNULL(request_radius, 4000) as request_radius FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} WHERE city_id = ? AND operator_id = ? AND vehicle_type = ? AND ride_type = ? LIMIT 1`;
 
@@ -400,7 +546,7 @@ exports.insertUpdatedFareLogs = async function (req, res) {
                 }
             }
 
-        if (fares.customer.ride_type == rideConstants.rideType.OUTSTATION) {
+        if (fares.customer.ride_type == rideConstants.RIDE_TYPE.OUTSTATION) {
 
             var cityList = await checkIfOperatorCityExists([fares.from_city_id, fares.to_city_id], operatorId);
             if (cityList.length < 2) {
@@ -422,7 +568,7 @@ exports.insertUpdatedFareLogs = async function (req, res) {
                 package,
                 updateCondition
             );
-        } else if (fares.customer.ride_type == rideConstants.rideType.RENTAL) {
+        } else if (fares.customer.ride_type == rideConstants.RIDE_TYPE.RENTAL) {
             package = {
                 package_name: fares.package_name
             }
@@ -469,6 +615,31 @@ async function checkIfOperatorCityExists(cities, operatorId) {
         dbConstants.DBS.LIVE_DB,
         cityQuery,
         [cities, operatorId],
+    );
+    return result
+}
+
+async function fetchImageTypeDocument(operatorId, vehicleType) {
+
+    var stmt = `SELECT
+                rd.document_id
+            FROM 
+             ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REQ_DOC} rd
+            JOIN 
+                ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_DOC} cd ON cd.document_id = rd.document_id
+            WHERE 
+                rd.operator_id = ? 
+                AND cd.city_id = ?
+                AND cd.vehicle_type = ? 
+                AND cd.is_active = ?
+                AND cd.is_required = ?
+                AND rd.document_type = ?`;
+    var values = [operatorId, rideConstants.CITIES.DEFAULT_CITY_ID, vehicleType, rideConstants.STATUS.ACTIVE, rideConstants.DRIVER_DOCUMENTS_IS_REQUIRED.MANDATORY_REGISTER, rideConstants.DOCUMENT_TYPES.IMAGE];
+
+    var result = await db.RunQuery(
+        dbConstants.DBS.LIVE_DB,
+        stmt,
+        values,
     );
     return result
 }

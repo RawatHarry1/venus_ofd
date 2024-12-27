@@ -14,6 +14,7 @@ exports.PANEL = {
   SMP: 5,
   debuggerMARKETING : 12,
   ADMIN_PANEL: 32,
+  AUTOS_PANEL: 20
 };
 
 exports.LEVEL = {

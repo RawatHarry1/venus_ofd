@@ -42,3 +42,26 @@ exports.getTokenString = async () => {
     }
   }
 };
+
+exports.verifyPermissions = async (granted_permissions, required_permissions) => {
+
+  if (Object.keys(required_permissions).length === 0) {
+    return true;
+  }
+  var flag = false;
+
+  granted_permissions && granted_permissions.forEach(function (granted_permission) {
+    required_permissions && required_permissions.forEach(function (required_permission) {
+
+      if (
+        (granted_permission.panel_id === 0 || granted_permission.panel_id === required_permission.panel_id) &&
+        (required_permission.level_id.indexOf(constants.level.ALL) != -1 || granted_permission.level_id === 0 || required_permission.level_id.indexOf(granted_permission.level_id) != -1) &&
+        (required_permission.city_id === constants.cities.ALL || granted_permission.city_id == 0 || required_permission.city_id == 'null' ||
+          granted_permission.city_id.toString().split(",").indexOf(required_permission.city_id.toString()) > -1)) {
+        flag = true;
+        return;
+      }
+    });
+  });
+  return flag;
+}

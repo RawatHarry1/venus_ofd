@@ -38,6 +38,8 @@ exports.LIVE_DB = {
   VEHICLE_FARE: 'tb_fare',
   VEHICLE_RENTAL: 'tb_rental_packages',
   BUSINESS_USER: 'tb_business_users',
+  BANNERS_TYPE: 'banner_types',
+  BANNERS: 'banners'
 };
 
 exports.LIVE_LOGS = {
