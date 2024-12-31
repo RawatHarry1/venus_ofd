@@ -11,6 +11,7 @@ const rideConstant = require('../../../constants/rideConstants');
 const Helper = require('../helper');
 var Joi = require('joi');
 var QueryBuilder = require('datatable');
+const { getOperatorParameters } = require('../../admin/helper');
 
 exports.getRides = async function (req, res) {
   try {
@@ -512,6 +513,199 @@ exports.dataAggregation = async function (req, res) {
   }
 };
 
+exports.getScheduledRideDetails = async function (req, res) {
+  let 
+  cityId = +req.query.city_id,
+  regionId = +req.query.region_id,
+  operatorId = req.operator_id || 1,
+  vehicleType = -1,
+  requestRideType = req.request_ride_type;
+
+  delete req.query.token;
+	delete req.query.domain_token;
+	let orderDirection   = req.query.sSortDir_0 || "ASC"
+	let status = req.query.status
+	let limit = Number(req.query.iDisplayLength || 50);
+	let offset = Number((req.query.iDisplayStart) || 0);
+	let sSearch = req.query.sSearch
+	orderDirection = (orderDirection.toUpperCase() == 'DESC') ? 'ASC' : 'ASC';
+  let paramsWrapper = {}
+  try {
+
+    let schema = Joi.object({
+      city_id: Joi.number().integer().optional(),
+      region_id: Joi.number().integer().optional(),
+      sSortDir_0: Joi.string().optional(),
+      status:Joi.number().integer().optional(),
+      iDisplayLength: Joi.number().integer().optional(),
+      iDisplayStart: Joi.number().integer().optional(),
+      sSearch: Joi.string().allow("").optional(),
+      secret_key: Joi.number().optional()
+    }); 
+    let result = schema.validate(req.query);
+
+    if (result.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    if (regionId) {
+
+			let checkOperator = `SELECT operator_id, vehicle_type FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} WHERE region_id = ? `;
+			if (requestRideType == rideConstants.CLIENTS.MARS) {
+				checkOperator += ` AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.MARS}`;
+			} else {
+				checkOperator += ` AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI}`;
+			}
+
+      let operatorDetails =  await db.RunQuery(dbConstants.DBS.LIVE_DB, checkOperator, [regionId]);
+
+			if (!operatorDetails || !operatorDetails.length) {
+				throw new Error('No associated operator found.');
+			}
+
+			if (operatorDetails[0].operator_id != operatorId) {
+				throw new Error('Invalid operator.');
+			}
+			regionId = [regionId];
+
+			vehicleType = operatorDetails[0].vehicle_type;
+		}
+
+		else if (cityId) {
+
+			let regionIdQuery = `SELECT region_id FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} WHERE operator_id = ? AND is_active = 1 AND city_id = ? `;
+			if (requestRideType == rideConstants.CLIENTS.MARS) {
+				regionIdQuery +=  ` AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.MARS}`;
+			} else {
+				regionIdQuery +=  `AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI}`;
+			}
+
+      let regionResults = await db.RunQuery(dbConstants.DBS.LIVE_DB, regionIdQuery, [operatorId, cityId]);
+
+			regionId = [];
+
+			for (let region of regionResults) {
+				regionId.push(region.region_id);
+			}
+		}
+
+    await getOperatorParameters( 'schedule_cancel_window', operatorId, paramsWrapper)
+
+		let cancelWindowTime = paramsWrapper.schedule_cancel_window || 0;
+
+    var valueToBePicked = ` 
+    sc.pickup_id, 
+				sc.latitude, 
+				sc.longitude, 
+				sc.op_drop_latitude,
+				sc.op_drop_longitude, 
+				sc.preferred_payment_mode, 
+				sc.pickup_location_address, 
+				sc.drop_location_address,
+				sc.pickup_time, 
+				sc.status, 
+				sc.region_id, 
+				sc.customer_note, 
+				sc.driver_to_engage,
+				sc.user_id,
+				CASE WHEN (sc.pickup_time > NOW() + INTERVAL ? MINUTE AND sc.status = 0) THEN 1
+				ELSE 0 END AS modifiable, 
+				u.user_name, 
+				u.phone_no,
+				cr.vehicle_type,
+				cr.city_id,
+				0 AS is_vip`
+
+
+
+    var valueToBePickedFrom = `
+			  venus_live.tb_schedules sc 
+			JOIN 
+				venus_live.tb_users u ON u.user_id = sc.user_id
+			JOIN 
+				venus_live.tb_city_sub_regions cr ON cr.region_id = sc.region_id
+`;
+
+
+    valueToBePickedFrom += `  NEW_CONDITION sc.region_id in (?) AND 
+				sc.pickup_time > NOW() - INTERVAL 4 HOUR`
+
+    if (sSearch) {
+      valueToBePickedFrom += ` AND sc.user_id LIKE '%${sSearch}%'`;
+    }
+    if(status){
+			valueToBePickedFrom += ` AND sc.status = ${status}`
+		}
+    regionId = regionId.join(',')
+
+    let values = [cancelWindowTime, regionId];
+
+
+        let tableDefinition = {
+          sSelectSql: valueToBePicked,
+          sFromSql: valueToBePickedFrom,
+          sCountColumnName: `e.engagement_id`,
+          aoColumnDefs: [
+            { mData: 'e.engagement_id', bSearchable: true },
+            { mData: 'd.name', bSearchable: true },
+            { mData: 'u.user_name', bSearchable: true },
+            { mData: 'e.pickup_location_address', bSearchable: true },
+            { mData: 'e.drop_location_address', bSearchable: true },
+          ],
+        };
+      
+            let queryBuilder = new QueryBuilder(tableDefinition);
+            let requestQuery = req.query;
+            let queries = queryBuilder.buildQuery({
+              ...requestQuery,
+              order: [{ column: 0, dir: orderDirection }],
+              columns: [{ name: 'sc.pickup_time', orderable: 'true' }],
+              start: offset,
+              length: limit,
+            });
+      
+            if (queries.length > 2) {
+              queries = queries.splice(1);
+            }
+      
+            queries.select = queries.select.replace('WHERE', ' AND ');
+            queries.recordsTotal = queries.recordsTotal.replace('WHERE', ' AND ');
+            queries.select = queries.select.replace(/NEW_CONDITION/g, ' WHERE ');
+            queries.recordsTotal = queries.recordsTotal.replace(
+              /NEW_CONDITION/g,
+              ' WHERE ',
+            );
+      
+            let all_data = await db.RunQuery(
+              dbConstants.DBS.LIVE_DB,
+              queries.select,
+              values,
+            );
+            let user_count = await db.RunQuery(
+              dbConstants.DBS.LIVE_DB,
+              queries.recordsTotal,
+              [regionId],
+            );
+            console.log("user_count",user_count);
+
+    return responseHandler.success(req, res, '', {
+      result: all_data,
+      iTotalRecords: user_count[0]['COUNT(*)'],
+    });
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+
+exports.getUnacceptedRideRequestUserDetails = async function (req, res) {
+  try {
+    return responseHandler.success(req, res, 'Rides fetched successfully', '');
+    
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+}
 
 exports.getEngagementInfo = async function (req, res) {
   try {
@@ -565,31 +759,10 @@ exports.getEngagementInfo = async function (req, res) {
       const waitFare = {
           customerWaitTimeFare,driverWaitTimeFare
       }
-
-      // let editRideHistory = await getEditRideHistoryPromisify(engagementId);
-      // let responseData = {
-      //     flag: constants.responseFlags.ACTION_COMPLETE,
-      //     log: "Engagement info fetched successfully",
-      //     EditRideLog: editRideHistory,
-      //     waitFare: waitFare,
-      //     data: data[0]
-      // }
-      /* 
-
-      Comment out for pool ride tb
-      
-      */
-      // if(data[0].ride_type_status == 2){
-      //     let poolEngagementData = yield getPoolRidePromisify(handlerInfo, engagementId);
-      //     responseData.pool_data =poolEngagementData;
-      // }
-      // return res.send(responseData);
-
-
-
-
-
-    return responseHandler.success(req, res, '', '');
+    return responseHandler.success(req, res, 'Engagement info fetched successfully', {
+      waitFare: waitFare,
+      data: data[0]
+    });
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

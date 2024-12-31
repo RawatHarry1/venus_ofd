@@ -18,6 +18,13 @@ module.exports = function (app) {
     CaptainDetail.getCaptains,
   );
 
+  app.get(
+    '/get_driver_details',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.getCaptionsDetails,
+  );
+
   app.post(
     '/get_payout_info',
     AdminMiddlewares.admin.domainToken,

@@ -132,11 +132,9 @@ exports.city = {
             }
         ],
         e = null;
-
-    var handlerInfo = exposedAPIs.getEngagementInfo.handlerInfo;
     req.reference_id = "";
 
-    if(!commonfunctions.verifyPermissions(req.permissions,permissions_required)) {
+    if(!Helper.verifyPermissions(req.permissions,permissions_required)) {
         var e = new Error("Not permitted, contact panel admin!");
         e.status = 403;
         return next(e);

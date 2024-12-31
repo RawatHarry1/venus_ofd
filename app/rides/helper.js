@@ -479,7 +479,6 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
               ${dbConstants.LIVE_DB.IN_THE_AIR}.cancellation_charges,
               COALESCE( tb_coupons.title, tb_ride_promotions.title ) AS coupon_title,
               ${dbConstants.LIVE_DB.IN_THE_AIR}.master_coupon,
-              iPromotions.promo_name AS integratedPromoTitle,
               tb_coupons.cashback_percentage,
               tb_coupons.cashback_maximum,
               CASE
@@ -493,10 +492,6 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
                 WHEN ${dbConstants.LIVE_DB.IN_THE_AIR}.ride_type = 4 THEN 'Delivery Pool'
                 ELSE 'Autos'
               END AS ride_type,
-              IF(issue_reports.id IS NULL, 0, 1) AS end_ride,
-              IF(caselogs.issue_id IS NULL, 0, 1) AS start_end,
-              ref_req.is_reversed AS start_end_reversed,
-              ref_req.is_automated AS start_end_automated,
               COALESCE(dbt.debt_amount, 0) AS debt_amount,
               COALESCE(dbt.debt_engagement_id, 0) AS debt_engagement_id,
               cities.waiting_charges_applicable
@@ -539,10 +534,6 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
             ON
               tb_accounts.account_id = ${dbConstants.LIVE_DB.IN_THE_AIR}.applicable_account_id
             LEFT JOIN
-              ${config.get('venus_auth_server')}.tb_integrated_promotions AS iPromotions
-            ON
-              ${dbConstants.LIVE_DB.IN_THE_AIR}.applicable_promo_id = iPromotions.promo_id
-            LEFT JOIN
               ${dbConstants.DBS.LIVE_DB}.tb_ride_promotions
             ON
               ${dbConstants.LIVE_DB.IN_THE_AIR}.applicable_promo_id = tb_ride_promotions.promo_id
@@ -550,42 +541,20 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
               ${dbConstants.DBS.LIVE_DB}.tb_coupons
             ON
               tb_coupons.coupon_id = tb_accounts.coupon_id
-            LEFT JOIN
-              ${config.get('venus_addn_server')}.tb_case_logs AS caselogs
-            ON
-              caselogs.engagement_id = ${dbConstants.LIVE_DB.RIDES}.engagement_id
-              AND caselogs.issue_id = 1
-            LEFT JOIN
-              ${config.get('venus_addn_server')}.tb_csp_refund_requests AS ref_req
-            ON
-              ref_req.eng_id = ${dbConstants.LIVE_DB.RIDES}.engagement_id
-              AND ref_req.source_id = 1
-            LEFT JOIN (
-              SELECT
-                id,
-                eng_id
-              FROM
-                ${config.get('venus_addn_server')}.tb_issue_reports
-              WHERE
-                user_id != -1
-                AND driver_id != -1
-                AND issue_tag_id = 52 ) AS issue_reports
-            ON
-              issue_reports.eng_id = ${dbConstants.LIVE_DB.RIDES}.engagement_id
             WHERE
               ${dbConstants.LIVE_DB.RIDES}.engagement_id = ?`
 
 
-    const engagementInfo = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, [operatorId, engagementId]);
+    const engagementInfo = await db.RunQuery(dbConstants.DBS.LIVE_DB, sql_new, [operatorId, engagementId]);
     if (Array.isArray(engagementInfo) && !engagementInfo.length) {
       throw new Error("No ride data found for this engagement id");
     }
-    let addnInfo = engagementInfo[0].addn_info;
-    addnInfo = JSON.parse(addnInfo)
-      (addnInfo.driver_name) ? engagementInfo[0].driver_name = addnInfo.driver_name : 0;
-    (addnInfo.driver_vehicle_reg) ? engagementInfo[0].driver_vehicle_reg = addnInfo.driver_vehicle_reg : 0;
-    (addnInfo.driver_phone) ? engagementInfo[0].driver_phone = addnInfo.driver_phone : 0;
-    (addnInfo.driver_image) ? engagementInfo[0].driver_image = addnInfo.driver_image : 0;
+    // let addnInfo = engagementInfo[0].addn_info;
+    // addnInfo = JSON.parse(addnInfo)
+    //   (addnInfo.driver_name) ? engagementInfo[0].driver_name = addnInfo.driver_name : 0;
+    // (addnInfo.driver_vehicle_reg) ? engagementInfo[0].driver_vehicle_reg = addnInfo.driver_vehicle_reg : 0;
+    // (addnInfo.driver_phone) ? engagementInfo[0].driver_phone = addnInfo.driver_phone : 0;
+    // (addnInfo.driver_image) ? engagementInfo[0].driver_image = addnInfo.driver_image : 0;
 
     return engagementInfo
 
@@ -594,12 +563,10 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
   }
 };
 
-exports.calculateWaitTimeFare = async function (waitTime, waitingChargesApplicable, fareThresholdWaitingTime, farePerWaitingMin, fareFactor) {
+exports.calculateWaitTimeFare = function (waitTime, waitingChargesApplicable, fareThresholdWaitingTime, farePerWaitingMin, fareFactor) {
   var waitFare = 0;
   if (waitingChargesApplicable && waitTime >= fareThresholdWaitingTime) {
     waitFare += (waitTime - fareThresholdWaitingTime) * farePerWaitingMin * fareFactor;
   }
-
-  loggingImp.trace(handlerInfo, { WAIT_TIME_FARE: waitFare });
   return waitFare;
 }

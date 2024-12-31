@@ -11,7 +11,6 @@ const responseHandler = {
    */
   success: (req, res, message = 'Success', data, statusCode = 200) => {
     const secretKey = req.query.secret_key || req.body.secret_key || req.headers.secret_key;
-    console.log(secretKey);
 
     if (secretKey == 1) {
       return res.status(statusCode).json({
