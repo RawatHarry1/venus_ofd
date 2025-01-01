@@ -1,6 +1,7 @@
 const CaptainController = require('./controllers/captainRegistration');
 const CaptainDetail = require('./controllers/captainDetails');
 const PayoutController = require('./controllers/payout');
+const customerController = require('./controllers/customerDetails')
 const AdminMiddlewares = require('../admin/middelware');
 
 module.exports = function (app) {
@@ -31,6 +32,11 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     PayoutController.getPayouts,
   );
+
+  /**
+   * Global Search Driver
+  **/
+
   app.post(
     '/schedule-ride-auth/driver_info',
     AdminMiddlewares.admin.domainToken,
@@ -38,5 +44,16 @@ module.exports = function (app) {
     CaptainDetail.getDriverInfo,
   );
 
+
+  /**
+   * Global Search Customer
+  **/
+    app.post(
+      '/schedule-ride-auth/get/user_details',
+      AdminMiddlewares.admin.isLoggedIn,
+      AdminMiddlewares.admin.domainToken,
+      AdminMiddlewares.city.getEngagementInfo,
+      customerController.get_details_for_user,
+    );
   
 };

@@ -3,6 +3,7 @@
 // Importing constants
 const dbConstants = require('../constants/dbconstants');
 const ResponseConstants = require('../constants/responesConstans');
+const documentsConstants = require('../constants/document')
 
 // Importing helpers
 /* const helpers = require('../helpers/index');  */
@@ -44,4 +45,5 @@ module.exports = {
   authConstants,
   rideConstants,
   generalConstants,
+  documentsConstants
 };
