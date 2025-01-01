@@ -494,11 +494,11 @@ exports.dataAggregation = async function (req, res) {
     }
 
     const result = await Promise.all([
-      rideHelper.getTripsData(requestBody),
-      rideHelper.getDriversData(requestBody),
-      rideHelper.getCustomersData(requestBody),
-      rideHelper.getRideStatistics(requestBody),
-      rideHelper.getActiveUsersData(requestBody),
+      Helper.getTripsData(requestBody),
+      Helper.getDriversData(requestBody),
+      Helper.getCustomersData(requestBody),
+      Helper.getRideStatistics(requestBody),
+      Helper.getActiveUsersData(requestBody),
     ]);
 
     return responseHandler.success(req, res, '', {
