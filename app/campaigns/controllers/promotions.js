@@ -240,10 +240,10 @@ exports.promotionList = async function (req, res) {
         );
         break;
       case 2:
-        //promoList = await getCoupons(operatorId, undefined, requestRideType);
+        promoList = await getCoupons(operatorId, undefined, requestRideType);
         break;
       case 3:
-        // promoList = await getAuthCoupons(operatorId, cityId, requestRideType);
+        promoList = await getAuthCoupons(operatorId, cityId, requestRideType);
         break;
     }
     return responseHandler.success(req, res, 'User Details Sents', promoList);
@@ -273,6 +273,107 @@ async function getCityWidePromos(cityId, operatorId, requestRideType) {
   let finalCityWidePromos = filterPromotionsList(cityWidePromos);
   return finalCityWidePromos;
 }
+
+async function getAuthCoupons(operatorId, cityId, requestRideType) {
+  cityId = parseInt(cityId);
+  const values = [operatorId];
+  let whereClause = ``;
+  
+  if (cityId) {
+      whereClause += ` AND city_id REGEXP ?`;
+      const cityIdRegex = `^${cityId},|,${cityId},|^${cityId}$|,${cityId}$`; // Build the REGEXP pattern
+      values.push(cityIdRegex);
+  }
+  
+  // Add `requestRideType` to values
+  values.push(requestRideType);
+  
+  let couponQuery = `
+    SELECT 
+      promo_code, 
+      money_to_add, 
+      bonus_type, 
+      city_id, 
+      coupons_validity_autos, 
+      start_date, 
+      end_date, 
+      max_number, 
+      num_redeemed, 
+      promo_type, 
+      login_type AS user_type,
+      (CASE 
+        WHEN (start_date <= NOW() AND end_date >= NOW()) THEN 1 
+        ELSE 0 
+      END) AS is_active, 
+      coupon_id_autos, 
+      promo_id, 
+      promo_owner_client_id
+    FROM ${dbConstants.DBS.AUTH_DB}.tb_promotions
+    WHERE operator_id = ? ${whereClause} AND service_type = ?
+    ORDER BY promo_id DESC
+  `;
+  
+  // Execute the query
+  let coupons = await db.RunQuery(dbConstants.DBS.AUTH_DB, couponQuery, values);
+  return coupons
+}
+
+async function getCoupons(operatorId, couponId, requestRideType, cityId) {
+  const values = [operatorId, requestRideType]; // Initialize the values array
+  let whereClause = ``; // Initialize the whereClause variable
+
+  // Add cityId condition if it exists
+  if (cityId) {
+    whereClause += ` AND city_id REGEXP ?`;
+    const cityIdRegex = `^${cityId},|,${cityId},|^${cityId}$|,${cityId}$`; // Build the REGEXP pattern
+    values.push(cityIdRegex);
+  }
+
+  // Construct the coupons query
+  let couponsQuery = `
+    SELECT 
+      coupon_id, 
+      title,
+      subtitle,
+      description, 
+      coupon_type AS promo_type,
+      benefit_type, 
+      discount_percentage,
+      discount_maximum, 
+      cashback_percentage, 
+      cashback_maximum, 
+      capped_fare, 
+      capped_fare_maximum, 
+      pickup_radius,
+      no_coupons_to_give,
+      is_active, 
+      allowed_vehicles, 
+      pickup_latitude, 
+      pickup_longitude,  
+      drop_radius, 
+      drop_latitude, 
+      drop_longitude, 
+      fare_id, 
+      usuage AS current_usage_count,  
+      CASE 
+        WHEN is_active = 1 THEN 1
+        ELSE 0 
+      END AS is_coupon_active
+    FROM ${dbConstants.DBS.LIVE_DB}.tb_coupons
+    WHERE operator_id = ? AND service_type = ? ${whereClause}
+  `;
+
+  // Add couponId condition if it exists
+  if (couponId) {
+    couponsQuery += ` AND coupon_id = ? AND is_active = 1`;
+    values.push(couponId);
+  }
+
+  // Execute the query
+  let coupons = await db.RunQuery(dbConstants.DBS.LIVE_DB, couponsQuery, values);
+  return coupons;
+}
+
 
 function filterPromotionsList(promoObject) {
   for (let i in promoObject) {

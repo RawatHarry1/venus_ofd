@@ -11,11 +11,18 @@ module.exports = function (app) {
     CaptainController.getCaptainEnrollment,
   );
 
-  app.post(
+  app.get(
     '/active_driver_details',
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     CaptainDetail.getCaptains,
+  );
+
+  app.get(
+    '/get_driver_details',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.getCaptionsDetails,
   );
 
   app.post(

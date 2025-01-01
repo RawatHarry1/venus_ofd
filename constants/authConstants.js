@@ -31,4 +31,6 @@ exports.LEVEL = {
   INVENTORY_EXECUTIVE: 1,
   ENROLMENT_AGENT: 2,
   ALL: -1,
+  TEAM_LEAD: 5,
+  REGULAR: 0
 };

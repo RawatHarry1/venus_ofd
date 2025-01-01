@@ -8,7 +8,7 @@ const {
 
 const rideConstant = require('../../../constants/rideConstants');
 const documentsConstant = require('../../../constants/document');
-const rideHelper = require('../helper');
+const Helper = require('../helper')
 var Joi = require('joi');
 var QueryBuilder = require('datatable');
 
@@ -282,6 +282,59 @@ exports.getCaptains = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+exports.getCaptionsDetails = async function (req, res) {
+  try {
+    var
+      operatorId = req.operator_id,
+      deliveryEnabled = +req.query.delivery_enabled || 0,
+      status = req.query.status,
+      cityId = req.query.city_id,
+      vehicleType = req.query.vehicle_type,
+      requestRideType = req.request_ride_type,
+      fleetId = req.fleet_id;
+
+    delete req.query.token;
+
+    var schema = Joi.object({
+      city_id: Joi.required(),
+      status: Joi.number().min(0).max(5).required(),
+      vehicle_type: Joi.number().optional(),
+      delivery_enabled: Joi.number().min(0).max(1).optional(),
+      request_fleet_id: Joi.number().optional(),
+      secret_key: Joi.number().optional()
+    }).unknown(true);;
+
+    var result = schema.validate(req.query);
+
+    if(Array.isArray(cityId) && cityId.length){
+      cityId = cityId.toString().join(',');
+    }
+
+    if (result.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    };
+
+    if (!fleetId) {
+      fleetId = req.query.request_fleet_id;
+    }
+
+    var fetchDriverDetails = Helper.getLimitedDriverDetailsQueryHelper(deliveryEnabled, status, vehicleType, fleetId, cityId, requestRideType);
+
+    var values = [operatorId, requestRideType, cityId];
+
+    if (vehicleType) {
+      values.push(vehicleType);
+    }
+    if (fleetId) {
+      values.push(fleetId);
+    }
+    let drivers = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchDriverDetails, values);
+    return responseHandler.success(req, res, 'Data fetched successfully.', drivers);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+}
 
 
 async function getDriverRideInfo(driverId, startFrom, pageSize, responseData) {

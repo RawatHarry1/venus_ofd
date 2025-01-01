@@ -120,7 +120,27 @@ exports.city = {
       return next(e);
     }
     next();
-  }
+  },
+  getEngagementInfo: function (req, res, next) {
+    var permissions_required =
+        [
+            {
+            "panel_id": authConstants.PANEL.CSP,
+            "level_id": [authConstants.LEVEL.ADMIN, authConstants.LEVEL.TEAM_LEAD,
+              authConstants.LEVEL.REGULAR],
+            "city_id": rideConstants.CITIES.DEFAULT_CITY_ID
+            }
+        ],
+        e = null;
+    req.reference_id = "";
+
+    if(!Helper.verifyPermissions(req.permissions,permissions_required)) {
+        var e = new Error("Not permitted, contact panel admin!");
+        e.status = 403;
+        return next(e);
+    }
+    next();
+  },
 };
 
 exports.documents = {
