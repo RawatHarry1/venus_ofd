@@ -13,55 +13,55 @@ var AWS                  = require('aws-sdk');
 const path = require('path');
 
 
-exports.fetchParameterValues = async function fetchParameterValues (operatorId, resultWrapper, paramList, paramIds, serverType) {
-    var fetchParamQuery =
-        `SELECT 
-            pr.param_id,
-            pr.param_name, 
-            COALESCE(opr.param_value, pr.param_value) AS param_value,
-            pr.param_value AS default_value, 
-            opr.param_value AS operator_value,
-            pr.min_value as min_value,
-            pr.max_value as max_value,
-            pr.label as label, 
-            pr.allowed_values as allowed_values,
-            pr.type as type 
-         FROM tb_parameters pr 
-         LEFT JOIN tb_operator_params opr 
-            ON  pr.param_id = opr.param_id AND 
-                opr.operator_id = ?  `;
+// exports.fetchParameterValues = async function fetchParameterValues (operatorId, resultWrapper, paramList, paramIds, serverType) {
+//     var fetchParamQuery =
+//         `SELECT 
+//             pr.param_id,
+//             pr.param_name, 
+//             COALESCE(opr.param_value, pr.param_value) AS param_value,
+//             pr.param_value AS default_value, 
+//             opr.param_value AS operator_value,
+//             pr.min_value as min_value,
+//             pr.max_value as max_value,
+//             pr.label as label, 
+//             pr.allowed_values as allowed_values,
+//             pr.type as type 
+//          FROM tb_parameters pr 
+//          LEFT JOIN tb_operator_params opr 
+//             ON  pr.param_id = opr.param_id AND 
+//                 opr.operator_id = ?  `;
 
-    var values = [operatorId];
-    if(paramList.length) {
-        fetchParamQuery += ` WHERE pr.param_name IN (?) `;
-        values.push(paramList);
-    }
-    else if(paramIds.length) {
-        fetchParamQuery += ` WHERE pr.param_id IN (?) `;
-        values.push(paramIds);
-    }
-    if(serverType == rideConstants.SERVER_FLAG.AUTH){
-        var result = await db.RunQuery(
-            dbConstants.DBS.AUTH_DB,
-            fetchParamQuery,
-            values,
-          );
-    }else{
-        var result = await db.RunQuery(
-            dbConstants.DBS.LIVE_DB,
-            fetchParamQuery,
-            values,
-          );
-    }
-    if(result.length){
-        for(var param of result) {
-            resultWrapper[param.param_name] = param.param_value;
-        }
-    }
-    return result
-}
+//     var values = [operatorId];
+//     if(paramList.length) {
+//         fetchParamQuery += ` WHERE pr.param_name IN (?) `;
+//         values.push(paramList);
+//     }
+//     else if(paramIds.length) {
+//         fetchParamQuery += ` WHERE pr.param_id IN (?) `;
+//         values.push(paramIds);
+//     }
+//     if(serverType == rideConstants.SERVER_FLAG.AUTH){
+//         var result = await db.RunQuery(
+//             dbConstants.DBS.AUTH_DB,
+//             fetchParamQuery,
+//             values,
+//           );
+//     }else{
+//         var result = await db.RunQuery(
+//             dbConstants.DBS.LIVE_DB,
+//             fetchParamQuery,
+//             values,
+//           );
+//     }
+//     if(result.length){
+//         for(var param of result) {
+//             resultWrapper[param.param_name] = param.param_value;
+//         }
+//     }
+//     return result
+// }
 
-exports.formatOperatorCityFields = async function (operatorCityFields, metaData) {
+async function formatOperatorCityFields (operatorCityFields, metaData) {
     try {
         if (operatorCityFields["driver_side_menu"]) {
             operatorCityFields["driver_side_menu"] = menuStringToArray(operatorCityFields["driver_side_menu"]);
@@ -506,4 +506,4 @@ async function insertCitySubRegion(requiredFields) {
     return result
 }
 
-module.exports = {fetchFareData,fetchVehiclesImagesFaresData,insertRequiredDocument,insertCityDocument,insertCitySubRegion}
+module.exports = {fetchFareData,fetchVehiclesImagesFaresData,insertRequiredDocument,insertCityDocument,insertCitySubRegion,fetchParameterValues,formatOperatorCityFields}
