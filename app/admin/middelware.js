@@ -7,6 +7,7 @@ const {
   authConstants,
   rideConstants
 } = require('../../bootstart/header');
+const { checkBlank } = require('../rides/helper');
 const Helper = require('./helper');
 
 exports.admin = {
@@ -141,6 +142,49 @@ exports.city = {
     }
     next();
   },
+  getDetailsForUser: async function (req, res, next) {
+    var userId = req.body.user_id;
+    var keyType = parseInt(req.body.search_key);
+    var operatorId = req.operator_id;
+
+    var checkValues = checkBlank([userId, keyType, operatorId]);
+    if (checkValues == 1) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+    var permissions_required =
+      [
+        {
+          "panel_id": authConstants.PANEL.CSP,
+          "level_id": [authConstants.LEVEL.REGULAR, authConstants.LEVEL.ADMIN, authConstants.LEVEL.TEAM_LEAD],
+          "city_id": authConstants.LEVEL.ALL
+        }
+      ],
+      error = null;
+    req.reference_id = "";
+
+    if (!Helper.verifyPermissions(req.permissions, permissions_required)) {
+      error = new Error("Not permitted, contact panel admin!");
+      error.status = 403;
+      return next(error);
+    }
+    var userFound = {};
+
+    await Helper.sqlQueryForAutos(req, keyType, userId, operatorId, userFound)
+    await Helper.sqlQueryForVendors(req, keyType, userFound, userId, operatorId)
+
+
+
+    if ((!userFound.isVendor && !userFound.isAutosUser)
+      || (operatorId != 1 && !userFound.isAutosUser)) {
+      throw new Error("INVALID USER");
+    }
+
+    req.body.isAutosUser = userFound.isAutosUser;
+    req.body.isVendor = userFound.isVendor;
+    req.body.keyType = keyType;
+    req.body.verificationStatus = userFound.verificationStatus;
+    next();
+  }
 };
 
 exports.documents = {

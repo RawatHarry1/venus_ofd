@@ -34,3 +34,12 @@ exports.LEVEL = {
   TEAM_LEAD: 5,
   REGULAR: 0
 };
+
+exports.WALLET_TYPE = {
+  RAZOR_PAY: 4,
+  ICICI: 7,
+  MPESA: 8,
+  PAYTM: 0,
+  MOBIKWIK: 1,
+  FREECHARGE: 2,
+}

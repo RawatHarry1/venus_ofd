@@ -90,9 +90,11 @@ const {
           );
 
           response = {
-            data : operatorCityFieldValues,
-            meta_data : metaData,
-            countries : countries
+            data : {
+                operatorCityData: operatorCityFieldValues[0],
+                countries: countries,
+                metaData  : metaData
+            }
         };
 
       return responseHandler.success(

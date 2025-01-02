@@ -126,7 +126,7 @@ function parseJsonString(jsonString, event){
 }
 
 
-exports.readImageFile = async function (imageFile,wrapperObject) {
+async function readImageFile (imageFile,wrapperObject) {
     try {
         const normalizedPath = path.normalize(imageFile.path);
         const data = await fs.readFile(normalizedPath);
@@ -137,7 +137,8 @@ exports.readImageFile = async function (imageFile,wrapperObject) {
 }
 
 
-exports.uploadFileToS3 = async function (awsCredentials,filename, wrapperObject) {
+
+async function uploadFileToS3 (awsCredentials,filename, wrapperObject) {
     const s3 = new AWS.S3({
         accessKeyId: awsCredentials.accessKeyId,
         secretAccessKey: awsCredentials.secretAccessKey,
@@ -356,7 +357,6 @@ async function fetchFareData(fareCriteria, resultWrapper) {
     }
 }
 
-
 async function fetchParameterValues(operatorId, resultWrapper, paramList, paramIds, serverType) {
     var fetchParamQuery =
         `SELECT 
@@ -506,4 +506,4 @@ async function insertCitySubRegion(requiredFields) {
     return result
 }
 
-module.exports = {fetchFareData,fetchVehiclesImagesFaresData,insertRequiredDocument,insertCityDocument,insertCitySubRegion,fetchParameterValues,formatOperatorCityFields}
+module.exports = {fetchFareData,fetchVehiclesImagesFaresData,insertRequiredDocument,insertCityDocument,insertCitySubRegion,fetchParameterValues,formatOperatorCityFields,readImageFile,uploadFileToS3}

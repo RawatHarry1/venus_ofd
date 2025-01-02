@@ -3,6 +3,7 @@ const {
   db,
   errorHandler,
   responseHandler,
+  rideConstants,
 } = require('../../bootstart/header');
 const crypto = require('crypto');
 
@@ -142,5 +143,88 @@ exports.getOperatorParameters = async (paramNames, operatorId, resultWrapper) =>
   const parameters = await db.RunQuery(dbConstants.DBS.LIVE_DB, getParameters, values);
   for (var i = 0; i < parameters.length; i++) {
     resultWrapper[parameters[i].param_name] = parameters[i].param_value;
+  }
+}
+
+exports.sqlQueryForAutos = async (req,keyType,userId,operatorId,userFound) => {
+  try {
+    let stmt = `SELECT u.user_id
+                FROM ${dbConstants.DBS.LIVE_DB}.tb_users u
+                WHERE u.operator_id = ? and `;
+
+    // Constructing query based on keyType
+    switch (keyType) {
+      case rideConstants.USER_DETAIL_SEARCH_KEY.USER_ID:
+        stmt += " u.user_id = ?";
+        break;
+      case rideConstants.USER_DETAIL_SEARCH_KEY.USER_EMAIL:
+        stmt += " u.user_email = ?";
+        break;
+      case rideConstants.USER_DETAIL_SEARCH_KEY.USER_PHONE:
+        stmt += " u.phone_no = ?";
+        if (!req.body.country_code) {
+          userId = '+91' + userId.slice(-10);            
+        }
+        break;
+    }
+
+    // Execute query
+    const userInfo = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, [operatorId, userId]);
+
+    // Check if user exists in the ecosystem
+    if (userInfo.length === 0) {
+      userFound.isAutosUser = 0;
+    } else {
+      req.body.user_id = userInfo[0].user_id;
+      userFound.isAutosUser = 1;
+    }
+
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+
+
+exports.sqlQueryForVendors = async (req, keyType, userId, operatorId, userFound) => {
+  if(operatorId != 1) {
+    userFound.isVendor = 0;
+    return
+}
+  try {
+    let stmt = `SELECT a.user_id ,a.verification_status FROM ${dbConstants.DBS.AUTH_DB}.tb_users AS a JOIN  ${dbConstants.DBS.AUTH_DB}.tb_users_delivery AS b ON a.user_id = b.user_id WHERE`;
+
+    switch (keyType) {
+      case rideConstants.USER_DETAIL_SEARCH_KEY.USER_ID:
+        stmt += " a.venus_autos_user_id = ?"
+        break;
+      case rideConstants.USER_DETAIL_SEARCH_KEY.USER_EMAIL:
+        stmt += " a.user_email = ?";
+        req.body.email = userId;
+        break;
+      case rideConstants.USER_DETAIL_SEARCH_KEY.USER_PHONE:
+
+        stmt += " a.phone_no = ?";
+        userId = '+91' + userId.slice(-10);
+        req.body.phoneNo = userId;
+        break;
+    }
+
+    // Execute query
+    const vendorInfo = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, [userId]);
+    if (vendorInfo.length == 0) {
+      userFound.isVendor = 0;
+    }
+    else {
+      userFound.isVendor = 1;
+      userFound.verificationStatus = vendorInfo[0].verification_status;
+      req.body.authUserId = vendorInfo[0].user_id;
+      if (keyType == 0) {
+        req.body.userId = vendorInfo[0].user_id;
+      }
+    }
+
+  } catch (error) {
+    throw new Error(error.message);
   }
 }

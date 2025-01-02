@@ -20,6 +20,7 @@ exports.ENGAGEMENT_STATUS = {
   RIDE_ENDED_BY_CRONE: 11,
   ARRIVED: 14,
   RIDE_CANCELLED_BY_CUSTOMER: 13,
+  DRIVER_ARRIVED: 14
 };
 
 exports.SERVER_FLAG = {
@@ -99,4 +100,17 @@ exports.CITIES = {
 exports.STATUS = {
   ACTIVE : 1,
   INACTIVE: 0
+}
+
+exports.CANCELLATION_REFUND = {
+  NA : 0,
+  ON_COMPLAINT: 1,
+  ON_CALL : 2,
+  NO_REFUND: 3,
+}
+
+exports.USER_DETAIL_SEARCH_KEY = {
+  USER_ID : 0,
+  USER_EMAIL: 1,
+  USER_PHONE : 2
 }

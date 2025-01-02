@@ -1,4 +1,6 @@
 const {dbConstants,db,errorHandler,responseHandler} = require('../../../bootstart/header');
+const { checkBlank } = require('../../rides/helper');
+const settingsHelper = require('../helper');
 
 
 exports.createBannerType = async function (req, res) {
@@ -22,6 +24,46 @@ exports.createBannerType = async function (req, res) {
         );
       return responseHandler.success(req,res, 'Banner type created successfully', result.insertId);
     } catch (error) {
+      errorHandler.errorHandler(error, req, res);
+    }
+};
+
+
+exports.uploadLogoToS3 = async function (req, res) {
+    try {
+        var body = req.body;
+        var docImage = req.file;
+        var operatorId = req.operator_id;
+    
+        var checkValues = checkBlank([docImage]);
+        if (checkValues === 1) {
+            return responseHandler.parameterMissingResponse(res); 
+        }
+        var wrapperObject = {};
+        var awsCredentials = {
+            ridesDataBucket: process.env.AWS_RIDES_DATA_BUCKET+ '/operator_' + operatorId,
+            driverDocumentsBucket: process.env.AWS_DRIVER_DOCUMENTS_BUCKET,
+            operatorDataBucket: process.env.AWS_OPERATOR_DATA_BUCKET + '/operator_' + operatorId,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            region: process.env.AWS_REGION
+        }
+        console.log(awsCredentials.ridesDataBucket);
+        
+        // var bucketFilePath = awsCredentials.operatorDataBucket + '/operator_' + operatorId;
+        try {
+            var filename = Date.now() + "." + docImage.originalname.split(".").pop();
+        } catch (e) {
+            var filename = Date.now();
+        }
+        // var bucketFilePath = awsCredentials.operatorDataBucket + '/operator_' + operatorId;
+        await settingsHelper.readImageFile(docImage, wrapperObject);
+
+        await settingsHelper.uploadFileToS3(awsCredentials, filename, wrapperObject);
+
+      return responseHandler.success(req,res, 'Successfully updated', wrapperObject.url);
+    } catch (error) {
+        console.log(error)
       errorHandler.errorHandler(error, req, res);
     }
 };
