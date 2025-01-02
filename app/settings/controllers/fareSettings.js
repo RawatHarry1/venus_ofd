@@ -402,14 +402,14 @@ exports.updateOperatorRequestRadius = async function (req, res) {
         var insertionSet = {
             request_radius : body.request_radius
         };
-        var queryToUpdateTable = `UPDATE tb_city_sub_regions SET ? WHERE region_id =? AND operator_id = ?`;
+        var queryToUpdateTable = `UPDATE tb_city_sub_regions SET request_radius = ? WHERE region_id =? AND operator_id = ?`;
         // Logging for debugging
         console.log('Query:', queryToUpdateTable);
         console.log('Params:', [insertionSet, body.region_id, operatorId]);
         await db.RunQuery(
             dbConstants.DBS.LIVE_DB,
             queryToUpdateTable,
-            [insertionSet, body.region_id, operatorId],
+            [body.request_radius, body.region_id, operatorId],
         );
 
         return responseHandler.success(req, res, 'Vehicle type changes updated!', '');

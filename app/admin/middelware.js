@@ -184,6 +184,58 @@ exports.city = {
     req.body.keyType = keyType;
     req.body.verificationStatus = userFound.verificationStatus;
     next();
+  },
+  getDriverInfo: async function (req, res, next) {
+    var operatorId = req.operator_id;
+    var permissions_required =
+      [
+        {
+          "panel_id": authConstants.PANEL.CSP,
+          "level_id": [authConstants.LEVEL.REGULAR, authConstants.LEVEL.ADMIN, authConstants.LEVEL.TEAM_LEAD],
+          "city_id": authConstants.LEVEL.ALL
+        }
+      ],
+        error = null;
+    req.reference_id = "";
+
+    if (!Helper.verifyPermissions(req.permissions, permissions_required)) {
+      error = new Error("Not permitted, contact panel admin!");
+      error.status = 403;
+      return next(error);
+    }
+
+    var userId = req.body.driver_id, queryParams = [], operatorId = req.operator_id;
+    var searchKey = parseInt(req.body.search_key);
+    var getUserIdQuery =
+      `SELECT driver_id as user_id FROM ${dbConstants.DBS.LIVE_DB}.tb_drivers WHERE operator_id = ? `
+    queryParams.push(operatorId);
+
+    switch (searchKey) {
+      case rideConstants.DRIVER_DETAIL_SEARCH_KEY.DRIVER_ID:
+        getUserIdQuery += " AND driver_id = ?";
+        break;
+      case rideConstants.DRIVER_DETAIL_SEARCH_KEY.DRIVER_AUTO_NO:
+        getUserIdQuery += " AND vehicle_no = ?";
+        break;
+      case rideConstants.DRIVER_DETAIL_SEARCH_KEY.DRIVER_PHONE:
+        getUserIdQuery += " AND (phone_no = ? or alternate_phone_no = ? )";
+        queryParams.push(userId);
+        break;
+    }
+    queryParams.push(userId);
+
+    let driver = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      getUserIdQuery,
+      queryParams,
+    );
+    if (!driver) {
+      throw new Error("Invalid Driver id");
+    }
+
+    req.body.driver_id = driver[0].user_id;
+
+    next();
   }
 };
 
