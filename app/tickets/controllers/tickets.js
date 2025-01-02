@@ -112,3 +112,41 @@ exports.getTicketList = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+
+exports.updateTicket = async function (req, res) {
+
+  try {
+    let body = req.body;
+    delete body.token;
+    const schema = Joi.object({
+      city_id: Joi.number().integer().required(),
+      ticket_id: Joi.number().integer().required(),
+      status: Joi.number().valid(0, 1, 2).required(),
+      admin_response: Joi.string().max(255).optional()
+    });
+
+    const result = schema.validate(body);
+
+    if (result.error) {
+      return res.send({
+        flag: ResponseConstants.RESPONSE_STATUS.PARAMETER_MISSING,
+        message: 'Params missing or invalid',
+      });
+    }
+
+    const { ticket_id, status, admin_response, city_id } = body;
+    const operatorId = req.operator_id;
+
+    await db.updateTable(dbConstants.DBS.LIVE_DB, dbConstants.LIVE_DB.TICKETS, {
+      status: status,
+      admin_id: req.user_id,
+      response_at: new Date(),
+      admin_response: admin_response
+    }, [{ key: 'operator_id', value: operatorId }, { key: 'city_id', value: city_id }, { key: 'id', value: ticket_id }]);
+    return responseHandler.success(req, res, 'Ticket updated successfully', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+
+  }
+}

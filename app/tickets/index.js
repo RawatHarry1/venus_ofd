@@ -8,4 +8,10 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     TicketsController.getTicketList,
   );
+  app.post(
+    '/internal/update_support_ticket',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    TicketsController.updateTicket,
+  );
 };
