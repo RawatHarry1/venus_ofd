@@ -428,7 +428,6 @@ exports.getDriverInfo = async function (req, res) {
     responseData.start_end_count = startEndCount[0];
     responseData.call_history = callHistory[0];
     responseData.detailsCount = exports.driverInfoCount;
-    responseData.flag = constants.responseFlags.ACTION_COMPLETE;
     responseData.bankDetails = bankDetails;
     responseData.dodo = dodoDeliveries;
     responseData.todays_first_login = firstLogin[0];

@@ -1803,7 +1803,7 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
               ref_req.is_reversed, 
               ref_req.is_automated 
           FROM 
-              ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES} tb_engagements
+              ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES}
           LEFT JOIN 
               ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.IN_THE_AIR}  ON tb_session.session_id = tb_engagements.session_id 
           LEFT JOIN 
@@ -1820,7 +1820,8 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
           WHERE 
               tb_engagements.driver_id = ? 
               AND tb_engagements.status = ? 
-              AND engagement_date BETWEEN DATE(?) AND DATE(?) 
+              AND tb_engagements.engagement_date >= ?
+              AND tb_engagements.engagement_date <= ?
           ORDER BY 
               engagement_id DESC 
           LIMIT ?, ?;
@@ -1829,7 +1830,7 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
   var driverInfo = await db.RunQuery(
     dbConstants.DBS.LIVE_DB,
     sql,
-    [driverId, 3, startDate, endDate, startFrom, pageSize],
+    [driverId, 3, endDate, startDate, startFrom, pageSize],
   );
 
   if (!driverInfo.length) {
@@ -1868,7 +1869,7 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
       });
       var rideDate = new Date(driverInfo[i].engagement_date);
       var curDate = new Date();
-      if (utils.getPlainDateFormat(rideDate) == utils.getPlainDateFormat(curDate)) {
+      if (getPlainDateFormat(rideDate) == getPlainDateFormat(curDate)) {
         todays_completed_rides++;
       }
     }
@@ -2040,8 +2041,8 @@ async function getDriverRidesAndDelivery(driver_id, avgResult) {
   );
 
   if (driverRidesAndDeliveryData.length > 0) {
-    avgResult.rides_avg = driverRidesAndDeliveryData[0].rides_avg.toFixed(2);
-    avgResult.deliveries_avg = driverRidesAndDeliveryData[0].deliveries_avg.toFixed(2);
+    avgResult.rides_avg = driverRidesAndDeliveryData[0].rides_avg;
+    avgResult.deliveries_avg = driverRidesAndDeliveryData[0].deliveries_avg;
   }
 }
 
@@ -2139,7 +2140,7 @@ async function getDriverCityInfo(user_id, responseData) {
     LEFT JOIN ${dbConstants.DBS.LIVE_DB}.tb_driver_bank_details tdbd ON (tdbd.driver_id = tbd.driver_id)
               WHERE tbd.driver_id = ?`;
 
-    var result = await db.RunQuery(
+    var walletData = await db.RunQuery(
       dbConstants.DBS.LIVE_DB,
       walletQuery,
       [user_id],
@@ -2160,6 +2161,15 @@ function diffInDates(startDt, endDt, diffType)
     var endDate = moment(endDt, 'YYYY-MM-DD HH:mm Z');
     var diff = endDate.diff(startDate, diffType);
     return diff;
+}
+function getPlainDateFormat(curDate) {
+  var day   = curDate.getDate();
+  var month = curDate.getMonth() +1;
+  var year  = curDate.getUTCFullYear();
+  var dayStr = day < 10 ? ("0"+ day.toString()) : (day.toString());
+  var monthStr = month < 10 ? ("0" + month.toString()) : (month.toString());
+  var dateStr = dayStr + "-" + monthStr + "-" + year.toString();
+  return dateStr;
 }
 
 
