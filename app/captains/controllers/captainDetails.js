@@ -701,3 +701,71 @@ exports.getDriverInfo = async function (req, res) {
 
 }
 
+
+
+exports.getAvilableDrivers = async function (req, res) {
+
+  try {
+    var
+      deliveryEnabled = +req.query.delivery_enabled || 0,
+      cityId = req.query.city_id,
+      vehicleType = req.query.vehicle_type
+    fleetId = 0
+
+    let data = []
+
+    var schema = Joi.object({
+      city_id: Joi.required(),
+      vehicle_type: Joi.number().optional(),
+      delivery_enabled: Joi.number().min(0).max(1).optional(),
+      request_fleet_id: Joi.number().optional()
+    }).unknown(true);;
+
+    var result = schema.validate(req.query);
+    if (result.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+    if (!fleetId) {
+      fleetId = req.query.request_fleet_id;
+    }
+
+    var query = `SELECT
+        dr.name,
+        dr.driver_id,
+        dr.phone_no,
+        dr.driver_image,
+        dr.last_ride_on,
+        dr.date_of_birth,
+        dr.location_updated_at,
+        CASE WHEN ABS(dr.current_latitude) > 0.001 THEN dr.current_latitude ELSE dr.last_latitude END as current_latitude,
+        CASE WHEN ABS(dr.current_longitude) > 0.001 THEN dr.current_longitude ELSE dr.last_longitude END as current_longitude
+        FROM
+          ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} dr
+        WHERE
+            dr.operator_id = ?
+            AND dr.city_id IN (?)
+            AND dr.driver_suspended = 0
+            AND dr.status = 0
+            AND dr.current_latitude != 0
+            AND dr.current_longitude != 0
+            AND dr.autos_enabled = 1
+            AND dr.autos_available = 1
+            AND dr.location_updated_at >= (NOW() - INTERVAL 10 MINUTE)
+            AND dr.vehicle_type = ?`
+
+
+    data = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      query,
+      [req.operator_id, cityId, vehicleType],
+    );
+
+    return responseHandler.success(req, res, 'Data fetched successfully.', data);
+
+
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+
+
+  }
+}

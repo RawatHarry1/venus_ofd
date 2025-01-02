@@ -55,5 +55,12 @@ module.exports = function (app) {
       AdminMiddlewares.city.getDetailsForUser,
       customerController.get_details_for_user,
     );
+  app.get(
+    '/fetch/available_drivers',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.getAvilableDrivers,
+  );
+
   
 };
