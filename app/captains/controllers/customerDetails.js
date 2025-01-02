@@ -204,38 +204,36 @@ exports.get_details_for_user = async function (req, res) {
     
         // these functions will always be called,using auth_user_id or user_id on basis of whether he is vendor or not
            await globalHelper.getWalletTransactions(user_id, authUserId, allTransactions, sf_walletTxns, ps_walletTxns)
-            // globalHelper.get_transaction_details(app_id, time_transaction, amounts_transaction, debit_state,
-            //     account_balance, reason_transaction, user_id, authUserId, user_name, user_email, user_phone_no, user_is_blocked,
-            //     user_can_request, user_city, user_debt, block_reason, block_reason_text, date_registered, deviceName, osVersion,
-            //     appVersionCode, userCategory, isDeactivated, deactivationReason, dateOfBirth, sf_txnDetails, ps_txnDetails),
-            // globalHelper.get_user_ref_code_used(ref_code, user_ref_code, referrer, user_id, authUserId),
-            // globalHelper.get_paytm_enabled(user_id, authUserId, paytm_enabled),
-            // globalHelper.get_dup_reg(user_id, authUserId, dup_reg),
-            // globalHelper.get_invalid_devices(user_id, authUserId, invalid_device_count),
-            // globalHelper.getUserDebt(user_id, authUserId, actualUserDebt),
-            // globalHelper.getCustomerNotes(user_id, user_notes),
+           await globalHelper.get_transaction_details(app_id, time_transaction, amounts_transaction, debit_state,
+                account_balance, reason_transaction, user_id, authUserId, user_name, user_email, user_phone_no, user_is_blocked,
+                user_can_request, user_city, user_debt, block_reason, block_reason_text, date_registered, deviceName, osVersion,
+                appVersionCode, userCategory, isDeactivated, deactivationReason, dateOfBirth, sf_txnDetails, ps_txnDetails)
+           await globalHelper.get_user_ref_code_used(ref_code, user_ref_code, referrer, user_id, authUserId)
+           await globalHelper.get_paytm_enabled(user_id, authUserId, paytm_enabled)
+           await globalHelper.get_dup_reg(user_id, authUserId, dup_reg)
+           await globalHelper.get_invalid_devices(user_id, authUserId, invalid_device_count),
+        //    await globalHelper.getUserDebt(user_id, authUserId, actualUserDebt),
+           await globalHelper.getCustomerNotes(user_id, user_notes)
 
         // If user is autos, add additional tasks
         if (isAutosUser) {
-            // asyncTasks.push(
-            //     globalHelper.get_rides_data(discount, paid_by_customer, pickup_times, driver_names, ride_distances,
-            //         ride_times, amounts, payment_modes, account_numbers, coupon_titles, engagement_ids, user_id, driverIds, paid_using_paytm, paid_using_mobikwik,
-            //         paid_using_freecharge, amount_venus_wallet, convenience_charge,
-            //         convenience_charge_waiver, ride_source, ride_type, isStartEnd, isStartEndReversed, isStartEndAutomated, rideRating, sf_recentRides, ps_recentRides),
-            //     globalHelper.get_coupons_data(user_id, sf_couponsData, ps_couponsData, couponsData),
-            //     globalHelper.get_user_remaining_coupons(user_id, remaining_coup),
-            //     globalHelper.get_promotions_applicable(promo_titles, customer_fare_factor, driver_fare_factor, preferred_payment_mode, user_id, sf_promotionsApplicable, ps_promotionsApplicable),
-            //     globalHelper.get_friends_details(user_id, friends_details),
-            //     globalHelper.getOngoingRide(user_id, ongoinRide),
+            await globalHelper.getRidesData(discount, paid_by_customer, pickup_times, driver_names, ride_distances,
+                    ride_times, amounts, payment_modes, account_numbers, coupon_titles, engagement_ids, user_id, driverIds, paid_using_paytm, paid_using_mobikwik,
+                    paid_using_freecharge, amount_venus_wallet, convenience_charge,
+                    convenience_charge_waiver, ride_source, ride_type, isStartEnd, isStartEndReversed, isStartEndAutomated, rideRating, sf_recentRides, ps_recentRides)
+            await globalHelper.getCouponsData(user_id, sf_couponsData, ps_couponsData, couponsData)
+            await   globalHelper.get_user_remaining_coupons(user_id, remaining_coup),
+            await   globalHelper.get_promotions_applicable(promo_titles, customer_fare_factor, driver_fare_factor, preferred_payment_mode, user_id, sf_promotionsApplicable, ps_promotionsApplicable),
+            await   globalHelper.get_friends_details(user_id, friends_details),
+            await   globalHelper.getOngoingRide(user_id, ongoinRide),
             //     globalHelper.getIssuesForUser(user_id, issues, sf_userIssues, ps_userIssues),
-            //     globalHelper.getCancelledRides(user_id, cancelledRides, sf_cancelledRides, ps_cancelledRides, 1),
-            //     globalHelper.getFirstRideCity(user_id, firstRideCity),
+            await  globalHelper.getCancelledRides(user_id, cancelledRides, sf_cancelledRides, ps_cancelledRides, 1),
+            await  globalHelper.getFirstRideCity(user_id, firstRideCity)
             //     globalHelper.getUserSubscription(user_id, userSubscription),
             //     globalHelper.StartEnd.getStartEndCasesCount(user_id, startEndCount, isDriver),
             //     globalHelper.fetchPaytmBalance(user_id, balanceWrapper),
             //     globalHelper.getUserDeductMoneyLogs(user_id, deductMoneyTxns, sf_deductMoneyTxns, ps_deductMoneyTxns),
-            //     globalHelper.get_promotions(availablePromotions, user_id, sf_promotionsApplicable, ps_promotionsApplicable)
-            // );
+            await  globalHelper.get_promotions(availablePromotions, user_id, sf_promotionsApplicable, ps_promotionsApplicable)
         }
 
         detailsCountArr[0] = exports.detailsUserCount;
@@ -243,7 +241,7 @@ exports.get_details_for_user = async function (req, res) {
         var userCategoryNumber = userCategory[0];
         var cancellationRefund = -1;
 
-        cancellationRefund = constants.cancellationRefund["ON_COMPLAINT"];
+        cancellationRefund = rideConstants.CANCELLATION_REFUND.ON_COMPLAINT;
 
                 // check for user city null
                 if(user_city[0] == 0 || !user_city[0] ) {
@@ -253,6 +251,8 @@ exports.get_details_for_user = async function (req, res) {
                     transactions = [],
                     coupons      = [],
                     friends      = [];
+
+                    var remaining_coupons = remaining_coup[0];
 
 
               // Rides table
@@ -312,11 +312,177 @@ exports.get_details_for_user = async function (req, res) {
                 }
             }
 
-        
+                    // Transaction Table
+        if(time_transaction.length != 0) {
+            for(var j = 0; j < time_transaction.length; j++) {
+                var state = debit_state[j];
+                if(state == 1 || state == 14 || state == 15)
+                    state = 'C';
+                else if(state == 3)
+                    state = 'CB';
+                else if(state == 4)
+                    state = 'DAC';
+                else if(state == 5)
+                    state = 'Ride_Can';
+                else if(state == 6)
+                    state = 'Ref_Gift';
+                else if(state == 7)
+                    state = 'Ref_Bon';
+                else if(state == 8)
+                    state = 'Refund';
+                else if(state == 9)
+                    state = 'Prom_Gift';
+                else if(state == 10)
+                    state = 'Gift';
+                else
+                    state = 'D';
+                transactions.push({
+                    'Transaction Time':time_transaction[j],
+                    'Amount':amounts_transaction[j],
+                    'Debit/Credit/CashBack/Driver Added Cash(D/C/CB/DAC)':state,
+                    'Reason':reason_transaction[j],
+                    'Application': app_id[j]
+                });
+            }
+        }
+
+                    // Friends Details
+        if(friends_details.length != 0) {
+            for(var i = 0; i < friends_details.length; i++){
+                friends.push({
+                    'User Id':friends_details[i].user_id,
+                    'User Name':friends_details[i].user_name,
+                    'Email Id':friends_details[i].user_email,
+                    'Phone No': friends_details[i].phone_no,
+                    'Made Transaction On': friends_details[i].first_transaction_on,
+                    'Verification Status': friends_details[i].verification_status,
+                    'Is Duplicate'       : friends_details[i].is_duplicate,
+                    'Date Registered'    : friends_details[i].date_registered,
+                    'Failed Reason'      : friends_details[i].failed_reason,
+                    'Type'               : friends_details[i].type
+                });
+            }
+        }
+        var menuCoupons = [];
+        if(menusCouponsAddedOn.length!=0){
+            for(var i=0; i<menusCouponsAddedOn.length;i++){
+                menuCoupons.push({
+                    'Given On'      :   menusCouponsAddedOn[i],
+                    'Redeemed On'   :   menusCouponsRedeemedOn[i],
+                    'Expiry Date'   :   menusCouponsExpiryDate[i],
+                    'Status'        :   menusCouponsStatus[i],
+                    'Coupon Title'  :   menusCouponsCouponTitle[i],
+                    'Reason'        :   menusCouponsReason[i],
+                    'MaxBenefit'    :   menusCouponsMaxBenefit[i]
+                });
+            }
+        }
+        var freshCoupons = [];
+        if(freshCouponsAddedOn.length!=0){
+            for(var i=0; i<freshCouponsAddedOn.length; i++){
+                freshCoupons.push({
+                    'Given On'      :   freshCouponsAddedOn[i],
+                    'Redeemed On'   :   freshCouponsRedeemedOn[i],
+                    'Expiry Date'   :   freshCouponsExpiryDate[i],
+                    'Status'        :   freshCouponsStatus[i],
+                    'Coupon Title'  :   freshCouponsCouponTitle[i],
+                    'Reason'        :   freshCouponsReason[i],
+                    'MaxBenefit'    :   freshCouponsMaxBenefit[i]
+                    
+                });
+            }
+        }
+        var mealsCoupons = [];
+        if(mealsCouponsAddedOn.length!=0){
+            for(var i=0; i<mealsCouponsAddedOn.length; i++){
+                mealsCoupons.push({
+                    'Given On'      :   mealsCouponsAddedOn[i],
+                    'Redeemed On'   :   mealsCouponsRedeemedOn[i],
+                    'Expiry Date'   :   mealsCouponsExpiryDate[i],
+                    'Status'        :   mealsCouponsStatus[i],
+                    'Coupon Title'  :   mealsCouponsCouponTitle[i],
+                    'Reason'        :   mealsCouponsReason[i],
+                    'MaxBenefit'    :   mealsCouponsMaxBenefit[i]
+                });
+            }
+        }
 
 
+        var responseData = {
+            freshData                       : freshAnyWhereData.freshAnyWhereData,
+            'Paytm Enabled'                 : paytm_enabled.enabled,
+            'Mobikwik Enabled'              : paytm_enabled.mobikwik_enabled,
+            'Freecharge Enabled'            : paytm_enabled.freecharge_enabled,
+            'Ongoing Ride'                  : ongoinRide,
+            'user_debt'                     : actualUserDebt[0],
+            'User Subscription'             : userSubscription[0],
+            'Referred By'                   : referrer[0],
+            'DuplicateReg'                  : dup_reg[0],
+            'Date Registered'               : date_registered[0],
+            'issues'                        : issues,
+            'detailsCount'                  : detailsCountArr[0],
+            'start_end_count'               : startEndCount[0],
+            'paytm_balance'                 : balanceWrapper.paytm_balance,
+            'mobikwik_balance'              : balanceWrapper.mobikwik_balance,
+            'remaining_coupons'             : remaining_coupons,
+            'ref_code'                      : ref_code[0],
+            'user_ref_code'                 : user_ref_code[0],
+            'user_name'                     : user_name[0],
+            'user_status'                   : user_name[1],
+            'user_image'                    : user_name[2],
+            'user_email'                    : user_email[0],
+            'user_city'                     : user_city[0],
+            'device_name'                   : deviceName[0],
+            'os_version'                    : osVersion[0],
+            'app_version'                   : appVersionCode[0],
+            'user_id'                       : user_id,
+            'phone_no'                      : user_phone_no[0],
+            'is_blocked'                    : user_is_blocked[0],
+            'can_request'                   : user_can_request[0],
+            'account_balance'               : account_balance[0],
+            'recent_rides'                  : recent_rides,
+            'cancelled_rides'               : cancelledRides,
+            'transactions'                  : transactions,
+	        'allTransactions'		        : allTransactions,	
+            'coupons'                       : couponsData.couponData || [],
+            'friends'                       : friends,
+            'mealsData'                     : mealsData.userOrders,
+            'groceryData'                   : groceryData.userOrders,
+            'freecharge_balance'            : balanceWrapper.freecharge_balance,
+            'cancellationRefund'            : cancellationRefund,
+            'is_deactivated'                : isDeactivated[0],
+            'deactivation_reason'           : deactivationReason[0],
+            'date_of_birth'                 : dateOfBirth[0],
+            'deduct_money_txns'             : deductMoneyTxns,
+			'menusData'						: menusData.menuOrders,
+            'isVendor'                      : isVendor,
+            menuCoupons                     : menuCoupons,
+            freshCoupons                    : freshCoupons,
+            mealsCoupons                    : mealsCoupons,
+            availablePromotions : availablePromotions,
+            user_notes: user_notes.user_notes
+        }
 
 
+        if(isVendor) {
+            responseData['businessName']        = businessInfo.business_name;
+            responseData['vendorId']            = businessInfo.vendor_id;
+            responseData['is_menus_enabled']    = businessInfo.is_menus_enabled;
+            if(deliveryInfo.length != 0) {
+                responseData['vendorInfo'] = deliveryInfo;
+            }
+        }
+
+        if(user_can_request[0] == 0) {
+            responseData.blockReason = block_reason[0]!=null ? block_reason[0] : "Reason not found";
+            responseData.blockReasonText = block_reason_text[0] || "Reason not found";
+        }
+
+        if(invalid_device_count[0] > 0) {
+            responseData['referral_fail_reason'] = 'Not given because of invalid device';
+        }
+
+        return responseHandler.success(req, res, 'Data fetched successfully.', responseData);
         
     } catch (error) {
         errorHandler.errorHandler(error, req, res);

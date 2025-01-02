@@ -52,7 +52,7 @@ module.exports = function (app) {
       '/schedule-ride-auth/get/user_details',
       AdminMiddlewares.admin.isLoggedIn,
       AdminMiddlewares.admin.domainToken,
-      AdminMiddlewares.city.getEngagementInfo,
+      AdminMiddlewares.city.getDetailsForUser,
       customerController.get_details_for_user,
     );
   

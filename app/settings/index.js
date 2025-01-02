@@ -155,6 +155,15 @@ module.exports = function (app) {
     bannersController.createBannerType,
   );
 
+  app.post(
+    '/internal/upload_logo_to_s3',
+    upload.single('file'),
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    bannersController.uploadLogoToS3,
+  );
+
+
   app.get(
     '/internal/fetch_banner_types',
     AdminMiddlewares.admin.domainToken,
