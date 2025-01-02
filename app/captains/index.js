@@ -38,5 +38,12 @@ module.exports = function (app) {
     CaptainDetail.getDriverInfo,
   );
 
+  app.get(
+    '/fetch/available_drivers',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.getAvilableDrivers,
+  );
+
   
 };
