@@ -493,7 +493,7 @@ async function insertCityDocument(cityDocFields) {
   return result;
 }
 
-async function insertCitySubRegion(requiredFields) {
+async function insertCitySubRegion(body) {
   var queryToInsertIntoTable = 'INSERT INTO tb_city_sub_regions SET ?';
   var tableRow = {
     city_id: parseInt(body.city_id),
@@ -501,8 +501,8 @@ async function insertCitySubRegion(requiredFields) {
     region_name: body.region_name,
     vehicle_type: parseInt(body.vehicle_type),
     vehicle_color:
-      constants.iconSetVehicleMap[parseInt(body.vehicle_type)] ||
-      constants.iconSetVehicleMap[constants.vehicleType.TAXI],
+      rideConstants.ICON_SET_VEHICLE_MAP[parseInt(body.vehicle_type)] ||
+      rideConstants.ICON_SET_VEHICLE_MAP[rideConstants.VEHILCE_TYPE.TAXI],
     ride_type: parseInt(body.ride_type),
     max_people: parseInt(body.max_people),
     destination_mandatory: parseInt(body.destination_mandatory),
@@ -511,7 +511,7 @@ async function insertCitySubRegion(requiredFields) {
     display_order: parseInt(body.display_order) || 0,
     vehicle_tax: parseFloat(body.vehicle_tax) || 0,
     reverse_bidding_enabled: parseInt(body.reverse_bidding_enabled) || 0,
-    bid_config: parseInt(body.bid_config) || constants.bidConfig.AUTO_CANCEL,
+    bid_config: parseInt(body.bid_config) || rideConstants.BID_CONFIG.AUTO_CANCEL,
     images: body.images,
     applicable_gender: body.applicable_gender || null,
   };
