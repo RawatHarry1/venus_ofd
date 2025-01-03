@@ -14,4 +14,13 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     TicketsController.updateTicket,
   );
+  
+  app.post(
+    '/issue_tracker/get_cancelled_rides_issue_tags',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    TicketsController.getCancelledRidesIssueTags,
+  );
+
+
 };

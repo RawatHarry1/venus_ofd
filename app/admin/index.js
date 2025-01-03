@@ -40,4 +40,10 @@ module.exports = function (app) {
     Middlewares.admin.isLoggedIn,
     loginController.getPageWithPermission,
   );
+  app.post(
+    '/v1/acl/user/edit',
+    Middlewares.admin.domainToken,
+    Middlewares.admin.isLoggedIn,
+    loginController.editAdmin,
+  );
 };

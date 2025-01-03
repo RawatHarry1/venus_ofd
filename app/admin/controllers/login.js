@@ -316,3 +316,26 @@ exports.getPageWithPermission = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+exports.editAdmin = async function (req, res) {
+  var response = {};
+  try {
+    if (!req.body.email || !req.body.name) {
+      return responseHandler.parameterMissingResponse(res, ['email', 'name']);
+    }
+
+    const { email, name,id } = req.body;
+    const query = `UPDATE ${dbConstants.ADMIN_AUTH.ACL_USER} SET name = ?,email = ?  WHERE id = ?`;
+    const values = [name,email,id];
+    await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
+
+    return responseHandler.success(
+      req,
+      res,
+      'User Updated successfully',
+      response,
+    );
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};

@@ -1,4 +1,5 @@
 const ClientsDetails = require('./controllers/clientsDetails');
+const Payment = require('./controllers/payment.js');
 const AdminMiddlewares = require('../admin/middelware');
 
 module.exports = function (app) {
@@ -15,8 +16,6 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     ClientsDetails.isUserPresent,
   );
-
-
   app.get(
     '/get_customers',
     AdminMiddlewares.admin.domainToken,
@@ -24,5 +23,12 @@ module.exports = function (app) {
     ClientsDetails.getCustomers,
   );
 
+
+  app.get(
+    '/get_user_credit_logs',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    Payment.getUserCreditLogs,
+  );
 
 };

@@ -150,3 +150,85 @@ exports.updateTicket = async function (req, res) {
 
   }
 }
+
+const getIssueTags = async (dbName, condition) => {
+  const query = `SELECT tag.tag_id, tag.issue_category_id, tag.tag_name, tag.action_type,
+    tag.tag_display_text AS text, tag.is_eng_required, tag.user_type,
+    cat.cat_id, cat.category_name 
+    FROM ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.ISSUE} AS tag
+    INNER JOIN ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.ISSUE_CATEGORY} AS cat
+    ON tag.issue_category_id = cat.cat_id
+    WHERE tag.is_active = 1 ${condition}`;
+  return db.RunQuery(dbName, query);
+};
+
+const organizeIssuesByLevel = (data, type) => {
+  const levels = [];
+  data.forEach((issue) => {
+    if (issue.user_type === type) {
+      levels[issue.level] = levels[issue.level] || [];
+      levels[issue.level].push(issue);
+    }
+  });
+  return levels;
+};
+
+const findNextLevelEntries = (level, parentId, issuesArray, levels) => {
+  const currentLevelIssues = levels[level] || [];
+  currentLevelIssues.forEach((issue) => {
+    if (issue.parent_id === parentId && (issue.action_type === 2 || issue.action_type === 0)) {
+      issuesArray.push(issue);
+    }
+    if (issue.action_type === 1) {
+      issue.nodes = [];
+      findNextLevelEntries(level + 1, issue.tag_id, issue.nodes, levels);
+    }
+  });
+};
+
+exports.getCancelledRidesIssueTags = async function (req, res) {
+  try {
+    const { user_type } = req.body;
+    const userTypeCondition = parseInt(user_type)
+      ? `AND cat.category_name IN ('Rides', 'Fare', 'General', 'Cancellation')
+          AND tag.tag_display_text NOT IN (
+            'Ride Fare not generated', 'Wrong fare generated (Distance/Time)',
+            'Fare generated manually', 'Luggage Charge Raised',
+            'Customer forgot his/her belongings in auto')
+          AND tag.is_eng_required = 1 AND tag.user_type IN (1, 3)`
+      : `AND cat.category_name IN ('General', 'Wallet', 'Payments', 'Cancellation')
+          AND tag.is_eng_required = 1 AND tag.user_type IN (0, 2)
+          AND tag.tag_display_text NOT IN (
+            'Customer forgot his/her belongings in auto',
+            'Venus Wallet Credit Issues', 'Double Deductions')`;
+
+    const issueTags = await getIssueTags(dbConstants.DBS.LIVE_DB, userTypeCondition);
+    const responseData = {
+      driver_cancelled_rides_issues: user_type === 0 || user_type === 2 ? [] : issueTags,
+      customer_cancelled_rides_issues: user_type === 0 || user_type === 2 ? issueTags : [],
+    };
+
+    responseData.delivery_issues = await getIssueTags(
+      dbConstants.DBS.LIVE_LOGS,
+      "AND request_type = 6 AND tag.is_eng_required = 1"
+    );
+
+    const menuIssues = await getIssueTags(
+      dbConstants.DBS.LIVE_LOGS,
+      "AND request_type = 5 AND tag.is_eng_required = 1"
+    );
+
+    const customerLevels = organizeIssuesByLevel(menuIssues, 0);
+    const driverLevels = organizeIssuesByLevel(menuIssues, 1);
+
+    responseData.customer_issues_menu = [];
+    responseData.driver_issues = [];
+
+    findNextLevelEntries(0, -9999, responseData.customer_issues_menu, customerLevels);
+    findNextLevelEntries(0, -9999, responseData.driver_issues, driverLevels);
+
+    return responseHandler.success(req, res, 'User Details Sent', responseData);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};

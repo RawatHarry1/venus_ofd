@@ -11,6 +11,12 @@ exports.ADMIN_AUTH = {
   ACL_USER: 'tb_acl_users',
   TOKENS: 'tb_acl_tokens',
 };
+exports.AUTH_DB = {
+  AUTH_OPERATORS: 'tb_operator_cities',
+  TNX: 'tb_wallet_transactions',
+  AUTH_USERS: 'tb_users',
+  PENDING_TNX:"tb_pending_wallet_txns"
+}
 exports.LIVE_DB = {
   OPERATPRS: 'tb_operators',
   RIDES: 'tb_engagements',
@@ -48,5 +54,8 @@ exports.LIVE_LOGS = {
   SUSPEND_LOGS:'tb_driver_suspension_logs',
   SUSPEND_REASON:'tb_driver_suspension_reasons',
   CASE_LOGS:'tb_case_logs',
-  REFOUND_REQUESTS:'tb_csp_refund_requests'
+  REFOUND_REQUESTS:'tb_csp_refund_requests',
+  ISSUE:'tb_issue_tags',
+  ISSUE_CATEGORY:'tb_issue_categories',
+  CREDIT_LOGS:'tb_user_recharge_credits',
 };
