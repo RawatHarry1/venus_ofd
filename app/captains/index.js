@@ -41,6 +41,7 @@ module.exports = function (app) {
     '/schedule-ride-auth/driver_info',
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.city.getDriverInfo,
     CaptainDetail.getDriverInfo,
   );
 

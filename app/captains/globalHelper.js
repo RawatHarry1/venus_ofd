@@ -1,4 +1,5 @@
 const { dbConstants,db,errorHandler,responseHandler,ResponseConstants, authConstants, rideConstants } = require('../.././bootstart/header');
+var moment      = require('moment');
 const { checkBlank } = require('../rides/helper');
 
 
@@ -18,10 +19,16 @@ exports.getOngoingRide                        = getOngoingRide
 exports.getCancelledRides                     = getCancelledRides
 exports.getFirstRideCity                      = getFirstRideCity
 exports.get_promotions                        = get_promotions
+exports.getDriverRides                        = getDriverRides
+exports.getDriverPerformance                  = getDriverPerformance
+exports.getOngoingRideForDriver               = getOngoingRideForDriver
+exports.getTodaysFirstLogin                   = getTodaysFirstLogin
+exports.getDriverCityInfo                     = getDriverCityInfo
 
 
 
 var detailsUserCount = {};
+exports.driverInfoCount  = {};
 
 exports.detailsUserCount  = detailsUserCount;
 
@@ -1569,6 +1576,415 @@ async function get_promotions(availablePromotions, user_id, startFrom, pageSize)
 }
 
 
+async function getDriverRides(driverId, startFrom, pageSize, responseData) {
+  var getContactInfo = ` SELECT 
+            COALESCE(b.date_first_activated, b.date_registered) AS driver_date_registered,
+            b.driver_id AS user_id,
+            b.name AS user_name,
+            b.last_latitude,
+            b.last_longitude,
+            b.last_updated_on,
+            b.last_login,
+            b.driver_image,
+            b.email AS user_email,
+            b.vehicle_no AS driver_car_no,
+            b.city_id AS city,
+            b.phone_no,
+            b.payment_status,
+            b.autos_enabled,
+            b.delivery_enabled,
+            b.driver_suspended,
+            b.app_versioncode,
+            b.device_name,
+            b.os_version,
+            IF(b.last_ride_on < b.date_registered, NULL, b.last_ride_on) AS last_ride_on,
+            b.date_of_birth,
+            b.note,
+            b.status,
+            live_users.can_request,
+            b.driver_suspended AS is_deactivated,
+            reasons.reason_text AS deactivation_reason,
+            b.phone_no AS del_phone_no,
+            b.email AS del_email
+        FROM 
+            tb_drivers AS b
+        JOIN 
+            ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} live_users 
+            ON b.driver_id = live_users.user_id
+        LEFT JOIN 
+            ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.SUSPEND_LOGS} deactivation 
+            ON b.driver_id = deactivation.driver_id
+        LEFT JOIN 
+            ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.SUSPEND_REASON} reasons 
+            ON deactivation.suspension_reason_id = reasons.id
+        WHERE 
+            b.driver_id = ?;
+      `;
+
+  let contactInfo = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    getContactInfo,
+    [driverId],
+  );
+  if (!contactInfo.length) {
+    return responseData;
+  }
+
+  responseData['Driver Id'] = driverId;
+  responseData['last_latitude_longitude'] = `${contactInfo[0].last_latitude}, ${contactInfo[0].last_longitude}`;
+  responseData['last_location_updated'] = contactInfo[0].last_updated_on;
+  responseData['last_login'] = contactInfo[0].last_login;
+  responseData['Driver Name'] = contactInfo[0].user_name;
+  responseData['driver_email'] = contactInfo[0].is_deactivated ? contactInfo[0].del_email : contactInfo[0].user_email;
+  responseData['City'] = contactInfo[0].city;
+  responseData['Phone No'] = contactInfo[0].is_deactivated ? contactInfo[0].del_phone_no : contactInfo[0].phone_no;
+  responseData['Suspended'] = contactInfo[0].driver_suspended;
+  responseData['deactivation_reason'] = contactInfo[0].deactivation_reason;
+  responseData['app_version'] = contactInfo[0].app_versioncode;
+  responseData['Vehicle Number'] = contactInfo[0].driver_car_no;
+  responseData['Joining Date'] = contactInfo[0].driver_date_registered;
+  responseData['Last Ride On'] = contactInfo[0].last_ride_on;
+  responseData['Device Name'] = contactInfo[0].device_name;
+  responseData['OS version'] = contactInfo[0].os_version;
+  responseData['Autos Enabled'] = contactInfo[0].autos_enabled;
+  responseData['Dodo Enabled'] = contactInfo[0].delivery_enabled;
+  responseData['Driver Image'] = contactInfo[0].driver_image || ''
+  responseData.date_of_birth = contactInfo[0].date_of_birth;
+  responseData.note = contactInfo[0].note;
+  responseData.can_request = contactInfo[0].can_request
+  responseData.status = contactInfo[0].status
+  responseData['Payment Holded'] = (contactInfo[0].payment_status == 0 ? 1 : 0)
+
+  responseData.walletCompanyName = "";
+  responseData.walletNumber = "";
+  responseData.walletCompanyId = "";
+
+  var walletNumberData = await getWallerNumber(parseInt(driverId));
+
+  if (walletNumberData.length) {
+    walletNumberData = walletNumberData[0];
+
+    responseData.walletCompanyName = walletNumberData.companyName;
+    if (walletNumberData.companyName == "Other") {
+      responseData.walletCompanyName = walletNumberData.otherName;
+    }
+    responseData.walletNumber = walletNumberData.wallet_number;
+    responseData.walletCompanyId = walletNumberData.id;
+  }
+  var countSQL = `SELECT COUNT(1) as number FROM ${dbConstants.DBS.LIVE_DB}.tb_engagements WHERE tb_engagements.driver_id = ? AND tb_engagements.status= ?`
+
+  let count = await db.RunQuery(dbConstants.DBS.LIVE_DB,  countSQL, [driverId, 3] );
+  exports.driverInfoCount.info = count[0].number;
+  var paginationDetails = {
+    startFrom: startFrom,
+    pageSize: pageSize
+  }
+  var endAt = paginationDetails.startFrom + paginationDetails.pageSize;
+  await updatePaginationDetails(driverId, paginationDetails, endAt)
+  await getDriverRideInfo(driverId, paginationDetails, responseData)
+
+}
+
+
+async function getDriverPerformance(driverId, responseData) {
+  try {
+
+    var avgResult = {};
+
+    await getDriverRidesAndDelivery(driverId, avgResult)
+    await getDriverReferralDetails(driverId,avgResult)
+    await getDriverLastReferralDetail(driverId,avgResult)
+
+    responseData['Average Rides'] = avgResult.rides_avg;
+    responseData['Average Deliveries'] = avgResult.deliveries_avg;
+    responseData['Average Referrals'] = avgResult.avg_referrals;
+    responseData['Last Referral'] = avgResult.last_referral;
+    
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+async function updatePaginationDetails(driverId, paginationDetails,endAt) {
+  const sql = `
+        SELECT 
+            t1.engagement_date, 
+            counter, 
+            @cc AS startCounter, 
+            @cc := @cc + counter AS endCounter 
+        FROM 
+            (
+                SELECT 
+                    engagement_date, 
+                    COUNT(1) AS counter 
+                FROM 
+                    ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES} 
+                WHERE 
+                    driver_id = ? 
+                    AND status = 3 
+                GROUP BY 
+                    engagement_date 
+                ORDER BY 
+                    engagement_date DESC
+            ) AS t1 
+        JOIN 
+            (SELECT @cc := 0) AS t2 
+        GROUP BY 
+            t1.engagement_date 
+        HAVING 
+            (
+                (? >= startCounter AND ? < endCounter) 
+                OR 
+                (? >= startCounter AND ? < endCounter)
+            ) 
+        ORDER BY 
+            engagement_date DESC;
+    `;
+
+  var result = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    sql,
+    [driverId, paginationDetails.startFrom,
+      paginationDetails.startFrom, endAt, endAt],
+  );
+  paginationDetails.startDate = result[0].engagement_date;
+  paginationDetails.startFrom -= parseInt(result[0].startCounter);
+
+  if (endAt > parseInt(result[result.length - 1].endCounter)) {
+    paginationDetails.endDate = '2011-01-01 00:00:00';
+  }
+  else {
+    paginationDetails.endDate = result[result.length - 1]['engagement_date']
+  }
+}
+
+async function getDriverRideInfo(driverId, paginationDetails, responseData) {
+  var startFrom = paginationDetails.startFrom;
+  var pageSize = paginationDetails.pageSize;
+  var endDate = paginationDetails.endDate;
+  var startDate = paginationDetails.startDate;
+  const sql = `
+                 SELECT 
+              tb_engagements.engagement_id, 
+              drop_time, 
+              ride_distance_from_google, 
+              distance_travelled, 
+              ride_time, 
+              tb_engagements.user_rating, 
+              tb_engagements.driver_rating, 
+              tb_engagements.calculated_driver_fare, 
+              tb_engagements.calculated_customer_fare, 
+              tb_engagements.paid_by_customer, 
+              tb_engagements.paid_using_wallet, 
+              tb_engagements.paid_using_stripe, 
+              tb_engagements.calculated_customer_fare, 
+              tb_engagements.money_transacted, 
+              tb_engagements.net_customer_tax, 
+              tb_engagements.discount, 
+              actual_fare, 
+              tb_engagements.engagement_date, 
+              (tb_engagements.calculated_driver_fare - tb_engagements.venus_commission) AS driver_payout, 
+              tb_session.customer_fare_factor, 
+              tb_session.driver_fare_factor, 
+              tb_engagements.user_id AS customer_id, 
+              CASE 
+                  WHEN tb_session.ride_type = 3 THEN 'Dodo' 
+                  WHEN tb_session.ride_type = 4 THEN 'Delivery Pool'
+                  ELSE COALESCE(bu.partner_name, 'Venus') 
+              END AS ride_source, 
+              CASE 
+                  WHEN tb_session.ride_type = 3 THEN 'Dodo'  
+                  WHEN tb_session.ride_type = 2 THEN 'Pool'
+                  WHEN tb_session.ride_type = 4 THEN 'Delivery Pool' 
+                  WHEN tb_session.ride_type = 0 AND tb_engagements.vehicle_type = 3 THEN 'Taxi'
+                  ELSE 'Autos' 
+              END AS ride_type, 
+              caselogs.issue_id AS start_end, 
+              ref_req.is_reversed, 
+              ref_req.is_automated 
+          FROM 
+              ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES}
+          LEFT JOIN 
+              ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.IN_THE_AIR}  ON tb_session.session_id = tb_engagements.session_id 
+          LEFT JOIN 
+            ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.BUSINESS_USER} bu ON tb_session.is_manual = bu.business_id 
+          LEFT JOIN 
+             ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.CASE_LOGS} AS caselogs 
+              ON caselogs.engagement_id = tb_engagements.engagement_id 
+              AND caselogs.issue_id = 1 
+              AND caselogs.status = 1 
+          LEFT JOIN 
+              ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.REFOUND_REQUESTS} AS ref_req 
+              ON ref_req.eng_id = tb_engagements.engagement_id 
+              AND ref_req.source_id = 1 
+          WHERE 
+              tb_engagements.driver_id = ? 
+              AND tb_engagements.status = ? 
+              AND tb_engagements.engagement_date >= ?
+              AND tb_engagements.engagement_date <= ?
+          ORDER BY 
+              engagement_id DESC 
+          LIMIT ?, ?;
+      `;
+
+  var driverInfo = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    sql,
+    [driverId, 3, endDate, startDate, startFrom, pageSize],
+  );
+
+  if (!driverInfo.length) {
+    return responseData.info = [];
+  }
+
+  if (driverInfo.length >= 0) {
+    var infoArray = [];
+    var todays_completed_rides = 0;
+    for (var i = 0; i < driverInfo.length; i++) {
+      infoArray.push({
+        'Engagement ID': driverInfo[i].engagement_id,
+        'Customer ID': driverInfo[i].customer_id,
+        'Drop Time': new Date(driverInfo[i].drop_time),
+        'Distance Travelled': driverInfo[i].distance_travelled,
+        'Google Distance': driverInfo[i].ride_distance_from_google,
+        'Duration': driverInfo[i].ride_time,
+        'Fare': driverInfo[i].actual_fare,
+        'Customer Fare Factor': driverInfo[i].customer_fare_factor,
+        'Driver Fare Factor': driverInfo[i].driver_fare_factor,
+        'Ride Source': driverInfo[i].ride_source,
+        'Ride Type': driverInfo[i].ride_type,
+        'Start End': driverInfo[i].start_end,
+        'Start End Reversed': driverInfo[i].start_end == null ? null : driverInfo[i].is_reversed,
+        'Start End Automated': driverInfo[i].start_end == null ? null : driverInfo[i].is_automated,
+        'User Rating': driverInfo[i].user_rating,
+        'Driver Rating': driverInfo[i].driver_rating,
+        'Driver Payout': driverInfo[i].driver_payout,
+        'Calculated Driver Fare': driverInfo[i].calculated_driver_fare,
+        'Calculated Customer Fare': driverInfo[i].calculated_customer_fare,
+        'Paid By Customer Cash': driverInfo[i].paid_by_customer,
+        'Paid By Wallet': driverInfo[i].paid_using_wallet,
+        'Tax by driver': driverInfo[i].net_customer_tax,
+        'Discount': driverInfo[i].discount,
+        'Money Transacted': driverInfo[i].money_transacted
+      });
+      var rideDate = new Date(driverInfo[i].engagement_date);
+      var curDate = new Date();
+      if (getPlainDateFormat(rideDate) == getPlainDateFormat(curDate)) {
+        todays_completed_rides++;
+      }
+    }
+    responseData['todays_completed_rides'] = todays_completed_rides;
+    responseData.info = infoArray;
+  }
+}
+
+async function getOngoingRideForDriver(driver_Id, ongoinRide) {
+  var get_data = `      SELECT
+        tb_engagements.status,
+        engagement_id,
+        accept_time,
+        pickup_time,
+        tb_engagements.ride_time,
+        IF(tb_engagements.status=2,TIMESTAMPDIFF(MINUTE,
+            pickup_time,
+            NOW()),0) AS ongoing_ride_time,
+        tb_engagements.user_id,
+        pickup_location_address,
+        drop_location_address,
+        convenience_charge,
+        convenience_charge_waiver,
+        tb_users.user_name AS user_name,
+        tb_session.applicable_promo_id,
+        tb_session.applicable_account_id,
+        tb_session.preferred_payment_mode,
+        tb_coupons.title AS coupon_title,
+        tb_engagements.pickup_latitude,
+        tb_engagements.pickup_longitude,
+        tb_engagements.status
+      FROM
+        tb_engagements
+      JOIN
+        tb_users
+      ON
+        tb_users.user_id = tb_engagements.user_id
+      LEFT JOIN
+        tb_session
+      ON
+        tb_engagements.session_id = tb_session.session_id
+      LEFT JOIN
+        tb_accounts
+      ON
+        tb_accounts.account_id = tb_session.applicable_account_id
+      LEFT JOIN
+        tb_coupons
+      ON
+        tb_coupons.coupon_id = tb_accounts.coupon_id
+      WHERE
+        tb_engagements.status IN(?,
+          ?,
+          ?)
+        AND reg_as =0 AND tb_engagements.driver_id = ?
+      ORDER BY
+        engagement_id DESC`;
+
+  var data = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    get_data,
+    [rideConstants.ENGAGEMENT_STATUS.ACCEPTED, rideConstants.ENGAGEMENT_STATUS.STARTED, rideConstants.ENGAGEMENT_STATUS.DRIVER_ARRIVED, driver_Id],
+  );
+
+  exports.driverInfoCount.ongoingRide = data.length;
+  for (var j = 0; j < data.length; j++) {
+    var ride = {};
+    ride.engagement_id = data[j].engagement_id;
+    ride.user_id = data[j].user_id;
+    ride.accept_time = data[j].accept_time;
+    ride.pickup_time = data[j].pickup_time;
+    ride.user_name = data[j].user_name;
+    ride.applicable_promo_id = data[j].applicable_promo_id;
+    ride.applicable_account_id = data[j].applicable_account_id;
+    ride.preferred_payment_mode = data[j].preferred_payment_mode;
+    ride.coupon_title = data[j].coupon_title;
+    ride.pickup_latitude = data[j].pickup_latitude;
+    ride.pickup_longitude = data[j].pickup_longitude;
+    ride.conveneince_charge = data[j].conveneince_charge;
+    ride.conveneince_charge_waiver = data[j].conveneince_charge_waiver;
+    ride.rideStatus = data[j].status;
+    ride.pickup_location_address = data[j].pickup_location_address;
+    ride.drop_location_address = data[j].drop_location_address;
+    ride.ongoing_ride_time = data[j].ongoing_ride_time;
+    ongoinRide.push(ride);
+  }
+}
+
+async function getWallerNumber(driverId) {
+  const query = `
+    SELECT 
+        co.id,
+        co.name AS companyName,
+        dwn.company_name AS otherName,
+        dwn.wallet_number
+    FROM 
+        tb_driver_wallet_number dwn
+    LEFT JOIN 
+        tb_companies co 
+        ON dwn.company_id = co.id AND co.status = 1
+    WHERE 
+        dwn.driver_id = ? 
+        AND dwn.status = 1
+    GROUP BY 
+        dwn.driver_id;
+`;
+
+  let walletNumberData = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    query,
+    [driverId],
+  );
+  return walletNumberData;
+}
+
+
 function convert_to_ist(date_val){
   //console.log("date_val = "+date_val);
 
@@ -1587,6 +2003,174 @@ function convert_to_ist(date_val){
   return another_date;
 }
 
+async function getDriverRidesAndDelivery(driver_id, avgResult) {
+  const getDriverRidesAndDeliveryQuery = `
+  SELECT 
+    COALESCE(
+      IF(
+        (DATEDIFF(CURDATE(), DATE(drivers.date_registered)) >= 7),
+        SUM(list.deliveries) / 7,
+        SUM(list.deliveries) / DATEDIFF(CURDATE(), DATE(drivers.date_registered))
+      ), 
+      0
+    ) AS deliveries_avg,
+    COALESCE(
+      IF(
+        (DATEDIFF(CURDATE(), DATE(drivers.date_registered)) >= 7),
+        SUM(list.rides_taken) / 7,
+        SUM(list.rides_taken) / DATEDIFF(CURDATE(), DATE(drivers.date_registered))
+      ), 
+      0
+    ) AS rides_avg
+  FROM ${dbConstants.DBS.LIVE_LOGS}.tb_list_driver_rides_data AS list
+  LEFT JOIN ${dbConstants.DBS.LIVE_DB}.tb_drivers AS drivers 
+  ON list.driver_id = drivers.driver_id
+  WHERE engagement_date IN(?) 
+  AND list.driver_id = ?
+`;
+
+  const end_date = new Date();
+  const start_date = new Date();
+  start_date.setDate(end_date.getDate() - 7);
+  const dateArr = calculateDatesBwDates(start_date, end_date, 0);
+
+  var driverRidesAndDeliveryData = await db.RunQuery(
+    dbConstants.DBS.LIVE_LOGS,
+    getDriverRidesAndDeliveryQuery,
+    [dateArr.join(','), driver_id],
+  );
+
+  if (driverRidesAndDeliveryData.length > 0) {
+    avgResult.rides_avg = driverRidesAndDeliveryData[0].rides_avg;
+    avgResult.deliveries_avg = driverRidesAndDeliveryData[0].deliveries_avg;
+  }
+}
+
+
+async function getDriverReferralDetails(driver_id, avgResult) {
+  var getDriverReffQuery = `SELECT count(*) as avg_referrals FROM ${dbConstants.DBS.LIVE_DB}.tb_dc_referral WHERE driver_id=? AND referred_on >= Date(Now()) - interval 7 day `;
+
+  var driverReferralData = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    getDriverReffQuery,
+    [driver_id],
+  );
+  if (driverReferralData.length > 0) {
+    avgResult.avg_referrals = driverReferralData[0].avg_referrals / 7;
+    avgResult.avg_referrals = avgResult.avg_referrals.toFixed(2);
+  }
+}
+
+async function getDriverLastReferralDetail(driver_id, avgResult) {
+  var getDriverLastReffQuery = `SELECT referred_on FROM ${dbConstants.DBS.LIVE_DB}.tb_dc_referral WHERE driver_id=? ORDER BY referred_on desc `;
+
+  var driverReferralData = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    getDriverLastReffQuery,
+    [driver_id],
+  );
+  if (driverReferralData.length > 0) {
+    avgResult.last_referral = driverReferralData[0].referred_on
+  }
+}
+
+function calculateDatesBwDates(startDt, endDt, inclusion_type)
+{
+    //inclusion_type=0 means include both date
+    //inclusion_type=1 means include startDt
+    //inclusion_type=2 means include endDt
+    var arrDates=[];
+    var range=diffInDates(startDt, endDt, 'days');
+    for(var i=0;i<=range; i++)
+    {
+        if(i==0)
+        {
+            //first date
+            if(inclusion_type==0 ||inclusion_type==1)
+            {
+                var temp_date=new Date(startDt);
+                arrDates.push(temp_date.getUTCFullYear()+'-'+(temp_date.getUTCMonth()+1)+'-'+temp_date.getUTCDate());
+            }
+            startDt.setDate(startDt.getDate()+1);
+        }
+        else if(i==range)
+        {
+            //last date
+            if(inclusion_type==0 ||inclusion_type==2)
+            {
+                var temp_date=new Date(startDt);
+                arrDates.push(temp_date.getUTCFullYear()+'-'+(temp_date.getUTCMonth()+1)+'-'+temp_date.getUTCDate());
+            }
+            startDt.setDate(startDt.getDate()+1);
+        }
+        else
+        {
+            var temp_date=new Date(startDt);
+            arrDates.push(temp_date.getUTCFullYear()+'-'+(temp_date.getUTCMonth()+1)+'-'+temp_date.getUTCDate());
+            startDt.setDate(startDt.getDate()+1);
+        }
+    }
+    return arrDates;
+}
+
+async function getTodaysFirstLogin(driverId, firstLogin) {
+  try {
+    var sqlQuery = `SELECT MIN(request_made_on) as first_log_in FROM ${dbConstants.DBS.LIVE_DB}.tb_engagements WHERE engagement_date = DATE(NOW()+ INTERVAL 330 MINUTE) AND driver_id = ? `
+
+    var result = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      sqlQuery,
+      [driverId],
+    );
+
+    if (result.length == 0) {
+      firstLogin[0] = "No Rides Today";
+    } else {
+      firstLogin[0] = result[0].first_log_in;
+    }
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+async function getDriverCityInfo(user_id, responseData) {
+  try {
+    var walletQuery = `SELECT toc.bank_list, tdbd.bank_name, tdbd.sort_code, tdbd.iban as account_number FROM ${dbConstants.DBS.LIVE_DB}.tb_drivers tbd
+    INNER JOIN ${dbConstants.DBS.LIVE_DB}.tb_operator_cities toc USING (city_id)
+    LEFT JOIN ${dbConstants.DBS.LIVE_DB}.tb_driver_bank_details tdbd ON (tdbd.driver_id = tbd.driver_id)
+              WHERE tbd.driver_id = ?`;
+
+    var walletData = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      walletQuery,
+      [user_id],
+    );
+    responseData.bank_list = walletData[0].bank_list;
+    responseData.bank_info = {};
+    responseData.bank_info.bank_name = walletData[0].bank_name;
+    responseData.bank_info.sort_code = walletData[0].sort_code;
+    responseData.bank_info.account_number = walletData[0].account_number;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+function diffInDates(startDt, endDt, diffType)
+{
+    var startDate = moment(startDt, 'YYYY-MM-DD HH:mm Z'); // HH:mm:ss
+    var endDate = moment(endDt, 'YYYY-MM-DD HH:mm Z');
+    var diff = endDate.diff(startDate, diffType);
+    return diff;
+}
+function getPlainDateFormat(curDate) {
+  var day   = curDate.getDate();
+  var month = curDate.getMonth() +1;
+  var year  = curDate.getUTCFullYear();
+  var dayStr = day < 10 ? ("0"+ day.toString()) : (day.toString());
+  var monthStr = month < 10 ? ("0" + month.toString()) : (month.toString());
+  var dateStr = dayStr + "-" + monthStr + "-" + year.toString();
+  return dateStr;
+}
 
 
 
