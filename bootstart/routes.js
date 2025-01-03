@@ -6,4 +6,5 @@ module.exports = {
   campaigns: require('../app/campaigns'),
   tickets: require('../app/tickets'),
   settings: require('../app/settings'),
+  pushNotifcations: require('../app/push_notification')
 };

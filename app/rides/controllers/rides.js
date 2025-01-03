@@ -12,6 +12,7 @@ const Helper = require('../helper');
 var Joi = require('joi');
 var QueryBuilder = require('datatable');
 const { getOperatorParameters } = require('../../admin/helper');
+var moment = require('moment');
 
 exports.getRides = async function (req, res) {
   try {
@@ -700,7 +701,230 @@ exports.getScheduledRideDetails = async function (req, res) {
 
 exports.getUnacceptedRideRequestUserDetails = async function (req, res) {
   try {
-    return responseHandler.success(req, res, 'Rides fetched successfully', '');
+    var currentDate= moment().utc().format('YYYY-MM-DD');
+    var startTime = currentDate + ' 00:00:00.000'
+    var endTime =  currentDate  + ' 23:59:59.000'
+  
+    var
+      taskType = req.query.task_type || 0,
+      cityId = req.query.city_id,
+      requestRideType = req.request_ride_type,
+      startTime = req.query.start_time || moment().utc().subtract(240, 'minutes').format('YYYY-MM-DD HH:mm:ss'),
+      endTime = req.query.end_time || moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+      deliveryEnabled = +req.query.delivery_enabled || 0;
+  
+    delete req.query.token;
+  
+    var schema = Joi.object({
+      city_id: Joi.required(),
+      task_type: Joi.number().min(0).max(2).required(),
+      start_time: Joi.date().optional(),
+      end_time: Joi.date().optional(),
+      delivery_enabled: Joi.number().min(0).max(1).optional()
+    }).unknown(true);
+  
+    var resultt = schema.validate(req.query);
+
+    if (resultt.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    };
+    var
+      operatorId = req.operator_id,
+      fleetId = req.fleet_id;
+
+    // cityId = cityId.toString();
+
+    // cityId = cityId.join(',');
+    let additionalJoin = '';
+    let additionalSelect = '';
+    // Add condition if request_ride_type is 2
+    if (requestRideType == rideConstants.CLIENTS.MARS) {
+      additionalJoin = `
+						LEFT JOIN 
+						${dbConstants.DBS.LIVE_DB}.tb_requested_pkg_session pks
+						ON s.session_id = pks.session_id`;
+      additionalSelect = `,pks.*`;
+    }
+
+    let missedRequestsQuery = `
+    SELECT 
+      s.request_latitude, 
+      s.request_longitude, 
+      group_concat(s.operator_accept_time + interval utc_offset minute) AS 'request_time', 
+      u.user_id,
+      eng.pickup_location_address,
+      u.user_name,
+      u.phone_no,
+      eng.drop_location_address,
+      group_concat(requested_drivers) AS requested_drivers, 
+      count('request_time') AS 'request_count',
+      u.user_image AS customer_image,
+      u.date_registered AS customer_register_date,
+      u.user_email AS customer_email,
+      u.last_login AS customer_last_login,
+      u.total_rides_as_user,
+      u.total_rating_user,
+      u.last_ride_on AS customer_last_ride,				
+      s.city,
+      eng.engagement_id,
+      eng.pickup_latitude,
+      eng.pickup_longitude,
+      eng.vehicle_type
+      ${additionalSelect} -- Add the conditional select
+    FROM  
+      ${dbConstants.DBS.LIVE_DB}.tb_session s
+    LEFT JOIN 
+      ${dbConstants.DBS.LIVE_DB}.tb_cities c ON s.city=c.city_id
+    LEFT JOIN 
+      ${dbConstants.DBS.LIVE_DB}.tb_users u ON s.user_id=u.user_id
+    LEFT JOIN 
+       ${dbConstants.DBS.LIVE_DB}.tb_engagements eng ON s.session_id=eng.session_id
+     
+    ${additionalJoin}  -- Add the conditional join
+      
+    WHERE  
+      s.operator_accept_time + INTERVAL utc_offset MINUTE >= NOW() - INTERVAL 1 DAY
+              AND 
+      s.city IN (?) AND 
+      s.is_active!=1 AND 
+      ride_acceptance_flag = 0 AND
+      s.service_type = ? AND
+      requested_drivers>0 
+    GROUP BY u.user_id
+    ORDER BY 
+      s.session_id desc`;
+
+    let missedRequests =  await db.RunQuery(dbConstants.DBS.LIVE_DB, missedRequestsQuery, [cityId,requestRideType]);
+    let timeoutRequestsQuery = `
+    SELECT 
+      request_latitude, 
+      request_longitude, 
+      group_concat(s.operator_accept_time + interval utc_offset minute) AS 'request_time', 
+      u.user_id, 
+      eng.pickup_location_address,
+      (requested_drivers) AS requested_drivers, 
+      u.user_name,
+      eng.drop_location_address,
+      u.phone_no,
+      count('request_time') AS 'request_count',
+      u.user_image AS customer_image,
+      s.city,
+      eng.engagement_id,
+      eng.pickup_latitude,
+      eng.pickup_longitude,
+      eng.vehicle_type
+    FROM  
+      ${dbConstants.DBS.LIVE_DB}.tb_session s
+    LEFT JOIN 
+      ${dbConstants.DBS.LIVE_DB}.tb_cities c ON s.city=c.city_id
+    LEFT JOIN 
+      ${dbConstants.DBS.LIVE_DB}.tb_users u ON s.user_id=u.user_id
+    LEFT JOIN 
+        ${dbConstants.DBS.LIVE_DB}.tb_engagements eng ON s.session_id=eng.session_id
+    WHERE  
+      s.operator_accept_time + INTERVAL utc_offset MINUTE >= NOW() - INTERVAL 1 DAY
+              AND s.city IN (?) AND s.is_active!=1 AND ride_acceptance_flag = 0  AND s.requested_drivers=0 AND s.service_type = ?
+    GROUP BY u.user_id
+    ORDER BY 
+      s.session_id desc`;
+
+    let timeoutRequests =  await db.RunQuery(dbConstants.DBS.LIVE_DB, timeoutRequestsQuery, [cityId,requestRideType]);
+
+    var resObj = { missed_requests: missedRequests ? missedRequests : [], timeout_requests: timeoutRequests ? timeoutRequests : [] };
+
+    var queryRides = Helper.getTaskDetailsQueryHelper(deliveryEnabled, taskType, fleetId,requestRideType);
+
+    let result =  await db.RunQuery(dbConstants.DBS.LIVE_DB, queryRides, [startTime, endTime, operatorId, cityId, requestRideType]);
+
+    if (deliveryEnabled) {
+
+			var
+				finalResult = [],
+				dropDetailsMappingToSession = {},
+				taskMappingToSession = {};
+
+			for (var i in result) {
+
+				if (!dropDetailsMappingToSession[result[i].session_id]) {
+
+					dropDetailsMappingToSession[result[i].session_id] = [];
+					taskMappingToSession[result[i].session_id] = result[i];
+				}
+
+				var tempDropData = {};
+
+				tempDropData['lat'] = result[i].latitude;
+				tempDropData['long'] = result[i].longitude;
+				tempDropData['address'] = result[i].address;
+				dropDetailsMappingToSession[result[i].session_id].push(tempDropData);
+
+				delete result[i].latitude;
+				delete result[i].longitude;
+			}
+
+			for (var i in dropDetailsMappingToSession) {
+
+				var dropData = dropDetailsMappingToSession[i];
+				var data = taskMappingToSession[i];
+
+				data['drop_data'] = dropData;
+
+				finalResult.push(data);
+
+				finalResult['vehicle_name'] = result[i].vehicle_name;
+			}
+
+
+			resObj.assigned_data = finalResult;
+
+			return resObj;
+		}
+    		// here taskType 1 stands for ongoing ride
+
+		if (taskType == 1 && result.length) { 
+
+			var engagementIds = [];
+			var emergencyRidesEngagementIds = [];
+
+			for (var i in result) {
+
+				engagementIds.push(result[i].engagement_id);
+			}
+
+			var getEmergencyRidesQuery = `
+				SELECT 
+					engagement_id, alert_initiated_by 
+				FROM 
+					${dbConstants.DBS.AUTH_DB}.tb_emergency_alerts 
+				WHERE 
+					engagement_id IN (?) AND status = 1`;
+
+      let emergencyRides = await db.RunQuery(dbConstants.DBS.AUTH_DB, getEmergencyRidesQuery, [engagementIds]);
+
+      for (var i in emergencyRides) {
+
+        // 1 for customer 2 for driver 
+        // [In autos DB 0 is stored for customer and 1 for driver, whereas in SM constants 1 is for customer and 2 is for driver]
+        // And 3 for both ( i.e. both driver and customer have enabled sos)
+
+        if (emergencyRidesEngagementIds[emergencyRides[i].engagement_id]) {
+
+          emergencyRidesEngagementIds[emergencyRides[i].engagement_id] += emergencyRides[i].alert_initiated_by + 1;
+        } else {
+
+          emergencyRidesEngagementIds[emergencyRides[i].engagement_id] = emergencyRides[i].alert_initiated_by + 1;
+        }
+      }
+
+      for (var i in result) {
+
+        result[i].is_emergency_enabled = emergencyRidesEngagementIds[result[i].engagement_id] || 0;
+      }
+    }
+
+		resObj.assigned_data = result;
+
+    return responseHandler.success(req, res, 'Data fetched successfully', resObj);
     
   } catch (error) {
     errorHandler.errorHandler(error, req, res);

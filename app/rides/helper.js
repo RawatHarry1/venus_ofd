@@ -570,3 +570,499 @@ exports.calculateWaitTimeFare = function (waitTime, waitingChargesApplicable, fa
   }
   return waitFare;
 }
+
+
+exports.fetchNearestCity = async function (lat, long, operatorId, resultWrapper) {
+  try {
+    var dataWrapper = {};
+    await distanceFromNearestCity(lat, long, dataWrapper, operatorId)
+    await operationalHoursofCurrentDay(dataWrapper, operatorId)
+
+    if (dataWrapper.data) {
+      // dataWrapper.data.geoDistance *= 111;
+      resultWrapper.city = dataWrapper.data;
+    }
+    resultWrapper.next_city = dataWrapper.data;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}
+
+exports.isAValidScheduleTime = async function (pickupTime, currentTimeDiff, daysLimit) {
+  // If the time difference is less than an hour for the schedule, then show user a message
+  var minTimeDiff = moment(pickupTime).diff(moment(), 'minutes');
+  var dayTimeDiff = moment(pickupTime).diff(moment(), 'days');
+
+  return (minTimeDiff >= currentTimeDiff) && (dayTimeDiff <= daysLimit);
+}
+
+exports.hasAlreadyScheduled = async function (userId) {
+  var getExisting = `SELECT COUNT(*) as num_schedules FROM ${dbConstants.DBS.LIVE_DB}.tb_schedules WHERE user_id = ? AND status = ? AND pickup_time > NOW()`;
+  var values = [userId, rideConstants.SCHEDULE_STATUS.IN_QUEUE];
+
+  const information = await db.RunQuery(dbConstants.DBS.LIVE_DB, getExisting, values);
+
+  if (information[0].num_schedules === 0) {
+    return false
+  } else {
+    return true
+  }
+}
+async function distanceFromNearestCity (lat, long, dataWrapper, operatorId) {
+  if (!lat || !long) {
+    throw new Error("Latitude and longitude aren't in proper format.");
+  }
+
+  lat = parseFloat(lat);
+  long = parseFloat(long);
+
+  var getNearestCity = `
+SELECT 
+  c.city_id, 
+  c.city_name, 
+  c.is_active, 
+  c.night_fare_timings_text, 
+  c.night_fare_factor_text, 
+  c.latitude, 
+  c.longitude, 
+  o.eta_multiplication_factor, 
+  o.operational_hours_enabled, 
+  o.nts_enabled, 
+  o.is_PR_enabled, 
+  c.is_driver_arrival_factor_enabled, 
+  COALESCE(o.fresh_available, c.fresh_available) as fresh_available, 
+  o.dispatcher_hop_interval, 
+  c.currency, 
+  c.utc_offset, 
+  c.venus_percent_commission, 
+  o.shadow_radius, 
+  c.is_dp_automated, 
+  o.is_google_eta_enabled, 
+  c.currency_symbol,
+  o.driver_timeout_penalty, 
+  o.dispatcher_hop_radius, 
+  COALESCE(o.pay_available, c.pay_available) as pay_available, 
+  c.cbcd_applicable, 
+  c.c2d_referral_enabled, 
+  c.is_osrm_enabled, 
+  COALESCE(o.meals_available, c.meals_available) as meals_available, 
+  COALESCE(o.delivery_available, c.delivery_available) as delivery_available, 
+  COALESCE(o.grocery_available, c.grocery_available) as grocery_available, 
+  COALESCE(o.feed_available, c.feed_available) as feed_available, 
+  o.fare_roundoff_enabled, 
+  o.roundoff_power, 
+  o.roundoff_median, 
+  c.topup_card_enabled, 
+  o.wake_up_lock_enabled, 
+  COALESCE(o.menus_available, c.menus_available) as menus_available, 
+  COALESCE(o.pros_available, c.pros_available) as pros_available, 
+  o.office_address, 
+  COALESCE(o.autos_available, c.autos_available) as autos_available, 
+  c.osrm_port, 
+  c.distance_unit, 
+  c.autos_credit_limit, 
+  COALESCE(o.polygon_coordinates, c.polygon_coordinates) as region, 
+  o.operator_id, 
+  o.referral_data, 
+  o.customer_rate_card_info, 
+  o.enable_vehicle_sets, 
+  o.vehicle_set_config, 
+  o.driver_fare_enabled, 
+  o.req_inactive_drivers, 
+  CASE 
+    WHEN (CURRENT_TIME >= start_operation_time AND CURRENT_TIME <= end_operation_time AND end_operation_time > start_operation_time) 
+      OR (CURRENT_TIME >= start_operation_time AND CURRENT_TIME >= end_operation_time AND end_operation_time < start_operation_time) 
+      OR (CURRENT_TIME <= start_operation_time AND CURRENT_TIME <= end_operation_time AND end_operation_time < start_operation_time) 
+      OR (end_operation_time = start_operation_time) 
+    THEN 1 
+    ELSE 0 
+  END as is_operation_available, 
+  o.check_driver_debt, 
+  start_operation_time, 
+  end_operation_time, 
+  o.show_region_specific_fare, 
+  enable_address_localisation, 
+  vehicle_services_enabled, 
+  o.customer_support_number, 
+  o.driver_support_number, 
+  o.customer_tutorial_enabled, 
+  o.elm_verification_enabled, 
+  o.nts_enabled 
+FROM 
+  ${dbConstants.DBS.LIVE_DB}.tb_cities c 
+  JOIN ${dbConstants.DBS.LIVE_DB}.tb_operator_cities o 
+    ON c.city_id = o.city_id AND o.operator_id = ? 
+WHERE 
+  c.polygon_coordinates IS NOT NULL 
+  AND c.is_active = 1 
+  AND o.is_active = 1;
+`;
+  var values = [operatorId];
+
+  const nearestCity = await db.RunQuery(dbConstants.DBS.LIVE_DB, getNearestCity, values);
+
+  dataWrapper.data = nearestCity[0];
+}
+
+
+async function operationalHoursofCurrentDay (dataWrapper, operatorId) {
+  if (dataWrapper && !dataWrapper.operational_hours_enabled) {
+    return
+  }
+
+
+  lat = parseFloat(lat);
+  long = parseFloat(long);
+
+ var getOperationalTimings = `
+SELECT 
+  * 
+FROM (
+  SELECT 
+    c.*, 
+    h.start_day_id, 
+    h.start_time AS local_start_time, 
+    DATE_FORMAT((h.start_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") AS start_time, 
+    DATE_FORMAT((h.end_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") AS end_time, 
+    TIMESTAMPDIFF(SECOND, NOW(), h.start_time - INTERVAL c.utc_offset MINUTE) AS diff,  
+    CASE 
+      WHEN (
+        CURRENT_TIME >= DATE_FORMAT((h.start_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") 
+        AND CURRENT_TIME <= DATE_FORMAT((h.end_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") 
+        AND DATE_FORMAT((h.end_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") > DATE_FORMAT((h.start_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") 
+        AND start_day_id = DAYOFWEEK(NOW() + INTERVAL c.utc_offset MINUTE)
+      )
+      OR (
+        CURRENT_TIME >= DATE_FORMAT((h.start_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") 
+        AND CURRENT_TIME >= DATE_FORMAT((h.end_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") 
+        AND DATE_FORMAT((h.end_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") < DATE_FORMAT((h.start_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") 
+        AND start_day_id = DAYOFWEEK(NOW() + INTERVAL c.utc_offset MINUTE)
+      )
+      OR (
+        CURRENT_TIME <= DATE_FORMAT((h.start_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") 
+        AND CURRENT_TIME <= DATE_FORMAT((h.end_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") 
+        AND DATE_FORMAT((h.end_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") < DATE_FORMAT((h.start_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") 
+        AND start_day_id = DAYOFWEEK(NOW() + INTERVAL c.utc_offset MINUTE)
+      )
+      OR (
+        h.end_time - INTERVAL c.utc_offset MINUTE = DATE_FORMAT((h.start_time - INTERVAL c.utc_offset MINUTE), "%H:%i:%s") 
+        AND start_day_id = DAYOFWEEK(NOW() + INTERVAL c.utc_offset MINUTE)
+      ) 
+      THEN 1 
+      ELSE 0 
+    END AS is_operation_available 
+  FROM 
+    ${dbConstants.DBS.LIVE_DB}.tb_operational_hours h 
+  JOIN 
+     ${dbConstants.DBS.LIVE_DB}.tb_cities c 
+    ON h.city_id = c.city_id 
+  WHERE 
+    h.operator_id = ? 
+    AND h.city_id = ?  
+    AND h.is_active = 1 
+) AS a 
+ORDER BY 
+  is_operation_available DESC, 
+  start_day_id ASC;
+`;
+
+  var values = [operatorId, dataWrapper.data.city_id];
+
+  const result = await db.RunQuery(dbConstants.DBS.LIVE_DB, getOperationalTimings, values);
+
+  if (result.length == 0) {
+    dataWrapper.data.is_operation_available = 0;
+    dataWrapper.data.start_operation_time = '';
+    dataWrapper.data.end_operation_time = '';
+    dataWrapper.data.day_id = null;
+    return
+  }
+
+  if (result[0] && !result[0].is_operation_available) {
+    var operationalHoursData = [];
+    var date = new Date();
+    date.setDate(date.getDate() - 30);
+    while (date < new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000)) {
+      for (var item of result) {
+        if ((date.getDay() + 1) != item.start_day_id) {
+          continue;
+        }
+        var operationDate = new Date(date.getTime());
+        operationDate.setHours(item.local_start_time.split(':')[0]);
+        operationDate.setMinutes(item.local_start_time.split(':')[1]);
+        operationDate.setSeconds(item.local_start_time.split(':')[2]);
+        operationDate.data = item;
+        operationalHoursData.push(operationDate);
+      }
+      date.setDate(date.getDate() + 1);
+    }
+    operationalHoursData.sort((a, b) => {
+      return a - b;
+    });
+    for (var i = 0; i < operationalHoursData.length; i++) {
+      if (operationalHoursData[i] > new Date(new Date().getTime() + result[0].utc_offset * 60 * 1000)) {
+        var endTime = moment(operationalHoursData[i].data.end_time, 'HH:mm:ss');
+        var startTime = moment(operationalHoursData[i + 1].data.start_time, 'HH:mm:ss');
+        var x = moment.duration(startTime.diff(endTime)).asMinutes();
+        if (x >= 0 && x < 1 && (operationalHoursData[i + 1].data.start_day_id - operationalHoursData[i].data.start_day_id == 1 || (operationalHoursData[i + 1].data.start_day_id == 1 && operationalHoursData[i].data.start_day_id == 7))) {
+          operationalHoursData[i].data.end_time = operationalHoursData[i + 1].data.end_time;
+        }
+        result[0] = operationalHoursData[i].data
+        break;
+      }
+    }
+  }
+  if (result && result.length) {
+    dataWrapper.data.is_operation_available = result[0].is_operation_available;
+    dataWrapper.data.start_operation_time = result[0].start_time;
+    dataWrapper.data.end_operation_time = result[0].end_time;
+    dataWrapper.data.day_id = result[0].start_day_id;
+  }
+}
+
+
+exports.getTaskDetailsQueryHelper = function (deliveryEnabled, taskType, fleetId, requestRideType) {
+  var fleetIdClause = '';
+  let additionalJoin = '';
+  let additionalSelect = '';
+
+  if (fleetId) {
+    fleetIdClause += ` AND d.fleet_id IN (?) `;
+  }
+
+  if (requestRideType == rideConstants.CLIENTS.MARS) {
+    additionalJoin = `
+						LEFT JOIN 
+						${dbConstants.DBS.LIVE_DB}.tb_requested_pkg_session pks
+						ON a.session_id = pks.session_id`;
+    additionalSelect = `,pks.*`;
+  }
+  var unacceptedRides = `SELECT
+		   a1.session_id,
+		   a1.date,
+		   a1.request_latitude AS lat,
+		   a1.request_longitude AS lon,
+		   a1.request_address,
+		   b1.user_name AS driver_user_name,
+		   b1.user_id AS customer_id,
+		   b1.phone_no,
+		   c1.drop_location_address,
+		   b1.req_stat AS customer_verification_status,
+		   d1.vehicle_name,
+		   b1.user_image
+		FROM
+		   ${dbConstants.DBS.LIVE_DB}.tb_session a1
+		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_users b1 ON a1.user_id = b1.user_id
+		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_engagements c1 ON a1.session_id = c1.session_id
+		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_vehicle_type d1 ON c1.vehicle_type = d1.vehicle_type
+		   JOIN
+		(SELECT
+		   max(a.session_id) AS id
+		FROM 
+		   ${dbConstants.DBS.LIVE_DB}.tb_session a
+		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_users b ON a.user_id = b.user_id
+		WHERE 
+		  (
+			a.ride_acceptance_flag = 0
+			AND a.ride_type != 3
+			AND (a.is_active = 1)
+			AND a.date > ?
+			AND a.date <= ?
+			AND a.operator_id = ?
+			AND a.city IN (?)
+			AND a.service_type = ?
+		  )
+		GROUP by
+			a.user_id
+		) l2 ON a1.session_id = l2.id
+		GROUP BY session_id`;
+
+  var onGoingRides = `SELECT
+		   a.session_id,
+		   a.date,
+		   a.request_latitude AS lat,
+		   a.request_longitude AS lon,
+		   a.request_address,
+		   b.user_name,
+		   b.phone_no,
+		   d.name AS driver_name,
+		   d.driver_id AS driver_id,
+		   c.drop_location_address,
+		   c.accept_time,
+		   c.ride_type,
+		   c.vehicle_type,
+		   c.engagement_id,
+		   c.user_rating,
+		   c.driver_rating,
+		   b.req_stat AS customer_verification_status,
+		   d.current_latitude AS tracking_latitude,
+		   d.current_longitude AS tracking_longitude,
+		   b.user_image AS customer_image,
+		   b.date_registered AS customer_register_date,
+		   b.user_email AS customer_email,
+		   b.last_login AS customer_last_login,
+		   b.total_rides_as_user,
+		   b.total_rating_user,
+		   b.last_ride_on AS customer_last_ride,
+		   d.date_registered AS driver_register_date,
+		   d.vehicle_no AS vehicle_no,
+		   d.autos_enabled_on,
+		   d.vehicle_status,
+		   d.driver_image,
+		   d.date_first_activated AS driver_first_active,
+
+		CASE
+		   WHEN c.status = 1 THEN "ACCEPTED"
+		   WHEN c.status = 2  THEN "STARTED"
+		   WHEN c.status = 14  THEN "ARRIVED"
+   
+		END AS ride_status
+		${additionalSelect} -- Add columns from tb_additional_table if condition is met
+		FROM
+		   ${dbConstants.DBS.LIVE_DB}.tb_session a
+		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_engagements c ON a.session_id = c.session_id
+		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_drivers d ON c.driver_id = d.driver_id
+		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_users b ON a.user_id = b.user_id
+		   ${additionalJoin} -- Add join for tb_additional_table if condition is met
+		WHERE
+		   (
+			 c.status IN (1,2,14)
+			 AND a.date > ?
+			 AND a.date <= ?
+			 AND a.operator_id = ?
+			 AND a.city IN (?)
+			 AND a.service_type = ?
+			 AND a.ride_type != 3
+			 ${fleetIdClause}
+		   )
+		GROUP by a.user_id
+		ORDER by a.date DESC`;
+
+  var allRides = `SELECT
+		a.session_id,
+		a.date,
+		a.request_latitude AS lat,
+		a.request_longitude AS lon,
+		a.request_address,
+		b.user_name,
+		b.phone_no,
+		d.name AS driver_name,
+		d.driver_id AS driver_id,
+		c.drop_location_address,
+		c.accept_time,
+		c.ride_type,
+		c.vehicle_type,
+		c.engagement_id,
+		b.req_stat AS customer_verification_status
+	 FROM
+		${dbConstants.DBS.LIVE_DB}.tb_session a
+		JOIN ${dbConstants.DBS.LIVE_DB}.tb_engagements c ON a.session_id = c.session_id
+		JOIN ${dbConstants.DBS.LIVE_DB}.tb_drivers d ON c.driver_id = d.driver_id
+		JOIN ${dbConstants.DBS.LIVE_DB}.tb_users b ON a.user_id = b.user_id
+	WHERE
+		(
+			a.date > ?
+			AND a.date <= ?
+			AND a.operator_id = ?
+			AND a.city IN (?)
+			AND a.ride_type != 3
+			AND a.service_type = ?
+			${fleetIdClause}
+		)
+	 GROUP by a.user_id
+	 ORDER by a.date DESC`;
+
+
+  if (deliveryEnabled) {
+
+    unacceptedRides = `SELECT
+			   a1.session_id,
+			   a1.date,
+			   a1.request_latitude AS lat,
+			   a1.request_longitude AS lon,
+			   a1.request_address,
+			   b1.name AS user_name,
+			   b1.phone AS phone_no,
+			   b1.latitude,
+			   b1.longitude,
+			   b1.address
+			FROM
+			   ${dbConstants.DBS.LIVE_DB}.tb_session a1
+			   JOIN ${dbConstants.DBS.LIVE_DB}.tb_delivery b1 ON a1.session_id = b1.session_id
+			   JOIN
+		   (SELECT
+			   max(a.session_id) AS id
+			FROM
+			   ${dbConstants.DBS.LIVE_DB}.tb_session a
+			WHERE
+			   (
+				 a.ride_type = 3
+				 AND ((a.is_active = 1 AND a.ride_acceptance_flag = 0) 
+				 OR (a.is_active = 0 AND a.ride_acceptance_flag = 2))
+				 AND a.date > ?
+				 AND a.date <= ?
+				 AND a.operator_id = ?
+				 AND a.city IN (?)
+				)
+			GROUP by a.user_id
+				) l2 ON a1.session_id = l2.id`;
+
+
+    onGoingRides = `SELECT
+			   a.session_id,
+			   a.date,
+			   a.request_latitude AS lat,
+			   a.request_longitude AS lon,
+			   a.request_address,
+			   e.latitude,
+			   e.longitude,
+			   e.address,
+			   e.name AS user_name,
+			   e.phone AS phone_no,
+			   d.name AS driver_name,
+			   d.driver_id AS driver_id,
+			   c.drop_location_address,
+			   c.accept_time,
+			 CASE
+			   WHEN c.status = 1 THEN "ACCEPTED"
+			   WHEN c.status = 2  THEN "STARTED"
+			   WHEN c.status = 14  THEN "ARRIVED"
+			 END AS ride_status
+			 FROM
+			   ${dbConstants.DBS.LIVE_DB}.tb_session a
+			   JOIN ${dbConstants.DBS.LIVE_DB}.tb_engagements c ON a.session_id = c.session_id
+			   JOIN ${dbConstants.DBS.LIVE_DB}.tb_drivers d ON c.driver_id = d.driver_id
+			   JOIN ${dbConstants.DBS.LIVE_DB}.tb_delivery e ON a.session_id = e.session_id
+			 WHERE
+			   (
+				 c.status IN (1,2,14)
+				 AND a.date > ?
+				 AND a.date <= ?
+				 AND a.operator_id = ?
+				 AND a.city IN (?)
+				 AND a.ride_type = 3
+				 ${fleetIdClause}
+				)
+			 ORDER by
+				  a.date DESC`
+
+  }
+
+  var queryRides;
+  if (taskType == 0) {
+    queryRides = unacceptedRides;
+  }
+  else if (taskType == 1) {
+    queryRides = onGoingRides;
+  } else if (taskType == 2) {
+    queryRides = allRides
+  }
+
+  return queryRides;
+
+}
+
+
+
+
+

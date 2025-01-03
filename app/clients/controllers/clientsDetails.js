@@ -4,13 +4,11 @@ const {
   errorHandler,
   responseHandler,
   ResponseConstants,
+  generalConstants,
 } = require('../../../bootstart/header');
 
-const rideConstant = require('../../../constants/rideConstants');
-const documentsConstant = require('../../../constants/document');
-const rideHelper = require('../helper');
+const Helper = require('../helper')
 var Joi = require('joi');
-var QueryBuilder = require('datatable');
 
 exports.getClients = async function (req, res) {
   var response = {};
@@ -102,3 +100,38 @@ exports.getClients = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+
+exports.isUserPresent = async function (req, res) {
+  try {
+    delete req.body.token;
+
+    let schema = Joi.object({
+        phone_no: Joi.string().required(),
+        secret_key: Joi.number().optional()
+    });
+
+    let result = schema.validate(req.body);
+    var response = {};
+    if (result.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    let phoneNumber = req.body.phone_no;
+    let operatorId = req.operator_id;
+    let corporateId = req.corporate_id;
+
+    let userDetails = await Helper.validateUserUsingIdOrPhone('phone_no', phoneNumber, operatorId, generalConstants.userRegistrationStatus.CUSTOMER);
+
+    if (corporateId) {
+      let userCorporateDetails = await Helper.checkUserCorporate(corporateId, userDetails.user_id);
+      if (!userCorporateDetails.length) {
+        throw new Error("The user does not exist for this corporate");
+      }
+    }
+    return responseHandler.success(req, res, 'User Details Sent', userDetails);
+  } catch (error) {
+    throw new Error(error.message);
+
+  }
+}

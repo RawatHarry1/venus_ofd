@@ -324,7 +324,7 @@ exports.getCaptionsDetails = async function (req, res) {
 
     var values = [operatorId, requestRideType, cityId];
 
-    if (vehicleType) {
+    if (parseInt(vehicleType)) {
       values.push(vehicleType);
     }
     if (fleetId) {
