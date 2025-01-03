@@ -139,6 +139,11 @@ exports.SERVERS = {
   AUTOS_SERVER: 'https://chuki-rides.venustaxi.in',
 };
 
+exports.AUTOS_SERVERS_ENDPOINT = {
+  SEND_PUSH_DRIVER: '/send_push_from_autos',
+  FARE_ESTIMATE: '/partner/fare_estimate'
+}
+
 exports.VEHILCE_TYPE = {
   AUTOS: 1,
   BIKES: 2,

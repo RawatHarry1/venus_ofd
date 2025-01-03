@@ -10,6 +10,9 @@ const {
   generalConstants,
 } = require('../../bootstart/header');
 const moment = require('moment');
+const axios = require('axios');
+
+exports.pushFromRideServer           =   pushFromRideServer
 
 exports.sendPush = async function (driverObjArray, params) {
   try {
@@ -60,7 +63,7 @@ exports.sendPush = async function (driverObjArray, params) {
           user_type: rideConstants.LOGIN_TYPE.DRIVER,
         });
       }
-      await pushFromRideServer(requestBody, '/send_push_from_autos');
+      await pushFromRideServer(requestBody, rideConstants.AUTOS_SERVERS_ENDPOINT.SEND_PUSH_DRIVER);
     }
   } catch (error) {
     throw new Error(error.message);
@@ -79,31 +82,24 @@ function splitArrayIntoChunksOfLen(arr, len) {
 
 async function pushFromRideServer(requestBody, endpoint) {
   try {
-    var push_options = {
-      url: rideConstants.SERVERS.AUTOS_SERVER + endpoint,
-      method: 'POST',
-      body: requestBody,
-      json: true,
-      rejectUnauthorized: false,
+    let resultWrapper = {}
+    const url = rideConstants.SERVERS.AUTOS_SERVER + endpoint;
+
+    const response = await axios.post(url, requestBody, {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
       },
-    };
-    request(push_options, function (error, response, body) {
-      if (error || response.statusCode != '200') {
-        loggingImp.error({
-          EVENT: 'error from rides server for push',
-          error,
-          response,
-        });
-      }
     });
+
+    if (response.data && response.data.data) {
+      resultWrapper = response.data.data;
+    } else {
+      resultWrapper = response.data;
+    }
+    return resultWrapper;
+
   } catch (error) {
-    loggingImp.error({
-      EVENT: 'error from pushFromRideServer',
-      error,
-      response,
-    });
-    resolve();
+    console.error('Error pushing to ride server:', error.message);
+    throw new Error(error.response?.data?.message || error.message);
   }
 }

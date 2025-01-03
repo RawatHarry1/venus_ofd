@@ -292,7 +292,7 @@ exports.documents = {
 exports.bussinessMiddlewares = {
   fetchTokenUsingPhoneNo: async function (req, res, next) {
     try {
-      var userPhone = req.body.user_phone;
+      var userPhone = req.body.user_phone || req.body.phone_no;
       var userName = req.body.user_name;
       var operatorId = req.operator_id;
       var countryCode = req.body.country_code;

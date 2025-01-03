@@ -12,6 +12,23 @@ var Joi = require('joi');
 var QueryBuilder = require('datatable');
 const settingsHelper = require('../../settings/helper');
 const { getOperatorParameters } = require('../../admin/helper');
+const { pushFromRideServer } = require('../../push_notification/helper');
+
+
+exports.fareEstimateThroughBusinessUser = async function (req, res) {
+  try {
+    req.body.operator_token = req.operator_token
+
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.FARE_ESTIMATE
+
+    let fareWrapper = await pushFromRideServer(req.body, endpoint)
+
+    return responseHandler.success(req, res, '', fareWrapper);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+
+}
 
 exports.scheduleRideThroughBusinessUser = async function (req, res) {
   try {
