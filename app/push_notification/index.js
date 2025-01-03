@@ -12,4 +12,15 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     PushNotifcationController.sendSmsPushToDriver,
   )
+
+  /* 
+  Customer Push Notification
+  */
+
+  app.post(
+    '/sendSmsToDriver',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    PushNotifcationController.sendSmsPushToDriver,
+  )
 };

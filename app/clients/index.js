@@ -15,4 +15,14 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     ClientsDetails.isUserPresent,
   );
+
+
+  app.get(
+    '/get_customers',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    ClientsDetails.getCustomers,
+  );
+
+
 };
