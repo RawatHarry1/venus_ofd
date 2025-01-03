@@ -10,7 +10,7 @@ var moment = require('moment');
 var QueryBuilder = require('datatable');
 var Joi = require('joi');
 const Helper = require('../helper');
-const rideHelper  = require('../../rides/helper');
+const rideHelper = require('../../rides/helper');
 
 exports.fetchVehicles = async function (req, res) {
   try {
@@ -258,8 +258,6 @@ exports.operatorCityInfo = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
-
-
 
 function ensure_prefix_month(date) {
   var prefix = '';

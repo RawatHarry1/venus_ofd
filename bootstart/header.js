@@ -3,7 +3,7 @@
 // Importing constants
 const dbConstants = require('../constants/dbconstants');
 const ResponseConstants = require('../constants/responesConstans');
-const documentsConstants = require('../constants/document')
+const documentsConstants = require('../constants/document');
 
 // Importing helpers
 /* const helpers = require('../helpers/index');  */
@@ -16,7 +16,7 @@ const {
   insertIntoTable,
   selectFromTable,
   updateTable,
-  selectFromTableInArray
+  selectFromTableInArray,
 } = require('../db/helper');
 const dbQueries = require('../db/queries');
 
@@ -45,5 +45,5 @@ module.exports = {
   authConstants,
   rideConstants,
   generalConstants,
-  documentsConstants
+  documentsConstants,
 };

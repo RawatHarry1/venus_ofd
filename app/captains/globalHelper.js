@@ -1,114 +1,167 @@
-const { dbConstants,db,errorHandler,responseHandler,ResponseConstants, authConstants, rideConstants } = require('../.././bootstart/header');
-var moment      = require('moment');
+const {
+  dbConstants,
+  db,
+  errorHandler,
+  responseHandler,
+  ResponseConstants,
+  authConstants,
+  rideConstants,
+} = require('../.././bootstart/header');
+var moment = require('moment');
 const { checkBlank } = require('../rides/helper');
 
-
-exports.getWalletTransactions                 = getWalletTransactions
-exports.get_transaction_details               = get_transaction_details
-exports.get_user_ref_code_used                = get_user_ref_code_used
-exports.get_paytm_enabled                     = get_paytm_enabled
-exports.get_dup_reg                           = get_dup_reg
-exports.get_invalid_devices                   = get_invalid_devices
-exports.getCustomerNotes                      = getCustomerNotes
-exports.getRidesData                          = getRidesData
-exports.getCouponsData                        = getCouponsData
-exports.get_user_remaining_coupons            = get_user_remaining_coupons
-exports.get_promotions_applicable             = get_promotions_applicable
-exports.get_friends_details                   = get_friends_details
-exports.getOngoingRide                        = getOngoingRide
-exports.getCancelledRides                     = getCancelledRides
-exports.getFirstRideCity                      = getFirstRideCity
-exports.get_promotions                        = get_promotions
-exports.getDriverRides                        = getDriverRides
-exports.getDriverPerformance                  = getDriverPerformance
-exports.getOngoingRideForDriver               = getOngoingRideForDriver
-exports.getTodaysFirstLogin                   = getTodaysFirstLogin
-exports.getDriverCityInfo                     = getDriverCityInfo
-
-
+exports.getWalletTransactions = getWalletTransactions;
+exports.get_transaction_details = get_transaction_details;
+exports.get_user_ref_code_used = get_user_ref_code_used;
+exports.get_paytm_enabled = get_paytm_enabled;
+exports.get_dup_reg = get_dup_reg;
+exports.get_invalid_devices = get_invalid_devices;
+exports.getCustomerNotes = getCustomerNotes;
+exports.getRidesData = getRidesData;
+exports.getCouponsData = getCouponsData;
+exports.get_user_remaining_coupons = get_user_remaining_coupons;
+exports.get_promotions_applicable = get_promotions_applicable;
+exports.get_friends_details = get_friends_details;
+exports.getOngoingRide = getOngoingRide;
+exports.getCancelledRides = getCancelledRides;
+exports.getFirstRideCity = getFirstRideCity;
+exports.get_promotions = get_promotions;
+exports.getDriverRides = getDriverRides;
+exports.getDriverPerformance = getDriverPerformance;
+exports.getOngoingRideForDriver = getOngoingRideForDriver;
+exports.getTodaysFirstLogin = getTodaysFirstLogin;
+exports.getDriverCityInfo = getDriverCityInfo;
 
 var detailsUserCount = {};
-exports.driverInfoCount  = {};
+exports.driverInfoCount = {};
 
-exports.detailsUserCount  = detailsUserCount;
+exports.detailsUserCount = detailsUserCount;
 
+async function getWalletTransactions(
+  user_id,
+  auth_user_id,
+  walletTransactions,
+  startFrom,
+  pageSize,
+) {
+  try {
+    var paytmTransactions = [],
+      mobikwikTransactions = [],
+      freechargeTransactions = [],
+      razorPayTransactions = [],
+      iciciTransactions = [],
+      mPesaTransactions = [];
 
+    // Execute all the transaction functions
+    await get_paytmTransactions(
+      user_id,
+      auth_user_id,
+      paytmTransactions,
+      startFrom,
+      pageSize,
+    );
+    await getMobikwikTransactions(
+      user_id,
+      auth_user_id,
+      mobikwikTransactions,
+      startFrom,
+      pageSize,
+    );
+    await getFreechargeTransactions(
+      user_id,
+      auth_user_id,
+      freechargeTransactions,
+      startFrom,
+      pageSize,
+    );
+    await getRazorPayTransactions(
+      user_id,
+      auth_user_id,
+      razorPayTransactions,
+      startFrom,
+      pageSize,
+    );
+    await getIciciTransactions(
+      user_id,
+      auth_user_id,
+      iciciTransactions,
+      startFrom,
+      pageSize,
+    );
+    await getMpesaTransactions(
+      user_id,
+      auth_user_id,
+      mPesaTransactions,
+      startFrom,
+      pageSize,
+    );
 
-async function getWalletTransactions(user_id,auth_user_id, walletTransactions, startFrom, pageSize) {
-    try {
-        var paytmTransactions = [], mobikwikTransactions = [], freechargeTransactions = [],
-            razorPayTransactions = [], iciciTransactions = [], mPesaTransactions = [];
-
-        // Execute all the transaction functions
-        await get_paytmTransactions(user_id, auth_user_id, paytmTransactions, startFrom, pageSize);
-        await getMobikwikTransactions(user_id, auth_user_id, mobikwikTransactions, startFrom, pageSize);
-        await getFreechargeTransactions(user_id, auth_user_id, freechargeTransactions, startFrom, pageSize);
-        await getRazorPayTransactions(user_id, auth_user_id, razorPayTransactions, startFrom, pageSize);
-        await getIciciTransactions(user_id, auth_user_id, iciciTransactions, startFrom, pageSize);
-        await getMpesaTransactions(user_id, auth_user_id, mPesaTransactions, startFrom, pageSize);
-
-        for(var i = 0; i < paytmTransactions.length; i++) {
-            var aObj = paytmTransactions[i];
-            aObj.wallet_id   =  authConstants.WALLET_TYPE.PAYTM;
-            aObj.wallet_type = 'Paytm';
-            walletTransactions.push(aObj);
-        }
-        for(var i = 0; i < mobikwikTransactions.length; i++) {
-            var aObj = mobikwikTransactions[i];
-            aObj.wallet_id   = authConstants.WALLET_TYPE.MOBIKWIK;
-            aObj.wallet_type = 'Mobikwik';
-            walletTransactions.push(aObj);
-        }
-        for(var i = 0; i < freechargeTransactions.length; i++) {
-            var aObj = freechargeTransactions[i];
-            aObj.wallet_id   =  authConstants.WALLET_TYPE.FREECHARGE;
-            aObj.wallet_type = 'Freecharge';
-            walletTransactions.push(aObj);
-        }
-        for(var i = 0; i < razorPayTransactions.length; i++) {
-            var aObj = razorPayTransactions[i];
-            aObj.wallet_id   =  authConstants.WALLET_TYPE.RAZOR_PAY;
-            aObj.wallet_type = 'RazorPay';
-            walletTransactions.push(aObj);
-        }
-        for(var i = 0; i < iciciTransactions.length; i++) {
-            var aObj = iciciTransactions[i];
-            aObj.wallet_id   =  authConstants.WALLET_TYPE.ICICI;
-            aObj.wallet_type = 'ICICI';
-            walletTransactions.push(aObj);
-        }
-        for(var i = 0; i < mPesaTransactions.length; i++) {
-            var aObj = mPesaTransactions[i];
-            aObj.wallet_id   =  authConstants.WALLET_TYPE.MPESA;
-            aObj.wallet_type = 'MPESA';
-            walletTransactions.push(aObj);
-        }
-        walletTransactions.sort(function(a, b) {
-            var d1 = new Date(a.updated_at);
-            var d2 = new Date(b.updated_at);
-            return d2 - d1;
-        });
-    } catch (error) {
-        console.log(error);
-        throw new Error(error.message)
+    for (var i = 0; i < paytmTransactions.length; i++) {
+      var aObj = paytmTransactions[i];
+      aObj.wallet_id = authConstants.WALLET_TYPE.PAYTM;
+      aObj.wallet_type = 'Paytm';
+      walletTransactions.push(aObj);
     }
-    
+    for (var i = 0; i < mobikwikTransactions.length; i++) {
+      var aObj = mobikwikTransactions[i];
+      aObj.wallet_id = authConstants.WALLET_TYPE.MOBIKWIK;
+      aObj.wallet_type = 'Mobikwik';
+      walletTransactions.push(aObj);
+    }
+    for (var i = 0; i < freechargeTransactions.length; i++) {
+      var aObj = freechargeTransactions[i];
+      aObj.wallet_id = authConstants.WALLET_TYPE.FREECHARGE;
+      aObj.wallet_type = 'Freecharge';
+      walletTransactions.push(aObj);
+    }
+    for (var i = 0; i < razorPayTransactions.length; i++) {
+      var aObj = razorPayTransactions[i];
+      aObj.wallet_id = authConstants.WALLET_TYPE.RAZOR_PAY;
+      aObj.wallet_type = 'RazorPay';
+      walletTransactions.push(aObj);
+    }
+    for (var i = 0; i < iciciTransactions.length; i++) {
+      var aObj = iciciTransactions[i];
+      aObj.wallet_id = authConstants.WALLET_TYPE.ICICI;
+      aObj.wallet_type = 'ICICI';
+      walletTransactions.push(aObj);
+    }
+    for (var i = 0; i < mPesaTransactions.length; i++) {
+      var aObj = mPesaTransactions[i];
+      aObj.wallet_id = authConstants.WALLET_TYPE.MPESA;
+      aObj.wallet_type = 'MPESA';
+      walletTransactions.push(aObj);
+    }
+    walletTransactions.sort(function (a, b) {
+      var d1 = new Date(a.updated_at);
+      var d2 = new Date(b.updated_at);
+      return d2 - d1;
+    });
+  } catch (error) {
+    console.log(error);
+    throw new Error(error.message);
+  }
 }
 
-async function get_paytmTransactions(user_id,auth_user_id, paytmTransactions, startFrom, pageSize) {
-    var userString;
-    var userValue;
+async function get_paytmTransactions(
+  user_id,
+  auth_user_id,
+  paytmTransactions,
+  startFrom,
+  pageSize,
+) {
+  var userString;
+  var userValue;
 
-    if(auth_user_id){
-        userString = 'user_id';
-        userValue = auth_user_id;
-    }
-    else {
-        userString = 'venus_autos_user_id';
-        userValue = user_id;
-    };
+  if (auth_user_id) {
+    userString = 'user_id';
+    userValue = auth_user_id;
+  } else {
+    userString = 'venus_autos_user_id';
+    userValue = user_id;
+  }
 
-    var countSQL = `SELECT
+  var countSQL = `SELECT
     COUNT(1) AS number
   FROM (
     SELECT
@@ -195,12 +248,16 @@ async function get_paytmTransactions(user_id,auth_user_id, paytmTransactions, st
     ORDER BY
       req_logged_on DESC) AS test`;
 
-    const count = await db.RunQuery(dbConstants.DBS.AUTH_DB, countSQL, [userValue, userValue, userValue, userValue]);
+  const count = await db.RunQuery(dbConstants.DBS.AUTH_DB, countSQL, [
+    userValue,
+    userValue,
+    userValue,
+    userValue,
+  ]);
 
-    exports.detailsUserCount.paytm_transactions = count[0].number;
+  exports.detailsUserCount.paytm_transactions = count[0].number;
 
-    var get_paytm_data =
-    `SELECT
+  var get_paytm_data = `SELECT
       IFNULL(order_txns.order_id,txns.reference_id) AS engagement_id,
       txns.order_id,
       request_type,
@@ -304,40 +361,52 @@ async function get_paytmTransactions(user_id,auth_user_id, paytmTransactions, st
       req_logged_on DESC
     LIMIT
       ?,
-      ?`
+      ?`;
 
-    const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_paytm_data, [userValue, userValue, userValue, userValue, startFrom, pageSize]);
+  const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_paytm_data, [
+    userValue,
+    userValue,
+    userValue,
+    userValue,
+    startFrom,
+    pageSize,
+  ]);
 
-    for (var j = 0; j < data.length; j++) {
-        var paytm_record = {};
-        paytm_record.engagement_id = data[j].engagement_id;
-        paytm_record.created_at = data[j].req_logged_on;
-        // In order to keep object structure uniform in all wallet transactions
-        paytm_record.updated_at = data[j].req_logged_on;
-        paytm_record.amount = data[j].txn_amount;
-        paytm_record.responseMessage = data[j].resp_respmsg;
-        paytm_record.order_id = data[j].order_id;
-        paytm_record.txn_type = data[j].request_type;
-        paytm_record.phone_no = data[j].phone_no;
-        paytm_record.status   = data[j].status;
-        paytmTransactions.push(paytm_record);
-    }
+  for (var j = 0; j < data.length; j++) {
+    var paytm_record = {};
+    paytm_record.engagement_id = data[j].engagement_id;
+    paytm_record.created_at = data[j].req_logged_on;
+    // In order to keep object structure uniform in all wallet transactions
+    paytm_record.updated_at = data[j].req_logged_on;
+    paytm_record.amount = data[j].txn_amount;
+    paytm_record.responseMessage = data[j].resp_respmsg;
+    paytm_record.order_id = data[j].order_id;
+    paytm_record.txn_type = data[j].request_type;
+    paytm_record.phone_no = data[j].phone_no;
+    paytm_record.status = data[j].status;
+    paytmTransactions.push(paytm_record);
+  }
 }
 
-async function getMobikwikTransactions(userId,auth_user_id, mobikwikTransactions, startFrom, pageSize) {
-    var userString;
-    var userValue;
+async function getMobikwikTransactions(
+  userId,
+  auth_user_id,
+  mobikwikTransactions,
+  startFrom,
+  pageSize,
+) {
+  var userString;
+  var userValue;
 
-    if(auth_user_id){
-        userString = 'user_id';
-        userValue = auth_user_id;
-    }
-    else {
-        userString = 'venus_autos_user_id';
-        userValue = userId;
-    }
+  if (auth_user_id) {
+    userString = 'user_id';
+    userValue = auth_user_id;
+  } else {
+    userString = 'venus_autos_user_id';
+    userValue = userId;
+  }
 
-    var countSQL = `SELECT 
+  var countSQL = `SELECT 
   COUNT(*) as countTxns 
 FROM 
   (
@@ -360,11 +429,14 @@ FROM
   ) as a
 `;
 
-    const countRes = await db.RunQuery(dbConstants.DBS.AUTH_DB, countSQL, [userValue, userValue]);
+  const countRes = await db.RunQuery(dbConstants.DBS.AUTH_DB, countSQL, [
+    userValue,
+    userValue,
+  ]);
 
-    exports.detailsUserCount.mobikwikTransactionDetails = countRes[0].countTxns;
+  exports.detailsUserCount.mobikwikTransactionDetails = countRes[0].countTxns;
 
-    var sqlQuery = `SELECT
+  var sqlQuery = `SELECT
     *
   FROM (
     SELECT
@@ -421,27 +493,37 @@ FROM
     ?,
     ?`;
 
-    const result = await db.RunQuery(dbConstants.DBS.AUTH_DB, sqlQuery, [userValue, userValue, startFrom, pageSize]);
+  const result = await db.RunQuery(dbConstants.DBS.AUTH_DB, sqlQuery, [
+    userValue,
+    userValue,
+    startFrom,
+    pageSize,
+  ]);
 
-    for(var i = 0; i < result.length; i++) {
-        mobikwikTransactions.push(result[i]);
-    }
+  for (var i = 0; i < result.length; i++) {
+    mobikwikTransactions.push(result[i]);
+  }
 }
 
-async function getFreechargeTransactions(userId,auth_user_id, freechargeTransactions, startFrom, pageSize) {
-    var userString;
-    var userValue;
+async function getFreechargeTransactions(
+  userId,
+  auth_user_id,
+  freechargeTransactions,
+  startFrom,
+  pageSize,
+) {
+  var userString;
+  var userValue;
 
-    if(auth_user_id){
-        userString = 'user_id';
-        userValue = auth_user_id;
-    }
-    else {
-        userString = 'venus_autos_user_id';
-        userValue = userId;
-    }
+  if (auth_user_id) {
+    userString = 'user_id';
+    userValue = auth_user_id;
+  } else {
+    userString = 'venus_autos_user_id';
+    userValue = userId;
+  }
 
-    var countSQL = `SELECT 
+  var countSQL = `SELECT 
   COUNT(*) as countTxns 
 FROM 
   (
@@ -454,11 +536,13 @@ FROM
       users.${userString} = ? ) as a
 `;
 
-    const countRes = await db.RunQuery(dbConstants.DBS.AUTH_DB, countSQL, [userValue]);
+  const countRes = await db.RunQuery(dbConstants.DBS.AUTH_DB, countSQL, [
+    userValue,
+  ]);
 
-    exports.detailsUserCount.freechargeTransactionDetails = countRes[0].countTxns;
+  exports.detailsUserCount.freechargeTransactionDetails = countRes[0].countTxns;
 
-    var sqlQuery = `SELECT
+  var sqlQuery = `SELECT
                           freechargeTxns.order_id,
                           freechargeTxns.txn_type,
                           freechargeTxns.amount,
@@ -487,27 +571,36 @@ FROM
                           ?,
                           ?`;
 
-    const result = await db.RunQuery(dbConstants.DBS.AUTH_DB, sqlQuery, [userValue, startFrom, pageSize]);
+  const result = await db.RunQuery(dbConstants.DBS.AUTH_DB, sqlQuery, [
+    userValue,
+    startFrom,
+    pageSize,
+  ]);
 
-    for(var i = 0; i < result.length; i++) {
-        freechargeTransactions.push(result[i]);
-    }
+  for (var i = 0; i < result.length; i++) {
+    freechargeTransactions.push(result[i]);
+  }
 }
 
-async function getRazorPayTransactions(userId,auth_user_id,razorPayTransactions,startFrom,pageSize) {
-    var userString;
-    var userValue;
+async function getRazorPayTransactions(
+  userId,
+  auth_user_id,
+  razorPayTransactions,
+  startFrom,
+  pageSize,
+) {
+  var userString;
+  var userValue;
 
-    if(auth_user_id){
-        userString = 'user_id';
-        userValue = auth_user_id;
-    }
-    else {
-        userString = 'venus_autos_user_id';
-        userValue = userId;
-    }
+  if (auth_user_id) {
+    userString = 'user_id';
+    userValue = auth_user_id;
+  } else {
+    userString = 'venus_autos_user_id';
+    userValue = userId;
+  }
 
-    var countSQL = `SELECT 
+  var countSQL = `SELECT 
   COUNT(*) as countTxns 
 FROM 
   (
@@ -518,13 +611,15 @@ FROM
       JOIN ${dbConstants.DBS.AUTH_DB}.tb_users as users ON razorPay.user_id = users.user_id 
     WHERE 
       users.${userString} = ? ) as a
-`
+`;
 
-    const countRes = await db.RunQuery(dbConstants.DBS.AUTH_DB, countSQL, [userValue]);
+  const countRes = await db.RunQuery(dbConstants.DBS.AUTH_DB, countSQL, [
+    userValue,
+  ]);
 
-    exports.detailsUserCount.razorPayTransactionDetails = countRes[0].countTxns;
+  exports.detailsUserCount.razorPayTransactionDetails = countRes[0].countTxns;
 
-    var razorPayTransactionDetailsQuery = `SELECT 
+  var razorPayTransactionDetailsQuery = `SELECT 
   razorPay.id AS order_id, 
   razorPay.txn_type, 
   razorPay.amount, 
@@ -552,33 +647,42 @@ ORDER BY
 LIMIT 
   ?, 
   ?
-`
+`;
 
-    const razorPayDetails = await db.RunQuery(dbConstants.DBS.AUTH_DB, razorPayTransactionDetailsQuery, [userValue, startFrom, pageSize]);
+  const razorPayDetails = await db.RunQuery(
+    dbConstants.DBS.AUTH_DB,
+    razorPayTransactionDetailsQuery,
+    [userValue, startFrom, pageSize],
+  );
 
-    if(!razorPayDetails.length){
-        razorPayTransactions    =   [];
-    }
+  if (!razorPayDetails.length) {
+    razorPayTransactions = [];
+  }
 
-    for(var i = 0; i < razorPayDetails.length; i++) {
-        razorPayTransactions.push(result[i]);
-    }
+  for (var i = 0; i < razorPayDetails.length; i++) {
+    razorPayTransactions.push(result[i]);
+  }
 }
 
-async function getIciciTransactions(userId, auth_user_id, iciciTransactions, startFrom, pageSize,) {
-    var userString;
-    var userValue;
+async function getIciciTransactions(
+  userId,
+  auth_user_id,
+  iciciTransactions,
+  startFrom,
+  pageSize,
+) {
+  var userString;
+  var userValue;
 
-    if (auth_user_id) {
-        userString = 'user_id';
-        userValue = auth_user_id;
-    }
-    else {
-        userString = 'venus_autos_user_id';
-        userValue = userId;
-    }
+  if (auth_user_id) {
+    userString = 'user_id';
+    userValue = auth_user_id;
+  } else {
+    userString = 'venus_autos_user_id';
+    userValue = userId;
+  }
 
-    var iciciTransactionsQuery = `SELECT 
+  var iciciTransactionsQuery = `SELECT 
   icici.id AS order_id, 
   amount, 
   txn_type, 
@@ -606,33 +710,42 @@ ORDER BY
 LIMIT 
   ?, 
   ?
-`
+`;
 
-    const iciciTransactionDetails = await db.RunQuery(dbConstants.DBS.AUTH_DB, iciciTransactionsQuery, [userValue, startFrom, pageSize]);
+  const iciciTransactionDetails = await db.RunQuery(
+    dbConstants.DBS.AUTH_DB,
+    iciciTransactionsQuery,
+    [userValue, startFrom, pageSize],
+  );
 
-    if (!iciciTransactionDetails.length) {
-        iciciTransactions = [];
-    }
+  if (!iciciTransactionDetails.length) {
+    iciciTransactions = [];
+  }
 
-    for (var i = 0; i < iciciTransactionDetails.length; i++) {
-        iciciTransactions.push(result[i]);
-    }
+  for (var i = 0; i < iciciTransactionDetails.length; i++) {
+    iciciTransactions.push(result[i]);
+  }
 }
 
-async function getMpesaTransactions(userId,auth_user_id, mPesaTransactions, startFrom, pageSize) {
-    var userString;
-    var userValue;
+async function getMpesaTransactions(
+  userId,
+  auth_user_id,
+  mPesaTransactions,
+  startFrom,
+  pageSize,
+) {
+  var userString;
+  var userValue;
 
-    if(auth_user_id){
-        userString = 'user_id';
-        userValue = auth_user_id;
-    }
-    else {
-        userString = 'venus_autos_user_id';
-        userValue = userId;
-    }
+  if (auth_user_id) {
+    userString = 'user_id';
+    userValue = auth_user_id;
+  } else {
+    userString = 'venus_autos_user_id';
+    userValue = userId;
+  }
 
-    var countQuery = `SELECT 
+  var countQuery = `SELECT 
   COUNT(*) as countTxns 
 FROM 
   (
@@ -643,13 +756,15 @@ FROM
       JOIN ${dbConstants.DBS.AUTH_DB}.tb_users as users ON mpesa.user_id = users.user_id 
     WHERE 
       users.${userString} = ? ) as a
-`
+`;
 
-    const countRes = await db.RunQuery(dbConstants.DBS.AUTH_DB, countQuery, [userValue]);
+  const countRes = await db.RunQuery(dbConstants.DBS.AUTH_DB, countQuery, [
+    userValue,
+  ]);
 
-    exports.detailsUserCount.mPesa = countRes[0].countTxns;
+  exports.detailsUserCount.mPesa = countRes[0].countTxns;
 
-    var sqlQuery = `SELECT 
+  var sqlQuery = `SELECT 
   mpesa.id, 
   mpesa.txn_type, 
   mpesa.amount, 
@@ -677,33 +792,58 @@ ORDER BY
 LIMIT 
   ?, 
   ?
-`
+`;
 
-    const result = await db.RunQuery(dbConstants.DBS.AUTH_DB, sqlQuery, [userValue, startFrom, pageSize]);
+  const result = await db.RunQuery(dbConstants.DBS.AUTH_DB, sqlQuery, [
+    userValue,
+    startFrom,
+    pageSize,
+  ]);
 
-    for(var i = 0; i < result.length; i++) {
-        mPesaTransactions.push(result[i]);
-    }
+  for (var i = 0; i < result.length; i++) {
+    mPesaTransactions.push(result[i]);
+  }
 }
 
-
-async function get_transaction_details(app_id, logged_on, amount, transaction_state, account_balance, reference, user_id, auth_user_id,
-  user_name, user_email, user_phone_no, user_is_blocked, user_can_request,
-  user_city, user_debt, block_reason, block_reason_text, date_registered,
-  deviceName, osVersion, appVersionCode, userCategory, isDeactivated, deactivationReason, dateOfBirth,
-  startFrom, pageSize) {
-
+async function get_transaction_details(
+  app_id,
+  logged_on,
+  amount,
+  transaction_state,
+  account_balance,
+  reference,
+  user_id,
+  auth_user_id,
+  user_name,
+  user_email,
+  user_phone_no,
+  user_is_blocked,
+  user_can_request,
+  user_city,
+  user_debt,
+  block_reason,
+  block_reason_text,
+  date_registered,
+  deviceName,
+  osVersion,
+  appVersionCode,
+  userCategory,
+  isDeactivated,
+  deactivationReason,
+  dateOfBirth,
+  startFrom,
+  pageSize,
+) {
   var userString;
   var userValue;
 
   if (auth_user_id) {
     userString = 'user_id';
     userValue = auth_user_id;
-  }
-  else {
+  } else {
     userString = 'venus_autos_user_id';
     userValue = user_id;
-  };
+  }
 
   var get_balance = `SELECT 
   users.money_in_wallet_f as money_in_wallet, 
@@ -728,11 +868,13 @@ WHERE
   users.${userString} = ?
 `;
 
-  const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_balance, [userValue]);
+  const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_balance, [
+    userValue,
+  ]);
 
   account_balance.push(data[0].money_in_wallet);
   var userName = data[0].user_name.toLowerCase().split(' ');
-  var userStatus = data[0].user_status
+  var userStatus = data[0].user_status;
   for (var i = 0; i < userName.length; i++) {
     userName[i] = userName[i].replace(/\w\S*/g, function (txt) {
       return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
@@ -740,10 +882,14 @@ WHERE
   }
   userName = userName.join(' ');
   user_name.push(userName);
-  user_name.push(userStatus)
-  user_name.push(data[0].customer_image)
-  user_email.push(data[0].is_deactivated ? data[0].del_email : data[0].user_email);
-  user_phone_no.push(data[0].is_deactivated ? data[0].del_phone_no : data[0].phone_no);
+  user_name.push(userStatus);
+  user_name.push(data[0].customer_image);
+  user_email.push(
+    data[0].is_deactivated ? data[0].del_email : data[0].user_email,
+  );
+  user_phone_no.push(
+    data[0].is_deactivated ? data[0].del_phone_no : data[0].phone_no,
+  );
   user_city.push(data[0].city_reg);
   //var blocked = data[0].is_blocked == 0 ? 1:0;
   user_is_blocked.push(data[0].is_blocked);
@@ -752,7 +898,9 @@ WHERE
   deviceName.push(data[0].device_name);
   osVersion.push(data[0].os_version);
   date_registered.push(data[0].date_registered);
-  appVersionCode.push((data[0].venus_autos_app_version).toString().split('').join('.'));
+  appVersionCode.push(
+    data[0].venus_autos_app_version.toString().split('').join('.'),
+  );
   isDeactivated.push(data[0].is_deactivated);
   deactivationReason.push(data[0].deactivation_reason);
   dateOfBirth.push(data[0].date_of_birth);
@@ -782,13 +930,13 @@ FROM
     order by 
       txn_id desc
   ) AS test
-`
-  const count = await db.RunQuery(dbConstants.DBS.AUTH_DB, countSQL, [userValue]);
+`;
+  const count = await db.RunQuery(dbConstants.DBS.AUTH_DB, countSQL, [
+    userValue,
+  ]);
   exports.detailsUserCount.transactionDetails = count[0].number;
 
-  var get_transaction_details =
-
-    `SELECT
+  var get_transaction_details = `SELECT
          a.amount,
          a.logged_on,
          ifnull(order_txns.order_id,a.reference_id) as reference_id,
@@ -808,23 +956,23 @@ FROM
          logged_on DESC
        LIMIT
          ?,
-         ?`
+         ?`;
 
-  const data_tr = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_transaction_details, [userValue, startFrom, pageSize]);
+  const data_tr = await db.RunQuery(
+    dbConstants.DBS.AUTH_DB,
+    get_transaction_details,
+    [userValue, startFrom, pageSize],
+  );
   for (var j = 0; j < data_tr.length; j++) {
     var ist_logged_on = convert_to_ist(data_tr[j].logged_on);
     logged_on.push(ist_logged_on);
     amount.push(data_tr[j].amount);
     reference.push(data_tr[j].reference_id);
     transaction_state.push(data_tr[j].txn_type);
-    if (data_tr[j].client_id == 'g3Ql58Kx2VCDYVk3')
-      app_id.push('venus');
-    else if (data_tr[j].client_id == 'EEBUOvQq7RRJBxJm')
-      app_id.push('Autos');
-    else if (data_tr[j].client_id == 'QNrWRzMToQNnxrQ5')
-      app_id.push('Meals');
-    else
-      app_id.push('');
+    if (data_tr[j].client_id == 'g3Ql58Kx2VCDYVk3') app_id.push('venus');
+    else if (data_tr[j].client_id == 'EEBUOvQq7RRJBxJm') app_id.push('Autos');
+    else if (data_tr[j].client_id == 'QNrWRzMToQNnxrQ5') app_id.push('Meals');
+    else app_id.push('');
   }
 
   if (data[0].can_request == 0) {
@@ -838,17 +986,25 @@ Where
   users.${userString} = ? 
 order by 
   reasons.request_id desc
-`
+`;
 
-    const reason = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_blocking_reason, [userValue]);
+    const reason = await db.RunQuery(
+      dbConstants.DBS.AUTH_DB,
+      get_blocking_reason,
+      [userValue],
+    );
     block_reason.push(reason[0].reason_code);
     block_reason_text.push(reason[0].reason);
   }
-
 }
 
-
-async function get_user_ref_code_used(ref_code, user_ref_code, referrer, user_id, auth_user_id) {
+async function get_user_ref_code_used(
+  ref_code,
+  user_ref_code,
+  referrer,
+  user_id,
+  auth_user_id,
+) {
   var userString;
   var userValue;
 
@@ -863,7 +1019,9 @@ async function get_user_ref_code_used(ref_code, user_ref_code, referrer, user_id
   const get_ref_code_used = `SELECT referral_code_used as ref, referral_code FROM ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE ${userString} = ?`;
 
   try {
-    const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_ref_code_used, [userValue]);
+    const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_ref_code_used, [
+      userValue,
+    ]);
 
     if (data.length === 0) {
       ref_code.push('');
@@ -875,7 +1033,11 @@ async function get_user_ref_code_used(ref_code, user_ref_code, referrer, user_id
 
       if (checkBlank([data[0].ref]) === 0) {
         const get_referrer = `SELECT venus_autos_user_id FROM ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE referral_code = ?`;
-        const referred_by = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_referrer, [data[0].ref]);
+        const referred_by = await db.RunQuery(
+          dbConstants.DBS.AUTH_DB,
+          get_referrer,
+          [data[0].ref],
+        );
 
         if (referred_by.length === 0) {
           referrer.push('');
@@ -894,11 +1056,11 @@ async function get_paytm_enabled(user_id, auth_user_id, paytm_enabled) {
   var userValue;
 
   if (auth_user_id) {
-      userString = 'user_id';
-      userValue = auth_user_id;
+    userString = 'user_id';
+    userValue = auth_user_id;
   } else {
-      userString = 'venus_autos_user_id';
-      userValue = user_id;
+    userString = 'venus_autos_user_id';
+    userValue = user_id;
   }
 
   const get_info = `
@@ -907,15 +1069,19 @@ async function get_paytm_enabled(user_id, auth_user_id, paytm_enabled) {
       WHERE ${userString} = ?`;
 
   try {
-      const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_info, [userValue]);
+    const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_info, [
+      userValue,
+    ]);
 
-      if (data.length !== 0) {
-          paytm_enabled.enabled = data[0].paytm_enabled;
-          paytm_enabled.mobikwik_enabled = data[0].mobikwik_enabled;
-          paytm_enabled.freecharge_enabled = data[0].freecharge_enabled;
-      }
+    if (data.length !== 0) {
+      paytm_enabled.enabled = data[0].paytm_enabled;
+      paytm_enabled.mobikwik_enabled = data[0].mobikwik_enabled;
+      paytm_enabled.freecharge_enabled = data[0].freecharge_enabled;
+    }
   } catch (err) {
-      throw new Error(`Error while checking for Paytm integration: ${err.message}`);
+    throw new Error(
+      `Error while checking for Paytm integration: ${err.message}`,
+    );
   }
 }
 
@@ -924,11 +1090,11 @@ async function get_dup_reg(user_id, auth_user_id, dup_reg) {
   var userValue;
 
   if (auth_user_id) {
-      userString = 'user_id';
-      userValue = auth_user_id;
+    userString = 'user_id';
+    userValue = auth_user_id;
   } else {
-      userString = 'venus_autos_user_id';
-      userValue = user_id;
+    userString = 'venus_autos_user_id';
+    userValue = user_id;
   }
 
   const get_dup_reg_new = `
@@ -941,11 +1107,17 @@ async function get_dup_reg(user_id, auth_user_id, dup_reg) {
       WHERE u1.${userString} = ?`;
 
   try {
-      const dup_data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_dup_reg_new, [userValue]);
+    const dup_data = await db.RunQuery(
+      dbConstants.DBS.AUTH_DB,
+      get_dup_reg_new,
+      [userValue],
+    );
 
-      dup_reg.push(dup_data[0].num_reg);
+    dup_reg.push(dup_data[0].num_reg);
   } catch (err) {
-      throw new Error(`Error while fetching duplicate registrations: ${err.message}`);
+    throw new Error(
+      `Error while fetching duplicate registrations: ${err.message}`,
+    );
   }
 }
 
@@ -954,11 +1126,11 @@ async function get_invalid_devices(user_id, auth_user_id, dev_count) {
   var userValue;
 
   if (auth_user_id) {
-      userString = 'user_id';
-      userValue = auth_user_id;
+    userString = 'user_id';
+    userValue = auth_user_id;
   } else {
-      userString = 'venus_autos_user_id';
-      userValue = user_id;
+    userString = 'venus_autos_user_id';
+    userValue = user_id;
   }
 
   const get_invalid_devices = `
@@ -969,10 +1141,14 @@ async function get_invalid_devices(user_id, auth_user_id, dev_count) {
       WHERE users.${userString} = ?`;
 
   try {
-      const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_invalid_devices, [userValue]);
-      dev_count.push(data[0].num);
+    const data = await db.RunQuery(
+      dbConstants.DBS.AUTH_DB,
+      get_invalid_devices,
+      [userValue],
+    );
+    dev_count.push(data[0].num);
   } catch (err) {
-      throw new Error(`Error while fetching invalid devices: ${err.message}`);
+    throw new Error(`Error while fetching invalid devices: ${err.message}`);
   }
 }
 
@@ -984,24 +1160,49 @@ async function getCustomerNotes(user_id, responseData) {
       AND user_type = 1`;
 
   try {
-      const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, notesQuery, [user_id]);
-      
-      if (!data.length) {
-        responseData.user_notes = []
-      }
-      
-      responseData.user_notes = data || [];
+    const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, notesQuery, [
+      user_id,
+    ]);
+
+    if (!data.length) {
+      responseData.user_notes = [];
+    }
+
+    responseData.user_notes = data || [];
   } catch (error) {
-      throw new Error(`Error while fetching customer notes: ${error.message}`);
+    throw new Error(`Error while fetching customer notes: ${error.message}`);
   }
 }
 
-async function getRidesData(discount,paid_by_customer,values_time,driver_name,ride_dis,ride_time,amount,
-  payment_mode,account_id,coupon_title, engagement_ids,user_id, driverIds,paid_using_paytm, paid_using_mobikwik, paid_using_freecharge,
-  amount_venus_wallet, convenience_charge, convenience_charge_waiver, ride_source,
-  ride_type, isStartEnd, isStartEndReversed, isStartEndAutomated, rideRating, startFrom, pageSize,
+async function getRidesData(
+  discount,
+  paid_by_customer,
+  values_time,
+  driver_name,
+  ride_dis,
+  ride_time,
+  amount,
+  payment_mode,
+  account_id,
+  coupon_title,
+  engagement_ids,
+  user_id,
+  driverIds,
+  paid_using_paytm,
+  paid_using_mobikwik,
+  paid_using_freecharge,
+  amount_venus_wallet,
+  convenience_charge,
+  convenience_charge_waiver,
+  ride_source,
+  ride_type,
+  isStartEnd,
+  isStartEndReversed,
+  isStartEndAutomated,
+  rideRating,
+  startFrom,
+  pageSize,
 ) {
-
   const countQuery = `
       SELECT COUNT(1) AS number 
       FROM tb_engagements
@@ -1042,10 +1243,16 @@ async function getRidesData(discount,paid_by_customer,values_time,driver_name,ri
   `;
 
   try {
-    const count = await db.RunQuery(dbConstants.DBS.LIVE_DB, countQuery, [user_id]);
+    const count = await db.RunQuery(dbConstants.DBS.LIVE_DB, countQuery, [
+      user_id,
+    ]);
     exports.detailsUserCount.recentRides = count[0].number;
 
-    const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, dataQuery, [user_id, startFrom, pageSize]);
+    const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, dataQuery, [
+      user_id,
+      startFrom,
+      pageSize,
+    ]);
 
     for (var j = 0; j < data.length; j++) {
       var ist_pickup = convert_to_ist(data[j].pickup_time);
@@ -1073,15 +1280,14 @@ async function getRidesData(discount,paid_by_customer,values_time,driver_name,ri
       if (data[j].start_end != null) {
         isStartEndReversed.push(data[j].start_end_reversed);
         isStartEndAutomated.push(data[j].is_automated);
-      }
-      else {
+      } else {
         isStartEndReversed.push(null);
         isStartEndAutomated.push(null);
       }
       var rideRateObj = {
-        "user_rating": data[j].user_rating,
-        "driver_rating": data[j].driver_rating,
-        "Dname": data[j].driver_name
+        user_rating: data[j].user_rating,
+        driver_rating: data[j].driver_rating,
+        Dname: data[j].driver_name,
       };
       rideRating.push(rideRateObj);
     }
@@ -1110,12 +1316,12 @@ async function getCouponsData(userId, startFrom, pageSize, coupons) {
       ) AS test
   `;
 
-  const countResult = await db.RunQuery(dbConstants.DBS.LIVE_DB, countSQL, [userId]);
+  const countResult = await db.RunQuery(dbConstants.DBS.LIVE_DB, countSQL, [
+    userId,
+  ]);
 
   // Store the total count of coupons in a global object
   exports.detailsUserCount.couponsData = countResult[0].number;
-
-
 
   // SQL query to fetch paginated coupon data
   const getDataSQL = `
@@ -1161,10 +1367,14 @@ async function getCouponsData(userId, startFrom, pageSize, coupons) {
           LIMIT ?, ?
       `;
 
-  const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, getDataSQL, [userId, startFrom, pageSize]);
+  const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, getDataSQL, [
+    userId,
+    startFrom,
+    pageSize,
+  ]);
 
   // Transform the result data and store it in the coupons object
-  coupons.couponData = data.map(coupon => ({
+  coupons.couponData = data.map((coupon) => ({
     givenOn: coupon.given_on,
     expiryDate: coupon.expiry_date,
     redeemedOn: coupon.redeemed_on,
@@ -1177,12 +1387,22 @@ async function getCouponsData(userId, startFrom, pageSize, coupons) {
 
 async function get_user_remaining_coupons(user_id, number) {
   var get_data = `Select count(*) as num from tb_accounts where user_id = ? and status = 1`;
-  const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, get_data, [user_id, number]);
+  const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, get_data, [
+    user_id,
+    number,
+  ]);
   number[0] = data[0].num;
 }
 
-
-async function get_promotions_applicable(promo_titles, customer_fare_factor, driver_fare_factor, preferred_payment_mode, user_id, startFrom, pageSize) {
+async function get_promotions_applicable(
+  promo_titles,
+  customer_fare_factor,
+  driver_fare_factor,
+  preferred_payment_mode,
+  user_id,
+  startFrom,
+  pageSize,
+) {
   var get_data = `Select 
   * 
 from 
@@ -1212,7 +1432,11 @@ LIMIT
   ?, 
   ?
 `;
-  const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, get_data, [user_id, startFrom, pageSize]);
+  const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, get_data, [
+    user_id,
+    startFrom,
+    pageSize,
+  ]);
   for (var i = 0; i < data.length; i++) {
     customer_fare_factor.push(data[i].customer_fare_factor);
     driver_fare_factor.push(data[i].driver_fare_factor);
@@ -1222,18 +1446,15 @@ LIMIT
      */
     if (data[i].master_coupon == 1 && data[i].integratedPromoTitle != null) {
       promo_titles.push(data[i].integratedPromoTitle);
-    }
-    else if (data[i].promotion_title != null) {
+    } else if (data[i].promotion_title != null) {
       promo_titles.push(data[i].promotion_title);
-    }
-    else {
+    } else {
       promo_titles.push('NA');
     }
   }
 }
 
-async function get_friends_details(user_id,details){
-
+async function get_friends_details(user_id, details) {
   var get_friends = `SELECT
                         DISTINCT u.venus_autos_user_id,
                         u.user_id,
@@ -1287,32 +1508,33 @@ async function get_friends_details(user_id,details){
                         having u.venus_autos_user_id != ?
                       ORDER BY
                         u.date_registered DESC`;
-                    
-    const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_friends, [user_id,user_id]);
-    exports.detailsUserCount.friends = data.length;
-    for(var i = 0; i < data.length; i++){
-       details[i] = {};
-       var info = {
-           user_id : data[i].venus_autos_user_id,
-           user_name : data[i].user_name,
-           user_email : data[i].user_email,
-           phone_no : data[i].phone_no,
-           verification_status : data[i].verification_status,
-           first_transaction_on : data[i].first_transaction_on,
-           date_registered: data[i].date_registered,
-           is_duplicate : data[i].is_duplicate,
-           failed_reason : data[i].failed_reason,
-           type: data[i].type
-       };
-       if(data[i].logged_on == null)
-          details[i].first_transaction_on = '';
-       else
-          details[i].first_transaction_on = convert_to_ist(data[i].logged_on);
-          details[i] = info;
-    }
+
+  const data = await db.RunQuery(dbConstants.DBS.AUTH_DB, get_friends, [
+    user_id,
+    user_id,
+  ]);
+  exports.detailsUserCount.friends = data.length;
+  for (var i = 0; i < data.length; i++) {
+    details[i] = {};
+    var info = {
+      user_id: data[i].venus_autos_user_id,
+      user_name: data[i].user_name,
+      user_email: data[i].user_email,
+      phone_no: data[i].phone_no,
+      verification_status: data[i].verification_status,
+      first_transaction_on: data[i].first_transaction_on,
+      date_registered: data[i].date_registered,
+      is_duplicate: data[i].is_duplicate,
+      failed_reason: data[i].failed_reason,
+      type: data[i].type,
+    };
+    if (data[i].logged_on == null) details[i].first_transaction_on = '';
+    else details[i].first_transaction_on = convert_to_ist(data[i].logged_on);
+    details[i] = info;
+  }
 }
 
-async function getOngoingRide(userId, ongoinRide){
+async function getOngoingRide(userId, ongoinRide) {
   var get_data = `          SELECT
           engagement_id,
           accept_time,
@@ -1360,41 +1582,51 @@ async function getOngoingRide(userId, ongoinRide){
         ORDER BY
           engagement_id DESC`;
 
-          const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, get_data, [rideConstants.ENGAGEMENT_STATUS.ACCEPTED, rideConstants.ENGAGEMENT_STATUS.STARTED,rideConstants.ENGAGEMENT_STATUS.DRIVER_ARRIVED, userId]);
+  const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, get_data, [
+    rideConstants.ENGAGEMENT_STATUS.ACCEPTED,
+    rideConstants.ENGAGEMENT_STATUS.STARTED,
+    rideConstants.ENGAGEMENT_STATUS.DRIVER_ARRIVED,
+    userId,
+  ]);
 
-      for(var j = 0; j < data.length; j++){
-          var ride = {};
-          ride.engagement_id = data[j].engagement_id;
-          ride.driver_id = data[j].driver_id;
-          ride.accept_time = data[j].accept_time;
-          ride.pickup_time = data[j].pickup_time;
-          ride.driver_name = data[j].driver_name;
-          ride.applicable_promo_id = data[j].applicable_promo_id;
-          ride.applicable_account_id = data[j].applicable_account_id;
-          ride.preferred_payment_mode = data[j].preferred_payment_mode;
-          ride.applicable_account_id  = data[j].applicable_account_id;
-          ride.coupon_title           = data[j].coupon_title;
-          ride.pickup_latitude    = data[j].pickup_latitude;
-          ride.pickup_longitude   = data[j].pickup_longitude;
-          ride.conveneince_charge = data[j].conveneince_charge;
-          ride.convenience_charge_waiver = data[j].convenience_charge_waiver;
-          ride.rideStatus = data[j].status;
-          ride.pickup_location_address = data[j].pickup_location_address;
-          ride.drop_location_address  = data[j].drop_location_address;
-          ride.ongoing_ride_time  =   data[j].ongoing_ride_time;
-          ongoinRide.push(ride);
-      }
+  for (var j = 0; j < data.length; j++) {
+    var ride = {};
+    ride.engagement_id = data[j].engagement_id;
+    ride.driver_id = data[j].driver_id;
+    ride.accept_time = data[j].accept_time;
+    ride.pickup_time = data[j].pickup_time;
+    ride.driver_name = data[j].driver_name;
+    ride.applicable_promo_id = data[j].applicable_promo_id;
+    ride.applicable_account_id = data[j].applicable_account_id;
+    ride.preferred_payment_mode = data[j].preferred_payment_mode;
+    ride.applicable_account_id = data[j].applicable_account_id;
+    ride.coupon_title = data[j].coupon_title;
+    ride.pickup_latitude = data[j].pickup_latitude;
+    ride.pickup_longitude = data[j].pickup_longitude;
+    ride.conveneince_charge = data[j].conveneince_charge;
+    ride.convenience_charge_waiver = data[j].convenience_charge_waiver;
+    ride.rideStatus = data[j].status;
+    ride.pickup_location_address = data[j].pickup_location_address;
+    ride.drop_location_address = data[j].drop_location_address;
+    ride.ongoing_ride_time = data[j].ongoing_ride_time;
+    ongoinRide.push(ride);
+  }
 }
 
-
-async function getCancelledRides(user_id, cancelledRides, startFrom, pageSize, userType) {
-  let userCondition = "";
+async function getCancelledRides(
+  user_id,
+  cancelledRides,
+  startFrom,
+  pageSize,
+  userType,
+) {
+  let userCondition = '';
 
   // Determine user condition based on user type
   if (userType === 1) {
-    userCondition = "AND tb_engagements.user_id = ?";
+    userCondition = 'AND tb_engagements.user_id = ?';
   } else if (userType === 2) {
-    userCondition = "AND tb_engagements.driver_id = ?";
+    userCondition = 'AND tb_engagements.driver_id = ?';
   }
 
   // SQL to count cancelled rides
@@ -1407,7 +1639,9 @@ async function getCancelledRides(user_id, cancelledRides, startFrom, pageSize, u
   `;
 
   try {
-    const count = await db.RunQuery(dbConstants.DBS.LIVE_DB, countSQL, [user_id]);
+    const count = await db.RunQuery(dbConstants.DBS.LIVE_DB, countSQL, [
+      user_id,
+    ]);
     exports.detailsUserCount.cancelledRides = count[0].number;
     // driver.driverInfoCount.cancelledRides = count[0].number;
 
@@ -1464,14 +1698,20 @@ async function getCancelledRides(user_id, cancelledRides, startFrom, pageSize, u
     `;
 
     // Fetch the cancelled ride details
-    const cancelData = await db.RunQuery(dbConstants.DBS.LIVE_DB, queryString, [user_id, user_id, user_id, startFrom, pageSize]);
+    const cancelData = await db.RunQuery(dbConstants.DBS.LIVE_DB, queryString, [
+      user_id,
+      user_id,
+      user_id,
+      startFrom,
+      pageSize,
+    ]);
 
     // Map the results into a structured format
     cancelData.forEach((data, index) => {
       const resJson = {
         serial_no: index + 1,
         eng_id: data.engagement_id,
-        cancelled_by: data.status === 8 ? "driver" : "user",
+        cancelled_by: data.status === 8 ? 'driver' : 'user',
         reason: data.cancellation_reasons || data.other_reasons,
         pickup_location: data.pickup_location_address,
         cancelled_on: data.accept_time,
@@ -1484,7 +1724,7 @@ async function getCancelledRides(user_id, cancelledRides, startFrom, pageSize, u
         ride_source: data.ride_source,
         cancellation_charges: data.customer_cancellation_charges,
         is_refunded: data.is_refunded,
-        amount_refunded: (data.refund_jc + data.refund_paytm),
+        amount_refunded: data.refund_jc + data.refund_paytm,
         charged_via: data.wallet_type || -1,
       };
 
@@ -1495,7 +1735,6 @@ async function getCancelledRides(user_id, cancelledRides, startFrom, pageSize, u
 
       cancelledRides.push(resJson);
     });
-
   } catch (err) {
     throw new Error(err.message);
   }
@@ -1505,18 +1744,19 @@ async function getFirstRideCity(user_id, firstRideCity) {
   const sqlQuery = `SELECT * FROM ${dbConstants.DBS.LIVE_DB}.tb_engagements WHERE user_id = ? AND status = 3 ORDER BY pickup_time ASC`;
 
   try {
-    const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, sqlQuery, [user_id]);
+    const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, sqlQuery, [
+      user_id,
+    ]);
 
     if (data.length === 0) {
-      firstRideCity[0] = []
+      firstRideCity[0] = [];
     }
 
     firstRideCity[0] = data[0].city;
   } catch (err) {
-    throw new Error("Error fetching first ride city: ",err.message);
+    throw new Error('Error fetching first ride city: ', err.message);
   }
 }
-
 
 async function getStartEndCasesCount(user_id, startEndCount, isDriver) {
   let conditionStr = '';
@@ -1531,15 +1771,24 @@ async function getStartEndCasesCount(user_id, startEndCount, isDriver) {
                     AND issue_id IS NOT NULL AND logged_on != '0000-00-00 00:00:00'`;
 
   try {
-    const startEndCountData = await db.RunQuery(dbConstants.DBS.LIVE_DB, sqlQuery, [user_id]);
+    const startEndCountData = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      sqlQuery,
+      [user_id],
+    );
 
     startEndCount[0] = startEndCountData[0].start_end_count;
   } catch (err) {
-    throw new Error("Error fetching start/end case count:  ",err.message);
+    throw new Error('Error fetching start/end case count:  ', err.message);
   }
 }
 
-async function get_promotions(availablePromotions, user_id, startFrom, pageSize) {
+async function get_promotions(
+  availablePromotions,
+  user_id,
+  startFrom,
+  pageSize,
+) {
   const get_data = `
     SELECT
       tb_ride_promotions.promo_id,
@@ -1567,14 +1816,17 @@ async function get_promotions(availablePromotions, user_id, startFrom, pageSize)
   `;
 
   try {
-    const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, get_data, [user_id, startFrom, pageSize]);
+    const data = await db.RunQuery(dbConstants.DBS.LIVE_DB, get_data, [
+      user_id,
+      startFrom,
+      pageSize,
+    ]);
 
-    availablePromotions.promotions = (data && data.length > 0) ? data : [];
+    availablePromotions.promotions = data && data.length > 0 ? data : [];
   } catch (err) {
-    throw new Error("Error fetching promotions: ", err.message);
+    throw new Error('Error fetching promotions: ', err.message);
   }
 }
-
 
 async function getDriverRides(driverId, startFrom, pageSize, responseData) {
   var getContactInfo = ` SELECT 
@@ -1621,23 +1873,26 @@ async function getDriverRides(driverId, startFrom, pageSize, responseData) {
             b.driver_id = ?;
       `;
 
-  let contactInfo = await db.RunQuery(
-    dbConstants.DBS.LIVE_DB,
-    getContactInfo,
-    [driverId],
-  );
+  let contactInfo = await db.RunQuery(dbConstants.DBS.LIVE_DB, getContactInfo, [
+    driverId,
+  ]);
   if (!contactInfo.length) {
     return responseData;
   }
 
   responseData['Driver Id'] = driverId;
-  responseData['last_latitude_longitude'] = `${contactInfo[0].last_latitude}, ${contactInfo[0].last_longitude}`;
+  responseData['last_latitude_longitude'] =
+    `${contactInfo[0].last_latitude}, ${contactInfo[0].last_longitude}`;
   responseData['last_location_updated'] = contactInfo[0].last_updated_on;
   responseData['last_login'] = contactInfo[0].last_login;
   responseData['Driver Name'] = contactInfo[0].user_name;
-  responseData['driver_email'] = contactInfo[0].is_deactivated ? contactInfo[0].del_email : contactInfo[0].user_email;
+  responseData['driver_email'] = contactInfo[0].is_deactivated
+    ? contactInfo[0].del_email
+    : contactInfo[0].user_email;
   responseData['City'] = contactInfo[0].city;
-  responseData['Phone No'] = contactInfo[0].is_deactivated ? contactInfo[0].del_phone_no : contactInfo[0].phone_no;
+  responseData['Phone No'] = contactInfo[0].is_deactivated
+    ? contactInfo[0].del_phone_no
+    : contactInfo[0].phone_no;
   responseData['Suspended'] = contactInfo[0].driver_suspended;
   responseData['deactivation_reason'] = contactInfo[0].deactivation_reason;
   responseData['app_version'] = contactInfo[0].app_versioncode;
@@ -1648,16 +1903,16 @@ async function getDriverRides(driverId, startFrom, pageSize, responseData) {
   responseData['OS version'] = contactInfo[0].os_version;
   responseData['Autos Enabled'] = contactInfo[0].autos_enabled;
   responseData['Dodo Enabled'] = contactInfo[0].delivery_enabled;
-  responseData['Driver Image'] = contactInfo[0].driver_image || ''
+  responseData['Driver Image'] = contactInfo[0].driver_image || '';
   responseData.date_of_birth = contactInfo[0].date_of_birth;
   responseData.note = contactInfo[0].note;
-  responseData.can_request = contactInfo[0].can_request
-  responseData.status = contactInfo[0].status
-  responseData['Payment Holded'] = (contactInfo[0].payment_status == 0 ? 1 : 0)
+  responseData.can_request = contactInfo[0].can_request;
+  responseData.status = contactInfo[0].status;
+  responseData['Payment Holded'] = contactInfo[0].payment_status == 0 ? 1 : 0;
 
-  responseData.walletCompanyName = "";
-  responseData.walletNumber = "";
-  responseData.walletCompanyId = "";
+  responseData.walletCompanyName = '';
+  responseData.walletNumber = '';
+  responseData.walletCompanyId = '';
 
   var walletNumberData = await getWallerNumber(parseInt(driverId));
 
@@ -1665,47 +1920,46 @@ async function getDriverRides(driverId, startFrom, pageSize, responseData) {
     walletNumberData = walletNumberData[0];
 
     responseData.walletCompanyName = walletNumberData.companyName;
-    if (walletNumberData.companyName == "Other") {
+    if (walletNumberData.companyName == 'Other') {
       responseData.walletCompanyName = walletNumberData.otherName;
     }
     responseData.walletNumber = walletNumberData.wallet_number;
     responseData.walletCompanyId = walletNumberData.id;
   }
-  var countSQL = `SELECT COUNT(1) as number FROM ${dbConstants.DBS.LIVE_DB}.tb_engagements WHERE tb_engagements.driver_id = ? AND tb_engagements.status= ?`
+  var countSQL = `SELECT COUNT(1) as number FROM ${dbConstants.DBS.LIVE_DB}.tb_engagements WHERE tb_engagements.driver_id = ? AND tb_engagements.status= ?`;
 
-  let count = await db.RunQuery(dbConstants.DBS.LIVE_DB,  countSQL, [driverId, 3] );
+  let count = await db.RunQuery(dbConstants.DBS.LIVE_DB, countSQL, [
+    driverId,
+    3,
+  ]);
   exports.driverInfoCount.info = count[0].number;
   var paginationDetails = {
     startFrom: startFrom,
-    pageSize: pageSize
-  }
+    pageSize: pageSize,
+  };
   var endAt = paginationDetails.startFrom + paginationDetails.pageSize;
-  await updatePaginationDetails(driverId, paginationDetails, endAt)
-  await getDriverRideInfo(driverId, paginationDetails, responseData)
-
+  await updatePaginationDetails(driverId, paginationDetails, endAt);
+  await getDriverRideInfo(driverId, paginationDetails, responseData);
 }
-
 
 async function getDriverPerformance(driverId, responseData) {
   try {
-
     var avgResult = {};
 
-    await getDriverRidesAndDelivery(driverId, avgResult)
-    await getDriverReferralDetails(driverId,avgResult)
-    await getDriverLastReferralDetail(driverId,avgResult)
+    await getDriverRidesAndDelivery(driverId, avgResult);
+    await getDriverReferralDetails(driverId, avgResult);
+    await getDriverLastReferralDetail(driverId, avgResult);
 
     responseData['Average Rides'] = avgResult.rides_avg;
     responseData['Average Deliveries'] = avgResult.deliveries_avg;
     responseData['Average Referrals'] = avgResult.avg_referrals;
     responseData['Last Referral'] = avgResult.last_referral;
-    
   } catch (error) {
     throw new Error(error.message);
   }
 }
 
-async function updatePaginationDetails(driverId, paginationDetails,endAt) {
+async function updatePaginationDetails(driverId, paginationDetails, endAt) {
   const sql = `
         SELECT 
             t1.engagement_date, 
@@ -1741,20 +1995,20 @@ async function updatePaginationDetails(driverId, paginationDetails,endAt) {
             engagement_date DESC;
     `;
 
-  var result = await db.RunQuery(
-    dbConstants.DBS.LIVE_DB,
-    sql,
-    [driverId, paginationDetails.startFrom,
-      paginationDetails.startFrom, endAt, endAt],
-  );
+  var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, sql, [
+    driverId,
+    paginationDetails.startFrom,
+    paginationDetails.startFrom,
+    endAt,
+    endAt,
+  ]);
   paginationDetails.startDate = result[0].engagement_date;
   paginationDetails.startFrom -= parseInt(result[0].startCounter);
 
   if (endAt > parseInt(result[result.length - 1].endCounter)) {
     paginationDetails.endDate = '2011-01-01 00:00:00';
-  }
-  else {
-    paginationDetails.endDate = result[result.length - 1]['engagement_date']
+  } else {
+    paginationDetails.endDate = result[result.length - 1]['engagement_date'];
   }
 }
 
@@ -1827,14 +2081,17 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
           LIMIT ?, ?;
       `;
 
-  var driverInfo = await db.RunQuery(
-    dbConstants.DBS.LIVE_DB,
-    sql,
-    [driverId, 3, endDate, startDate, startFrom, pageSize],
-  );
+  var driverInfo = await db.RunQuery(dbConstants.DBS.LIVE_DB, sql, [
+    driverId,
+    3,
+    endDate,
+    startDate,
+    startFrom,
+    pageSize,
+  ]);
 
   if (!driverInfo.length) {
-    return responseData.info = [];
+    return (responseData.info = []);
   }
 
   if (driverInfo.length >= 0) {
@@ -1847,15 +2104,17 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
         'Drop Time': new Date(driverInfo[i].drop_time),
         'Distance Travelled': driverInfo[i].distance_travelled,
         'Google Distance': driverInfo[i].ride_distance_from_google,
-        'Duration': driverInfo[i].ride_time,
-        'Fare': driverInfo[i].actual_fare,
+        Duration: driverInfo[i].ride_time,
+        Fare: driverInfo[i].actual_fare,
         'Customer Fare Factor': driverInfo[i].customer_fare_factor,
         'Driver Fare Factor': driverInfo[i].driver_fare_factor,
         'Ride Source': driverInfo[i].ride_source,
         'Ride Type': driverInfo[i].ride_type,
         'Start End': driverInfo[i].start_end,
-        'Start End Reversed': driverInfo[i].start_end == null ? null : driverInfo[i].is_reversed,
-        'Start End Automated': driverInfo[i].start_end == null ? null : driverInfo[i].is_automated,
+        'Start End Reversed':
+          driverInfo[i].start_end == null ? null : driverInfo[i].is_reversed,
+        'Start End Automated':
+          driverInfo[i].start_end == null ? null : driverInfo[i].is_automated,
         'User Rating': driverInfo[i].user_rating,
         'Driver Rating': driverInfo[i].driver_rating,
         'Driver Payout': driverInfo[i].driver_payout,
@@ -1864,8 +2123,8 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
         'Paid By Customer Cash': driverInfo[i].paid_by_customer,
         'Paid By Wallet': driverInfo[i].paid_using_wallet,
         'Tax by driver': driverInfo[i].net_customer_tax,
-        'Discount': driverInfo[i].discount,
-        'Money Transacted': driverInfo[i].money_transacted
+        Discount: driverInfo[i].discount,
+        'Money Transacted': driverInfo[i].money_transacted,
       });
       var rideDate = new Date(driverInfo[i].engagement_date);
       var curDate = new Date();
@@ -1927,11 +2186,12 @@ async function getOngoingRideForDriver(driver_Id, ongoinRide) {
       ORDER BY
         engagement_id DESC`;
 
-  var data = await db.RunQuery(
-    dbConstants.DBS.LIVE_DB,
-    get_data,
-    [rideConstants.ENGAGEMENT_STATUS.ACCEPTED, rideConstants.ENGAGEMENT_STATUS.STARTED, rideConstants.ENGAGEMENT_STATUS.DRIVER_ARRIVED, driver_Id],
-  );
+  var data = await db.RunQuery(dbConstants.DBS.LIVE_DB, get_data, [
+    rideConstants.ENGAGEMENT_STATUS.ACCEPTED,
+    rideConstants.ENGAGEMENT_STATUS.STARTED,
+    rideConstants.ENGAGEMENT_STATUS.DRIVER_ARRIVED,
+    driver_Id,
+  ]);
 
   exports.driverInfoCount.ongoingRide = data.length;
   for (var j = 0; j < data.length; j++) {
@@ -1976,29 +2236,27 @@ async function getWallerNumber(driverId) {
         dwn.driver_id;
 `;
 
-  let walletNumberData = await db.RunQuery(
-    dbConstants.DBS.LIVE_DB,
-    query,
-    [driverId],
-  );
+  let walletNumberData = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, [
+    driverId,
+  ]);
   return walletNumberData;
 }
 
-
-function convert_to_ist(date_val){
+function convert_to_ist(date_val) {
   //console.log("date_val = "+date_val);
 
-  if(date_val == '0000-00-00 00:00:00'){
-      return date_val;
+  if (date_val == '0000-00-00 00:00:00') {
+    return date_val;
   }
   var gmt_time = new Date(date_val);
   var another_date = gmt_time;
   var now = new Date();
   //console.log("gmt_time = "+gmt_time);
   //console.log("timeoffset = "+now.getTimezoneOffset());
-  gmt_time.setTime(gmt_time.getTime() + 5.5*60*1000*60);
+  gmt_time.setTime(gmt_time.getTime() + 5.5 * 60 * 1000 * 60);
   //console.log("after = "+gmt_time);
-  another_date = another_date.toLocaleDateString() +" "+another_date.toLocaleTimeString();
+  another_date =
+    another_date.toLocaleDateString() + ' ' + another_date.toLocaleTimeString();
   //var converted_date = gmt_time.toLocaleString();
   return another_date;
 }
@@ -2046,7 +2304,6 @@ async function getDriverRidesAndDelivery(driver_id, avgResult) {
   }
 }
 
-
 async function getDriverReferralDetails(driver_id, avgResult) {
   var getDriverReffQuery = `SELECT count(*) as avg_referrals FROM ${dbConstants.DBS.LIVE_DB}.tb_dc_referral WHERE driver_id=? AND referred_on >= Date(Now()) - interval 7 day `;
 
@@ -2070,61 +2327,68 @@ async function getDriverLastReferralDetail(driver_id, avgResult) {
     [driver_id],
   );
   if (driverReferralData.length > 0) {
-    avgResult.last_referral = driverReferralData[0].referred_on
+    avgResult.last_referral = driverReferralData[0].referred_on;
   }
 }
 
-function calculateDatesBwDates(startDt, endDt, inclusion_type)
-{
-    //inclusion_type=0 means include both date
-    //inclusion_type=1 means include startDt
-    //inclusion_type=2 means include endDt
-    var arrDates=[];
-    var range=diffInDates(startDt, endDt, 'days');
-    for(var i=0;i<=range; i++)
-    {
-        if(i==0)
-        {
-            //first date
-            if(inclusion_type==0 ||inclusion_type==1)
-            {
-                var temp_date=new Date(startDt);
-                arrDates.push(temp_date.getUTCFullYear()+'-'+(temp_date.getUTCMonth()+1)+'-'+temp_date.getUTCDate());
-            }
-            startDt.setDate(startDt.getDate()+1);
-        }
-        else if(i==range)
-        {
-            //last date
-            if(inclusion_type==0 ||inclusion_type==2)
-            {
-                var temp_date=new Date(startDt);
-                arrDates.push(temp_date.getUTCFullYear()+'-'+(temp_date.getUTCMonth()+1)+'-'+temp_date.getUTCDate());
-            }
-            startDt.setDate(startDt.getDate()+1);
-        }
-        else
-        {
-            var temp_date=new Date(startDt);
-            arrDates.push(temp_date.getUTCFullYear()+'-'+(temp_date.getUTCMonth()+1)+'-'+temp_date.getUTCDate());
-            startDt.setDate(startDt.getDate()+1);
-        }
+function calculateDatesBwDates(startDt, endDt, inclusion_type) {
+  //inclusion_type=0 means include both date
+  //inclusion_type=1 means include startDt
+  //inclusion_type=2 means include endDt
+  var arrDates = [];
+  var range = diffInDates(startDt, endDt, 'days');
+  for (var i = 0; i <= range; i++) {
+    if (i == 0) {
+      //first date
+      if (inclusion_type == 0 || inclusion_type == 1) {
+        var temp_date = new Date(startDt);
+        arrDates.push(
+          temp_date.getUTCFullYear() +
+            '-' +
+            (temp_date.getUTCMonth() + 1) +
+            '-' +
+            temp_date.getUTCDate(),
+        );
+      }
+      startDt.setDate(startDt.getDate() + 1);
+    } else if (i == range) {
+      //last date
+      if (inclusion_type == 0 || inclusion_type == 2) {
+        var temp_date = new Date(startDt);
+        arrDates.push(
+          temp_date.getUTCFullYear() +
+            '-' +
+            (temp_date.getUTCMonth() + 1) +
+            '-' +
+            temp_date.getUTCDate(),
+        );
+      }
+      startDt.setDate(startDt.getDate() + 1);
+    } else {
+      var temp_date = new Date(startDt);
+      arrDates.push(
+        temp_date.getUTCFullYear() +
+          '-' +
+          (temp_date.getUTCMonth() + 1) +
+          '-' +
+          temp_date.getUTCDate(),
+      );
+      startDt.setDate(startDt.getDate() + 1);
     }
-    return arrDates;
+  }
+  return arrDates;
 }
 
 async function getTodaysFirstLogin(driverId, firstLogin) {
   try {
-    var sqlQuery = `SELECT MIN(request_made_on) as first_log_in FROM ${dbConstants.DBS.LIVE_DB}.tb_engagements WHERE engagement_date = DATE(NOW()+ INTERVAL 330 MINUTE) AND driver_id = ? `
+    var sqlQuery = `SELECT MIN(request_made_on) as first_log_in FROM ${dbConstants.DBS.LIVE_DB}.tb_engagements WHERE engagement_date = DATE(NOW()+ INTERVAL 330 MINUTE) AND driver_id = ? `;
 
-    var result = await db.RunQuery(
-      dbConstants.DBS.LIVE_DB,
-      sqlQuery,
-      [driverId],
-    );
+    var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, sqlQuery, [
+      driverId,
+    ]);
 
     if (result.length == 0) {
-      firstLogin[0] = "No Rides Today";
+      firstLogin[0] = 'No Rides Today';
     } else {
       firstLogin[0] = result[0].first_log_in;
     }
@@ -2140,11 +2404,9 @@ async function getDriverCityInfo(user_id, responseData) {
     LEFT JOIN ${dbConstants.DBS.LIVE_DB}.tb_driver_bank_details tdbd ON (tdbd.driver_id = tbd.driver_id)
               WHERE tbd.driver_id = ?`;
 
-    var walletData = await db.RunQuery(
-      dbConstants.DBS.LIVE_DB,
-      walletQuery,
-      [user_id],
-    );
+    var walletData = await db.RunQuery(dbConstants.DBS.LIVE_DB, walletQuery, [
+      user_id,
+    ]);
     responseData.bank_list = walletData[0].bank_list;
     responseData.bank_info = {};
     responseData.bank_info.bank_name = walletData[0].bank_name;
@@ -2155,22 +2417,18 @@ async function getDriverCityInfo(user_id, responseData) {
   }
 }
 
-function diffInDates(startDt, endDt, diffType)
-{
-    var startDate = moment(startDt, 'YYYY-MM-DD HH:mm Z'); // HH:mm:ss
-    var endDate = moment(endDt, 'YYYY-MM-DD HH:mm Z');
-    var diff = endDate.diff(startDate, diffType);
-    return diff;
+function diffInDates(startDt, endDt, diffType) {
+  var startDate = moment(startDt, 'YYYY-MM-DD HH:mm Z'); // HH:mm:ss
+  var endDate = moment(endDt, 'YYYY-MM-DD HH:mm Z');
+  var diff = endDate.diff(startDate, diffType);
+  return diff;
 }
 function getPlainDateFormat(curDate) {
-  var day   = curDate.getDate();
-  var month = curDate.getMonth() +1;
-  var year  = curDate.getUTCFullYear();
-  var dayStr = day < 10 ? ("0"+ day.toString()) : (day.toString());
-  var monthStr = month < 10 ? ("0" + month.toString()) : (month.toString());
-  var dateStr = dayStr + "-" + monthStr + "-" + year.toString();
+  var day = curDate.getDate();
+  var month = curDate.getMonth() + 1;
+  var year = curDate.getUTCFullYear();
+  var dayStr = day < 10 ? '0' + day.toString() : day.toString();
+  var monthStr = month < 10 ? '0' + month.toString() : month.toString();
+  var dateStr = dayStr + '-' + monthStr + '-' + year.toString();
   return dateStr;
 }
-
-
-

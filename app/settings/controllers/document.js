@@ -1,40 +1,39 @@
 const {
-    dbConstants,
-    db,
-    errorHandler,
-    responseHandler,
-    rideConstants,
-    ResponseConstants,
-    generalConstants,
-  } = require('../../../bootstart/header');
-  var moment = require('moment');
-  var Joi = require('joi');
-  const Helper = require('../helper');
-  const rideConstant = require('../../../constants/rideConstants');
+  dbConstants,
+  db,
+  errorHandler,
+  responseHandler,
+  rideConstants,
+  ResponseConstants,
+  generalConstants,
+} = require('../../../bootstart/header');
+var moment = require('moment');
+var Joi = require('joi');
+const Helper = require('../helper');
+const rideConstant = require('../../../constants/rideConstants');
 const { checkBlank } = require('../../rides/helper');
 
-
 exports.fetchCityDocuments = async function (req, res) {
-    try {
-        const requestParameters = req.query;
-        delete requestParameters.token;
+  try {
+    const requestParameters = req.query;
+    delete requestParameters.token;
 
-        const validationSchema = Joi.object({
-            city: Joi.number().integer().min(1).required(),
-            vehicle_type: Joi.number().integer().min(1).required(),
-            secret_key: Joi.number().optional()
-        });
-        const validatedParams = validationSchema.validate(requestParameters);
+    const validationSchema = Joi.object({
+      city: Joi.number().integer().min(1).required(),
+      vehicle_type: Joi.number().integer().min(1).required(),
+      secret_key: Joi.number().optional(),
+    });
+    const validatedParams = validationSchema.validate(requestParameters);
 
-        if (validatedParams.error) {
-            return responseHandler.parameterMissingResponse(res, '');
-        }
+    if (validatedParams.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
 
-        const cityId = requestParameters.city;
-        const vehicleType = requestParameters.vehicle_type;
-        const operatorId = req.operator_id;
+    const cityId = requestParameters.city;
+    const vehicleType = requestParameters.vehicle_type;
+    const operatorId = req.operator_id;
 
-        const stmt = `SELECT 
+    const stmt = `SELECT 
         rd.document_id, 
         rd.document_name,
         rd.instructions,
@@ -64,23 +63,18 @@ exports.fetchCityDocuments = async function (req, res) {
       ORDER BY 
         added_in_city DESC`;
 
-        const values = [cityId, vehicleType, operatorId, cityId];
+    const values = [cityId, vehicleType, operatorId, cityId];
 
-        const docWrapper = await db.RunQuery(
-            dbConstants.DBS.LIVE_DB,
-            stmt,
-            values,
-        );
+    const docWrapper = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, values);
 
-      return responseHandler.success(req,res, '',docWrapper);
-    } catch (error) {
-      errorHandler.errorHandler(error, req, res);
-    }
-  };
+    return responseHandler.success(req, res, '', docWrapper);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
 
 exports.insertDocument = async function (req, res) {
   try {
-
     const schema = Joi.object({
       operator_id: Joi.number().integer().optional(),
       document_name: Joi.string().required(),
@@ -95,7 +89,7 @@ exports.insertDocument = async function (req, res) {
       bank_details: Joi.optional(),
       include_expiry: Joi.optional(),
       text_doc_category: Joi.optional(),
-      secret_key: Joi.number().optional()
+      secret_key: Joi.number().optional(),
     });
 
     delete req.body.token;
@@ -108,7 +102,7 @@ exports.insertDocument = async function (req, res) {
     }
 
     const body = req.body;
-    body.operator_id = req.operator_id
+    body.operator_id = req.operator_id;
 
     if (body.document_type == 4 && !body.text_doc_category) {
       return responseHandler.parameterMissingResponse(res, '');
@@ -120,10 +114,14 @@ exports.insertDocument = async function (req, res) {
       //Document Category is mandatory when multiple Vehicles are enabled for operator
       if (!body.document_category) {
         return responseHandler.parameterMissingResponse(res, '');
-      }
-      else {
-        if (body.is_required != constants.driverDocumentIsRequired.MANDATORY_REGISTER) {
-          throw new Error("Invalid Required field. Only Mandatory Register is allowed for Vehicle Documents");
+      } else {
+        if (
+          body.is_required !=
+          constants.driverDocumentIsRequired.MANDATORY_REGISTER
+        ) {
+          throw new Error(
+            'Invalid Required field. Only Mandatory Register is allowed for Vehicle Documents',
+          );
         }
       }
     } else {
@@ -134,21 +132,28 @@ exports.insertDocument = async function (req, res) {
     }
 
     var requiredVehicleKeys = ['*'];
-    var vehicleCriteria = [{ key: 'vehicle_type', value: body.vehicle_type }, { key: 'operator_id', value: (body.operator_id || req.operator_id || 0) }, { key: 'city_id', value: body.city_id }];
+    var vehicleCriteria = [
+      { key: 'vehicle_type', value: body.vehicle_type },
+      { key: 'operator_id', value: body.operator_id || req.operator_id || 0 },
+      { key: 'city_id', value: body.city_id },
+    ];
     var vehicleValues = {};
     vehicleValues = await db.SelectFromTableIn(
       dbConstants.DBS.LIVE_DB,
       `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS}`,
       requiredVehicleKeys,
-      vehicleCriteria
+      vehicleCriteria,
     );
     if (!vehicleValues || !vehicleValues.length) {
       throw new Error('Vehicle Type is not valid.');
     }
 
     var requiredKeys = ['document_id'];
-    var criteria = [{ key: 'operator_id', value: body.operator_id }, { key: 'document_name', value: body.document_name },
-    { key: 'document_type', value: body.document_type }];
+    var criteria = [
+      { key: 'operator_id', value: body.operator_id },
+      { key: 'document_name', value: body.document_name },
+      { key: 'document_type', value: body.document_type },
+    ];
 
     var resultWrapper = {};
 
@@ -156,10 +161,10 @@ exports.insertDocument = async function (req, res) {
       dbConstants.DBS.LIVE_DB,
       `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REQ_DOC}`,
       requiredKeys,
-      criteria
+      criteria,
     );
 
-    if (body.document_type==4) body.num_images_required = "0";
+    if (body.document_type == 4) body.num_images_required = '0';
 
     var document = await Helper.insertRequiredDocument(body);
 
@@ -167,15 +172,20 @@ exports.insertDocument = async function (req, res) {
 
     await Helper.insertCityDocument(body);
 
-    return responseHandler.success(req, res, 'Document added successfully.', '');
-    } catch (error) {
-      errorHandler.errorHandler(error, req, res);
-    }
-  };
+    return responseHandler.success(
+      req,
+      res,
+      'Document added successfully.',
+      '',
+    );
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
 
 exports.updateDocument = async function (req, res) {
   try {
-    req.body.operator_id = req.operator_id
+    req.body.operator_id = req.operator_id;
     const schema = Joi.object({
       operator_id: Joi.number().integer().required(),
       document_id: Joi.number().integer().required(),
@@ -187,12 +197,30 @@ exports.updateDocument = async function (req, res) {
       change_status: Joi.number().integer().valid(1).optional(),
       vehicle_type: Joi.number().integer().min(1).optional(),
       secret_key: Joi.number().optional(),
-      is_required: Joi.number().integer().min(0).optional()
-    }).with('change_status', ['city_id', 'vehicle_type'])
+      is_required: Joi.number().integer().min(0).optional(),
+    })
+      .with('change_status', ['city_id', 'vehicle_type'])
       .with('is_required', ['city_id', 'vehicle_type'])
-      .without('city_id', ['document_name', 'instructions', 'num_images_required', 'gallery_restricted'])
-      .without('vehicle_type', ['document_name', 'instructions', 'num_images_required', 'gallery_restricted'])
-      .or('document_name', 'instructions', 'num_images_required', 'change_status', 'is_required', 'gallery_restricted')
+      .without('city_id', [
+        'document_name',
+        'instructions',
+        'num_images_required',
+        'gallery_restricted',
+      ])
+      .without('vehicle_type', [
+        'document_name',
+        'instructions',
+        'num_images_required',
+        'gallery_restricted',
+      ])
+      .or(
+        'document_name',
+        'instructions',
+        'num_images_required',
+        'change_status',
+        'is_required',
+        'gallery_restricted',
+      )
       .min(3);
 
     delete req.body.token;
@@ -207,14 +235,17 @@ exports.updateDocument = async function (req, res) {
     const body = req.body;
 
     var requiredKeys = ['document_name'];
-    var criteria = [{ key: 'document_id', value: body.document_id }, { key: 'operator_id', value: body.operator_id }];
+    var criteria = [
+      { key: 'document_id', value: body.document_id },
+      { key: 'operator_id', value: body.operator_id },
+    ];
     var prevDocValues = {};
 
     prevDocValues = await db.SelectFromTableIn(
       dbConstants.DBS.LIVE_DB,
       `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REQ_DOC}`,
       requiredKeys,
-      criteria
+      criteria,
     );
     if (!(prevDocValues && prevDocValues.length)) {
       throw new Error('No such document found.');
@@ -231,20 +262,21 @@ exports.updateDocument = async function (req, res) {
         values.push(rideConstants.STATUS.INACTIVE);
       }
       if (body.is_required >= 0) {
-        requiredDocumentQuery += (body.change_status ? "," : "") + `cd.is_required = ?`;
+        requiredDocumentQuery +=
+          (body.change_status ? ',' : '') + `cd.is_required = ?`;
         values.push(body.is_required);
       }
 
       requiredDocumentQuery += ` WHERE rd.operator_id = ? AND cd.document_id = ? AND cd.city_id = ? AND cd.vehicle_type = ?`;
 
-      values = values.concat([body.operator_id, body.document_id, body.city_id, body.vehicle_type]);
-      await db.RunQuery(
-        dbConstants.DBS.LIVE_DB,
-        requiredDocumentQuery,
-        values,
-      );
-    }
-    else {
+      values = values.concat([
+        body.operator_id,
+        body.document_id,
+        body.city_id,
+        body.vehicle_type,
+      ]);
+      await db.RunQuery(dbConstants.DBS.LIVE_DB, requiredDocumentQuery, values);
+    } else {
       var criteria = [{ key: 'document_id', value: body.document_id }];
       var updateKeys = {};
       if (body.document_name) {
@@ -264,11 +296,16 @@ exports.updateDocument = async function (req, res) {
         dbConstants.DBS.LIVE_DB,
         `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REQ_DOC}`,
         updateKeys,
-        criteria
+        criteria,
       );
     }
-      return responseHandler.success(req,res, 'Document updated successfully.','');
-    } catch (error) {
-      errorHandler.errorHandler(error, req, res);
-    }
+    return responseHandler.success(
+      req,
+      res,
+      'Document updated successfully.',
+      '',
+    );
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
 };

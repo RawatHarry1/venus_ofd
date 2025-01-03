@@ -2,7 +2,6 @@ const PushNotifcationController = require('./controllers/pushNotification');
 const AdminMiddlewares = require('../admin/middelware');
 
 module.exports = function (app) {
-
   /* 
   Driver Push Notification
   */
@@ -11,7 +10,7 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     PushNotifcationController.sendSmsPushToDriver,
-  )
+  );
 
   /* 
   Customer Push Notification
@@ -22,5 +21,5 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     PushNotifcationController.sendSmsPushToDriver,
-  )
+  );
 };

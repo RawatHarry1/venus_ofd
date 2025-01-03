@@ -1,18 +1,20 @@
 const RidesController = require('./controllers/rides');
 const vehicleTypesController = require('./controllers/vehicle');
 const AdminMiddlewares = require('../admin/middelware');
-const PackageTypesController = require('./controllers/package')
-var multer       =     require('multer');
+const PackageTypesController = require('./controllers/package');
+var multer = require('multer');
 const { generalConstants } = require('../../bootstart/header');
-var createRideController           = require('./controllers/createRide')
+var createRideController = require('./controllers/createRide');
 
-var upload       =     multer({dest : 'uploads/', limits: { fileSize: generalConstants.MAX_ALLOWED_FILE_SIZE }});
+var upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: generalConstants.MAX_ALLOWED_FILE_SIZE },
+});
 
 module.exports = function (app) {
-
   /**
    * Rides
-  **/
+   **/
   app.get(
     '/get_ride_details',
     AdminMiddlewares.admin.domainToken,
@@ -36,7 +38,7 @@ module.exports = function (app) {
 
   /**
    * VehicleTypes
-  **/
+   **/
   app.get(
     '/get_city_info_operator_wise',
     AdminMiddlewares.admin.isLoggedIn,
@@ -50,10 +52,9 @@ module.exports = function (app) {
     vehicleTypesController.fetchVehicleMake,
   );
 
-
-/**
-  * Graph
-**/
+  /**
+   * Graph
+   **/
   app.post(
     '/analytics/data_aggregation',
     AdminMiddlewares.admin.isLoggedIn,
@@ -61,10 +62,9 @@ module.exports = function (app) {
     RidesController.dataAggregation,
   );
 
-
   /**
    * Global Search Rides
-  **/
+   **/
   app.post(
     '/schedule-ride-auth/get_engagement_info',
     AdminMiddlewares.admin.isLoggedIn,
@@ -75,16 +75,35 @@ module.exports = function (app) {
 
   /**
    * Package Type Routes
-  **/
-  app.get('/internal/fetch_package_type', AdminMiddlewares.admin.isLoggedIn, AdminMiddlewares.admin.domainToken, PackageTypesController.fetchPackageTypes);
+   **/
+  app.get(
+    '/internal/fetch_package_type',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    PackageTypesController.fetchPackageTypes,
+  );
 
-  app.get('/internal/fetch_packages', AdminMiddlewares.admin.isLoggedIn, AdminMiddlewares.admin.domainToken, PackageTypesController.fetchPackages);
+  app.get(
+    '/internal/fetch_packages',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    PackageTypesController.fetchPackages,
+  );
 
-  app.post("/upload_file_customer", upload.single('image'), PackageTypesController.uploadFileController)
+  app.post(
+    '/upload_file_customer',
+    upload.single('image'),
+    PackageTypesController.uploadFileController,
+  );
 
   /**
    * Create Rides
-  **/
-  app.post('/api/v1/schedule_ride',AdminMiddlewares.admin.isLoggedIn, AdminMiddlewares.admin.domainToken, AdminMiddlewares.bussinessMiddlewares.fetchTokenUsingPhoneNo,createRideController.scheduleRideThroughBusinessUser)
-
+   **/
+  app.post(
+    '/api/v1/schedule_ride',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.bussinessMiddlewares.fetchTokenUsingPhoneNo,
+    createRideController.scheduleRideThroughBusinessUser,
+  );
 };

@@ -8,8 +8,8 @@ const {
 
 const rideConstant = require('../../../constants/rideConstants');
 const documentsConstant = require('../../../constants/document');
-const Helper = require('../helper')
-const globalHelper = require('../globalHelper')
+const Helper = require('../helper');
+const globalHelper = require('../globalHelper');
 var Joi = require('joi');
 var QueryBuilder = require('datatable');
 
@@ -45,8 +45,8 @@ exports.getCaptains = async function (req, res) {
 
     whereClause.push(
       '( ( ( DATEDIFF(NOW(), GLOBAL.date_registered)>= 7 ' +
-      'AND post_doc_status = 1 ) ) OR ( DATEDIFF(NOW(), GLOBAL.date_registered)< 7 ' +
-      'AND post_doc_status IN (0,1) ) ) ',
+        'AND post_doc_status = 1 ) ) OR ( DATEDIFF(NOW(), GLOBAL.date_registered)< 7 ' +
+        'AND post_doc_status IN (0,1) ) ) ',
     );
 
     if (vehicleType > 0) {
@@ -286,8 +286,7 @@ exports.getCaptains = async function (req, res) {
 
 exports.getCaptionsDetails = async function (req, res) {
   try {
-    var
-      operatorId = req.operator_id,
+    var operatorId = req.operator_id,
       deliveryEnabled = +req.query.delivery_enabled || 0,
       status = req.query.status,
       cityId = req.query.city_id,
@@ -303,24 +302,31 @@ exports.getCaptionsDetails = async function (req, res) {
       vehicle_type: Joi.number().optional(),
       delivery_enabled: Joi.number().min(0).max(1).optional(),
       request_fleet_id: Joi.number().optional(),
-      secret_key: Joi.number().optional()
-    }).unknown(true);;
+      secret_key: Joi.number().optional(),
+    }).unknown(true);
 
     var result = schema.validate(req.query);
 
-    if(Array.isArray(cityId) && cityId.length){
+    if (Array.isArray(cityId) && cityId.length) {
       cityId = cityId.toString().join(',');
     }
 
     if (result.error) {
       return responseHandler.parameterMissingResponse(res, '');
-    };
+    }
 
     if (!fleetId) {
       fleetId = req.query.request_fleet_id;
     }
 
-    var fetchDriverDetails = Helper.getLimitedDriverDetailsQueryHelper(deliveryEnabled, status, vehicleType, fleetId, cityId, requestRideType);
+    var fetchDriverDetails = Helper.getLimitedDriverDetailsQueryHelper(
+      deliveryEnabled,
+      status,
+      vehicleType,
+      fleetId,
+      cityId,
+      requestRideType,
+    );
 
     var values = [operatorId, requestRideType, cityId];
 
@@ -330,30 +336,53 @@ exports.getCaptionsDetails = async function (req, res) {
     if (fleetId) {
       values.push(fleetId);
     }
-    let drivers = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchDriverDetails, values);
-    return responseHandler.success(req, res, 'Data fetched successfully.', drivers);
+    let drivers = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      fetchDriverDetails,
+      values,
+    );
+    return responseHandler.success(
+      req,
+      res,
+      'Data fetched successfully.',
+      drivers,
+    );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
-}
+};
 
 exports.getDriverInfo = async function (req, res) {
   var response = {};
   try {
     var requestParameters = req.body;
     var driverId = requestParameters.driver_id;
-    var start_from_rides = parseInt(requestParameters.paginationDetails.start_from_rides) || 0;
-    var page_size_rides = parseInt(requestParameters.paginationDetails.page_size_rides) || 0;
-    var start_from_issues = parseInt(requestParameters.paginationDetails.start_from_issues) || 0;
-    var page_size_issues = parseInt(requestParameters.paginationDetails.page_size_issues) || 0;
-    var start_from_can_rides = parseInt(requestParameters.paginationDetails.start_from_can_rides) || 0;
-    var page_size_can_rides = parseInt(requestParameters.paginationDetails.page_size_can_rides) || 0;
-    var start_from_agent_history = parseInt(requestParameters.paginationDetails.start_from_agent_history) || 0;
-    var page_size_agent_history = parseInt(requestParameters.paginationDetails.page_size_agent_history) || 0;
-    var start_from_dodo = parseInt(requestParameters.paginationDetails.start_from_dodo) || 0;
-    var page_size_dodo = parseInt(requestParameters.paginationDetails.page_size_dodo) || 10;
-    var start_from_app_issue = parseInt(requestParameters.paginationDetails.start_from_app_issues) || 0;
-    var page_size_app_issue = parseInt(requestParameters.paginationDetails.page_size_app_issues) || 10;
+    var start_from_rides =
+      parseInt(requestParameters.paginationDetails.start_from_rides) || 0;
+    var page_size_rides =
+      parseInt(requestParameters.paginationDetails.page_size_rides) || 0;
+    var start_from_issues =
+      parseInt(requestParameters.paginationDetails.start_from_issues) || 0;
+    var page_size_issues =
+      parseInt(requestParameters.paginationDetails.page_size_issues) || 0;
+    var start_from_can_rides =
+      parseInt(requestParameters.paginationDetails.start_from_can_rides) || 0;
+    var page_size_can_rides =
+      parseInt(requestParameters.paginationDetails.page_size_can_rides) || 0;
+    var start_from_agent_history =
+      parseInt(requestParameters.paginationDetails.start_from_agent_history) ||
+      0;
+    var page_size_agent_history =
+      parseInt(requestParameters.paginationDetails.page_size_agent_history) ||
+      0;
+    var start_from_dodo =
+      parseInt(requestParameters.paginationDetails.start_from_dodo) || 0;
+    var page_size_dodo =
+      parseInt(requestParameters.paginationDetails.page_size_dodo) || 10;
+    var start_from_app_issue =
+      parseInt(requestParameters.paginationDetails.start_from_app_issues) || 0;
+    var page_size_app_issue =
+      parseInt(requestParameters.paginationDetails.page_size_app_issues) || 10;
     var dataDateLimit = new Date();
     var token = requestParameters.token;
     dataDateLimit.setDate(dataDateLimit.getDate() - 7);
@@ -379,13 +408,23 @@ exports.getDriverInfo = async function (req, res) {
     var asyncTasks = [];
     var finalWalletBalance = [];
 
-
-    await globalHelper.getDriverRides(driverId, start_from_rides, page_size_rides, responseData);
+    await globalHelper.getDriverRides(
+      driverId,
+      start_from_rides,
+      page_size_rides,
+      responseData,
+    );
     await globalHelper.getDriverPerformance(driverId, responseData);
     await globalHelper.getOngoingRideForDriver(driverId, ongoingRide);
     // await globalHelper.getIssuesForDriver(driverId, issues, start_from_issues, page_size_issues);
     // await globalHelper.getInAppIssuesForDriver(driverId, appIssues, start_from_app_issue, page_size_app_issue);
-    await globalHelper.getCancelledRides(driverId, cancelledRides, start_from_can_rides, page_size_can_rides, 2);
+    await globalHelper.getCancelledRides(
+      driverId,
+      cancelledRides,
+      start_from_can_rides,
+      page_size_can_rides,
+      2,
+    );
     await globalHelper.get_friends_details(driverId, friends);
     // await globalHelper.getDriverCallHistory(driverId, callHistory, start_from_agent_history, page_size_agent_history);
     // await globalHelper.getDriverToDriverReferrals(driverId, friends);
@@ -400,24 +439,23 @@ exports.getDriverInfo = async function (req, res) {
     // await globalHelper.getDriverNotes(driverId, responseData);
     await globalHelper.getDriverCityInfo(driverId, responseData);
 
-
     var friendsArr = [];
-    var hashMap = {}
-    for(var i = 0 in friends){
-        if(!hashMap[friends[i].user_id]){
-            hashMap[friends[i].user_id] = {
-                user_id : friends[i].user_id,
-                user_name : friends[i].user_name,
-                user_email : friends[i].user_email,
-                phone_no : friends[i].phone_no,
-                verification_status :friends[i].verification_status,
-                first_transaction_on : friends[i].first_transaction_on,
-                date_registered: friends[i].date_registered,
-                is_duplicate : friends[i].is_duplicate,
-                failed_reason : friends[i].failed_reason,
-                type: friends[i].type
-            }
-        }
+    var hashMap = {};
+    for (var i = (0) in friends) {
+      if (!hashMap[friends[i].user_id]) {
+        hashMap[friends[i].user_id] = {
+          user_id: friends[i].user_id,
+          user_name: friends[i].user_name,
+          user_email: friends[i].user_email,
+          phone_no: friends[i].phone_no,
+          verification_status: friends[i].verification_status,
+          first_transaction_on: friends[i].first_transaction_on,
+          date_registered: friends[i].date_registered,
+          is_duplicate: friends[i].is_duplicate,
+          failed_reason: friends[i].failed_reason,
+          type: friends[i].type,
+        };
+      }
       hashMap[friends[i].user_id].type = friends[i].type;
     }
     for (var j in hashMap) {
@@ -436,28 +474,23 @@ exports.getDriverInfo = async function (req, res) {
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
-
-}
-
-
+};
 
 exports.getAvilableDrivers = async function (req, res) {
-
   try {
-    var
-      deliveryEnabled = +req.query.delivery_enabled || 0,
+    var deliveryEnabled = +req.query.delivery_enabled || 0,
       cityId = req.query.city_id,
-      vehicleType = req.query.vehicle_type
-    fleetId = 0
+      vehicleType = req.query.vehicle_type;
+    fleetId = 0;
 
-    let data = []
+    let data = [];
 
     var schema = Joi.object({
       city_id: Joi.required(),
       vehicle_type: Joi.number().optional(),
       delivery_enabled: Joi.number().min(0).max(1).optional(),
-      request_fleet_id: Joi.number().optional()
-    }).unknown(true);;
+      request_fleet_id: Joi.number().optional(),
+    }).unknown(true);
 
     var result = schema.validate(req.query);
     if (result.error) {
@@ -489,21 +522,21 @@ exports.getAvilableDrivers = async function (req, res) {
             AND dr.autos_enabled = 1
             AND dr.autos_available = 1
             AND dr.location_updated_at >= (NOW() - INTERVAL 10 MINUTE)
-            AND dr.vehicle_type = ?`
+            AND dr.vehicle_type = ?`;
 
+    data = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, [
+      req.operator_id,
+      cityId,
+      vehicleType,
+    ]);
 
-    data = await db.RunQuery(
-      dbConstants.DBS.LIVE_DB,
-      query,
-      [req.operator_id, cityId, vehicleType],
+    return responseHandler.success(
+      req,
+      res,
+      'Data fetched successfully.',
+      data,
     );
-
-    return responseHandler.success(req, res, 'Data fetched successfully.', data);
-
-
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
-
-
   }
-}
+};

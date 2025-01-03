@@ -113,9 +113,7 @@ exports.getTicketList = async function (req, res) {
   }
 };
 
-
 exports.updateTicket = async function (req, res) {
-
   try {
     let body = req.body;
     delete body.token;
@@ -123,7 +121,7 @@ exports.updateTicket = async function (req, res) {
       city_id: Joi.number().integer().required(),
       ticket_id: Joi.number().integer().required(),
       status: Joi.number().valid(0, 1, 2).required(),
-      admin_response: Joi.string().max(255).optional()
+      admin_response: Joi.string().max(255).optional(),
     });
 
     const result = schema.validate(body);
@@ -138,18 +136,26 @@ exports.updateTicket = async function (req, res) {
     const { ticket_id, status, admin_response, city_id } = body;
     const operatorId = req.operator_id;
 
-    await db.updateTable(dbConstants.DBS.LIVE_DB, dbConstants.LIVE_DB.TICKETS, {
-      status: status,
-      admin_id: req.user_id,
-      response_at: new Date(),
-      admin_response: admin_response
-    }, [{ key: 'operator_id', value: operatorId }, { key: 'city_id', value: city_id }, { key: 'id', value: ticket_id }]);
+    await db.updateTable(
+      dbConstants.DBS.LIVE_DB,
+      dbConstants.LIVE_DB.TICKETS,
+      {
+        status: status,
+        admin_id: req.user_id,
+        response_at: new Date(),
+        admin_response: admin_response,
+      },
+      [
+        { key: 'operator_id', value: operatorId },
+        { key: 'city_id', value: city_id },
+        { key: 'id', value: ticket_id },
+      ],
+    );
     return responseHandler.success(req, res, 'Ticket updated successfully', {});
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
-
   }
-}
+};
 
 const getIssueTags = async (dbName, condition) => {
   const query = `SELECT tag.tag_id, tag.issue_category_id, tag.tag_name, tag.action_type,
@@ -176,7 +182,10 @@ const organizeIssuesByLevel = (data, type) => {
 const findNextLevelEntries = (level, parentId, issuesArray, levels) => {
   const currentLevelIssues = levels[level] || [];
   currentLevelIssues.forEach((issue) => {
-    if (issue.parent_id === parentId && (issue.action_type === 2 || issue.action_type === 0)) {
+    if (
+      issue.parent_id === parentId &&
+      (issue.action_type === 2 || issue.action_type === 0)
+    ) {
       issuesArray.push(issue);
     }
     if (issue.action_type === 1) {
@@ -202,20 +211,25 @@ exports.getCancelledRidesIssueTags = async function (req, res) {
             'Customer forgot his/her belongings in auto',
             'Venus Wallet Credit Issues', 'Double Deductions')`;
 
-    const issueTags = await getIssueTags(dbConstants.DBS.LIVE_DB, userTypeCondition);
+    const issueTags = await getIssueTags(
+      dbConstants.DBS.LIVE_DB,
+      userTypeCondition,
+    );
     const responseData = {
-      driver_cancelled_rides_issues: user_type === 0 || user_type === 2 ? [] : issueTags,
-      customer_cancelled_rides_issues: user_type === 0 || user_type === 2 ? issueTags : [],
+      driver_cancelled_rides_issues:
+        user_type === 0 || user_type === 2 ? [] : issueTags,
+      customer_cancelled_rides_issues:
+        user_type === 0 || user_type === 2 ? issueTags : [],
     };
 
     responseData.delivery_issues = await getIssueTags(
       dbConstants.DBS.LIVE_LOGS,
-      "AND request_type = 6 AND tag.is_eng_required = 1"
+      'AND request_type = 6 AND tag.is_eng_required = 1',
     );
 
     const menuIssues = await getIssueTags(
       dbConstants.DBS.LIVE_LOGS,
-      "AND request_type = 5 AND tag.is_eng_required = 1"
+      'AND request_type = 5 AND tag.is_eng_required = 1',
     );
 
     const customerLevels = organizeIssuesByLevel(menuIssues, 0);
@@ -224,7 +238,12 @@ exports.getCancelledRidesIssueTags = async function (req, res) {
     responseData.customer_issues_menu = [];
     responseData.driver_issues = [];
 
-    findNextLevelEntries(0, -9999, responseData.customer_issues_menu, customerLevels);
+    findNextLevelEntries(
+      0,
+      -9999,
+      responseData.customer_issues_menu,
+      customerLevels,
+    );
     findNextLevelEntries(0, -9999, responseData.driver_issues, driverLevels);
 
     return responseHandler.success(req, res, 'User Details Sent', responseData);

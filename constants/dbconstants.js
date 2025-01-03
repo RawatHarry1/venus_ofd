@@ -5,7 +5,7 @@ exports.DBS = {
   ADMIN_AUTH: 'venus_acl',
   LIVE_DB: 'venus_live',
   LIVE_LOGS: 'venus_live_addn',
-  AUTH_DB: 'venus_auth'
+  AUTH_DB: 'venus_auth',
 };
 exports.ADMIN_AUTH = {
   ACL_USER: 'tb_acl_users',
@@ -15,8 +15,8 @@ exports.AUTH_DB = {
   AUTH_OPERATORS: 'tb_operator_cities',
   TNX: 'tb_wallet_transactions',
   AUTH_USERS: 'tb_users',
-  PENDING_TNX:"tb_pending_wallet_txns"
-}
+  PENDING_TNX: 'tb_pending_wallet_txns',
+};
 exports.LIVE_DB = {
   OPERATPRS: 'tb_operators',
   RIDES: 'tb_engagements',
@@ -46,16 +46,16 @@ exports.LIVE_DB = {
   BUSINESS_USER: 'tb_business_users',
   BANNERS_TYPE: 'banner_types',
   BANNERS: 'banners',
-  SCHEDULE_RIDE: 'tb_schedules'
+  SCHEDULE_RIDE: 'tb_schedules',
 };
 
 exports.LIVE_LOGS = {
   CITIES: 'tb_cities',
-  SUSPEND_LOGS:'tb_driver_suspension_logs',
-  SUSPEND_REASON:'tb_driver_suspension_reasons',
-  CASE_LOGS:'tb_case_logs',
-  REFOUND_REQUESTS:'tb_csp_refund_requests',
-  ISSUE:'tb_issue_tags',
-  ISSUE_CATEGORY:'tb_issue_categories',
-  CREDIT_LOGS:'tb_user_recharge_credits',
+  SUSPEND_LOGS: 'tb_driver_suspension_logs',
+  SUSPEND_REASON: 'tb_driver_suspension_reasons',
+  CASE_LOGS: 'tb_case_logs',
+  REFOUND_REQUESTS: 'tb_csp_refund_requests',
+  ISSUE: 'tb_issue_tags',
+  ISSUE_CATEGORY: 'tb_issue_categories',
+  CREDIT_LOGS: 'tb_user_recharge_credits',
 };

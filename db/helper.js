@@ -142,7 +142,6 @@ exports.selectFromTableInArray = async function (
   return exports.executeQuery(dbName, stmt, values);
 };
 
-
 exports.updateTable = async function (
   dbName,
   tableName,
@@ -150,11 +149,13 @@ exports.updateTable = async function (
   criteria = [],
   orderByCriteria = [],
   orderDesc = false,
-  limit = null
+  limit = null,
 ) {
   // Ensure required parameters are provided
   if (!dbName || !tableName || Object.keys(updateFields).length === 0) {
-    throw new Error('Database name, table name, and update fields are required.');
+    throw new Error(
+      'Database name, table name, and update fields are required.',
+    );
   }
 
   const setClause = Object.keys(updateFields)

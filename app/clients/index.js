@@ -23,12 +23,10 @@ module.exports = function (app) {
     ClientsDetails.getCustomers,
   );
 
-
   app.get(
     '/get_user_credit_logs',
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     Payment.getUserCreditLogs,
   );
-
 };

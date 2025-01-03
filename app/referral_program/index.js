@@ -7,5 +7,5 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     Referral.updatedOperatorCityReferral,
-  );  
+  );
 };

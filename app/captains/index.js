@@ -1,7 +1,7 @@
 const CaptainController = require('./controllers/captainRegistration');
 const CaptainDetail = require('./controllers/captainDetails');
 const PayoutController = require('./controllers/payout');
-const customerController = require('./controllers/customerDetails')
+const customerController = require('./controllers/customerDetails');
 const AdminMiddlewares = require('../admin/middelware');
 
 module.exports = function (app) {
@@ -35,7 +35,7 @@ module.exports = function (app) {
 
   /**
    * Global Search Driver
-  **/
+   **/
 
   app.post(
     '/schedule-ride-auth/driver_info',
@@ -45,23 +45,20 @@ module.exports = function (app) {
     CaptainDetail.getDriverInfo,
   );
 
-
   /**
    * Global Search Customer
-  **/
-    app.post(
-      '/schedule-ride-auth/get/user_details',
-      AdminMiddlewares.admin.isLoggedIn,
-      AdminMiddlewares.admin.domainToken,
-      AdminMiddlewares.city.getDetailsForUser,
-      customerController.get_details_for_user,
-    );
+   **/
+  app.post(
+    '/schedule-ride-auth/get/user_details',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.city.getDetailsForUser,
+    customerController.get_details_for_user,
+  );
   app.get(
     '/fetch/available_drivers',
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     CaptainDetail.getAvilableDrivers,
   );
-
-  
 };

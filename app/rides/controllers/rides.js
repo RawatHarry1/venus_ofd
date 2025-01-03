@@ -4,7 +4,7 @@ const {
   errorHandler,
   responseHandler,
   ResponseConstants,
-  rideConstants
+  rideConstants,
 } = require('../../../bootstart/header');
 
 const rideConstant = require('../../../constants/rideConstants');
@@ -65,7 +65,14 @@ exports.getRides = async function (req, res) {
     };
     var ridesQuery = Helper.ridesQueryHelper(null, null, null, status);
     ridesQuery += ` WHERE e.city = ? AND e.status IN (?) AND d.operator_id = ? AND u.operator_id = ? AND e.request_made_on >= NOW() - INTERVAL 24 HOUR`;
-    var values = [cityId, Array.isArray(rideStatus[status]) ? rideStatus[status].join(',') : rideStatus[status], operatorId, operatorId];
+    var values = [
+      cityId,
+      Array.isArray(rideStatus[status])
+        ? rideStatus[status].join(',')
+        : rideStatus[status],
+      operatorId,
+      operatorId,
+    ];
 
     if (status == rideConstant.DASHBOARD_RIDE_STATUS.ONGOING) {
       var get_data = `
@@ -386,12 +393,12 @@ d.current_longitude,
   JOIN venus_live.tb_session s ON e.session_id = s.session_id
   `;
 
-      if (status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_REQUESTS || status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_RIDES) {
-
+      if (
+        status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_REQUESTS ||
+        status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_RIDES
+      ) {
         valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM venus_live.tb_nts_booking_info GROUP BY engagement_id) nts ON e.session_id = nts.session_id `;
-
       } else {
-
         valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM venus_live.tb_nts_booking_info WHERE is_vehicle_assigned = 1 ) nts ON e.session_id = nts.session_id `;
       }
 
@@ -399,17 +406,17 @@ d.current_longitude,
       e.status IN (?) AND 
       d.operator_id = ? AND 
       u.operator_id = ? AND
-      e.request_made_on >= NOW() - INTERVAL 24 HOUR`
+      e.request_made_on >= NOW() - INTERVAL 24 HOUR`;
 
-//       if (corporateId) {
+      //       if (corporateId) {
 
-//         valueToBePickedFrom += `
-// JOIN venus_live.tb_business_users bu ON bu.business_id = s.is_manual 
-// `;
+      //         valueToBePickedFrom += `
+      // JOIN venus_live.tb_business_users bu ON bu.business_id = s.is_manual
+      // `;
 
-//         valueToBePicked += ', bu.external_id AS corporate_id ';
+      //         valueToBePicked += ', bu.external_id AS corporate_id ';
 
-//       }
+      //       }
 
       // if (driverId) {
 
@@ -417,21 +424,21 @@ d.current_longitude,
       // }
 
       if (fleetId) {
-
-        valueToBePicked += ', d.driver_id, d.external_id AS fleet_id, (e.actual_fare - e.venus_commission) AS driver_earnings, s.preferred_payment_mode  ';
+        valueToBePicked +=
+          ', d.driver_id, d.external_id AS fleet_id, (e.actual_fare - e.venus_commission) AS driver_earnings, s.preferred_payment_mode  ';
       }
-  let tableDefinition = {
-    sSelectSql: valueToBePicked,
-    sFromSql: valueToBePickedFrom,
-    sCountColumnName: `e.engagement_id`,
-    aoColumnDefs: [
-      { mData: 'e.engagement_id', bSearchable: true },
-      { mData: 'd.name', bSearchable: true },
-      { mData: 'u.user_name', bSearchable: true },
-      { mData: 'e.pickup_location_address', bSearchable: true },
-      { mData: 'e.drop_location_address', bSearchable: true },
-    ],
-  };
+      let tableDefinition = {
+        sSelectSql: valueToBePicked,
+        sFromSql: valueToBePickedFrom,
+        sCountColumnName: `e.engagement_id`,
+        aoColumnDefs: [
+          { mData: 'e.engagement_id', bSearchable: true },
+          { mData: 'd.name', bSearchable: true },
+          { mData: 'u.user_name', bSearchable: true },
+          { mData: 'e.pickup_location_address', bSearchable: true },
+          { mData: 'e.drop_location_address', bSearchable: true },
+        ],
+      };
 
       let queryBuilder = new QueryBuilder(tableDefinition);
       let requestQuery = req.query;
@@ -515,34 +522,32 @@ exports.dataAggregation = async function (req, res) {
 };
 
 exports.getScheduledRideDetails = async function (req, res) {
-  let 
-  cityId = +req.query.city_id,
-  regionId = +req.query.region_id,
-  operatorId = req.operator_id || 1,
-  vehicleType = -1,
-  requestRideType = req.request_ride_type;
+  let cityId = +req.query.city_id,
+    regionId = +req.query.region_id,
+    operatorId = req.operator_id || 1,
+    vehicleType = -1,
+    requestRideType = req.request_ride_type;
 
   delete req.query.token;
-	delete req.query.domain_token;
-	let orderDirection   = req.query.sSortDir_0 || "ASC"
-	let status = req.query.status
-	let limit = Number(req.query.iDisplayLength || 50);
-	let offset = Number((req.query.iDisplayStart) || 0);
-	let sSearch = req.query.sSearch
-	orderDirection = (orderDirection.toUpperCase() == 'DESC') ? 'ASC' : 'ASC';
-  let paramsWrapper = {}
+  delete req.query.domain_token;
+  let orderDirection = req.query.sSortDir_0 || 'ASC';
+  let status = req.query.status;
+  let limit = Number(req.query.iDisplayLength || 50);
+  let offset = Number(req.query.iDisplayStart || 0);
+  let sSearch = req.query.sSearch;
+  orderDirection = orderDirection.toUpperCase() == 'DESC' ? 'ASC' : 'ASC';
+  let paramsWrapper = {};
   try {
-
     let schema = Joi.object({
       city_id: Joi.number().integer().optional(),
       region_id: Joi.number().integer().optional(),
       sSortDir_0: Joi.string().optional(),
-      status:Joi.number().integer().optional(),
+      status: Joi.number().integer().optional(),
       iDisplayLength: Joi.number().integer().optional(),
       iDisplayStart: Joi.number().integer().optional(),
-      sSearch: Joi.string().allow("").optional(),
-      secret_key: Joi.number().optional()
-    }); 
+      sSearch: Joi.string().allow('').optional(),
+      secret_key: Joi.number().optional(),
+    });
     let result = schema.validate(req.query);
 
     if (result.error) {
@@ -550,49 +555,57 @@ exports.getScheduledRideDetails = async function (req, res) {
     }
 
     if (regionId) {
+      let checkOperator = `SELECT operator_id, vehicle_type FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} WHERE region_id = ? `;
+      if (requestRideType == rideConstants.CLIENTS.MARS) {
+        checkOperator += ` AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.MARS}`;
+      } else {
+        checkOperator += ` AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI}`;
+      }
 
-			let checkOperator = `SELECT operator_id, vehicle_type FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} WHERE region_id = ? `;
-			if (requestRideType == rideConstants.CLIENTS.MARS) {
-				checkOperator += ` AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.MARS}`;
-			} else {
-				checkOperator += ` AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI}`;
-			}
+      let operatorDetails = await db.RunQuery(
+        dbConstants.DBS.LIVE_DB,
+        checkOperator,
+        [regionId],
+      );
 
-      let operatorDetails =  await db.RunQuery(dbConstants.DBS.LIVE_DB, checkOperator, [regionId]);
+      if (!operatorDetails || !operatorDetails.length) {
+        throw new Error('No associated operator found.');
+      }
 
-			if (!operatorDetails || !operatorDetails.length) {
-				throw new Error('No associated operator found.');
-			}
+      if (operatorDetails[0].operator_id != operatorId) {
+        throw new Error('Invalid operator.');
+      }
+      regionId = [regionId];
 
-			if (operatorDetails[0].operator_id != operatorId) {
-				throw new Error('Invalid operator.');
-			}
-			regionId = [regionId];
+      vehicleType = operatorDetails[0].vehicle_type;
+    } else if (cityId) {
+      let regionIdQuery = `SELECT region_id FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} WHERE operator_id = ? AND is_active = 1 AND city_id = ? `;
+      if (requestRideType == rideConstants.CLIENTS.MARS) {
+        regionIdQuery += ` AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.MARS}`;
+      } else {
+        regionIdQuery += `AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI}`;
+      }
 
-			vehicleType = operatorDetails[0].vehicle_type;
-		}
+      let regionResults = await db.RunQuery(
+        dbConstants.DBS.LIVE_DB,
+        regionIdQuery,
+        [operatorId, cityId],
+      );
 
-		else if (cityId) {
+      regionId = [];
 
-			let regionIdQuery = `SELECT region_id FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} WHERE operator_id = ? AND is_active = 1 AND city_id = ? `;
-			if (requestRideType == rideConstants.CLIENTS.MARS) {
-				regionIdQuery +=  ` AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.MARS}`;
-			} else {
-				regionIdQuery +=  `AND ride_type = ${rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI}`;
-			}
+      for (let region of regionResults) {
+        regionId.push(region.region_id);
+      }
+    }
 
-      let regionResults = await db.RunQuery(dbConstants.DBS.LIVE_DB, regionIdQuery, [operatorId, cityId]);
+    await getOperatorParameters(
+      'schedule_cancel_window',
+      operatorId,
+      paramsWrapper,
+    );
 
-			regionId = [];
-
-			for (let region of regionResults) {
-				regionId.push(region.region_id);
-			}
-		}
-
-    await getOperatorParameters( 'schedule_cancel_window', operatorId, paramsWrapper)
-
-		let cancelWindowTime = paramsWrapper.schedule_cancel_window || 0;
+    let cancelWindowTime = paramsWrapper.schedule_cancel_window || 0;
 
     var valueToBePicked = ` 
     sc.pickup_id, 
@@ -615,9 +628,7 @@ exports.getScheduledRideDetails = async function (req, res) {
 				u.phone_no,
 				cr.vehicle_type,
 				cr.city_id,
-				0 AS is_vip`
-
-
+				0 AS is_vip`;
 
     var valueToBePickedFrom = `
 			  venus_live.tb_schedules sc 
@@ -627,67 +638,65 @@ exports.getScheduledRideDetails = async function (req, res) {
 				venus_live.tb_city_sub_regions cr ON cr.region_id = sc.region_id
 `;
 
-
     valueToBePickedFrom += `  NEW_CONDITION sc.region_id in (?) AND 
-				sc.pickup_time > NOW() - INTERVAL 4 HOUR`
+				sc.pickup_time > NOW() - INTERVAL 4 HOUR`;
 
     if (sSearch) {
       valueToBePickedFrom += ` AND sc.user_id LIKE '%${sSearch}%'`;
     }
-    if(status){
-			valueToBePickedFrom += ` AND sc.status = ${status}`
-		}
-    regionId = regionId.join(',')
+    if (status) {
+      valueToBePickedFrom += ` AND sc.status = ${status}`;
+    }
+    regionId = regionId.join(',');
 
     let values = [cancelWindowTime, regionId];
 
+    let tableDefinition = {
+      sSelectSql: valueToBePicked,
+      sFromSql: valueToBePickedFrom,
+      sCountColumnName: `e.engagement_id`,
+      aoColumnDefs: [
+        { mData: 'e.engagement_id', bSearchable: true },
+        { mData: 'd.name', bSearchable: true },
+        { mData: 'u.user_name', bSearchable: true },
+        { mData: 'e.pickup_location_address', bSearchable: true },
+        { mData: 'e.drop_location_address', bSearchable: true },
+      ],
+    };
 
-        let tableDefinition = {
-          sSelectSql: valueToBePicked,
-          sFromSql: valueToBePickedFrom,
-          sCountColumnName: `e.engagement_id`,
-          aoColumnDefs: [
-            { mData: 'e.engagement_id', bSearchable: true },
-            { mData: 'd.name', bSearchable: true },
-            { mData: 'u.user_name', bSearchable: true },
-            { mData: 'e.pickup_location_address', bSearchable: true },
-            { mData: 'e.drop_location_address', bSearchable: true },
-          ],
-        };
-      
-            let queryBuilder = new QueryBuilder(tableDefinition);
-            let requestQuery = req.query;
-            let queries = queryBuilder.buildQuery({
-              ...requestQuery,
-              order: [{ column: 0, dir: orderDirection }],
-              columns: [{ name: 'sc.pickup_time', orderable: 'true' }],
-              start: offset,
-              length: limit,
-            });
-      
-            if (queries.length > 2) {
-              queries = queries.splice(1);
-            }
-      
-            queries.select = queries.select.replace('WHERE', ' AND ');
-            queries.recordsTotal = queries.recordsTotal.replace('WHERE', ' AND ');
-            queries.select = queries.select.replace(/NEW_CONDITION/g, ' WHERE ');
-            queries.recordsTotal = queries.recordsTotal.replace(
-              /NEW_CONDITION/g,
-              ' WHERE ',
-            );
-      
-            let all_data = await db.RunQuery(
-              dbConstants.DBS.LIVE_DB,
-              queries.select,
-              values,
-            );
-            let user_count = await db.RunQuery(
-              dbConstants.DBS.LIVE_DB,
-              queries.recordsTotal,
-              [regionId],
-            );
-            console.log("user_count",user_count);
+    let queryBuilder = new QueryBuilder(tableDefinition);
+    let requestQuery = req.query;
+    let queries = queryBuilder.buildQuery({
+      ...requestQuery,
+      order: [{ column: 0, dir: orderDirection }],
+      columns: [{ name: 'sc.pickup_time', orderable: 'true' }],
+      start: offset,
+      length: limit,
+    });
+
+    if (queries.length > 2) {
+      queries = queries.splice(1);
+    }
+
+    queries.select = queries.select.replace('WHERE', ' AND ');
+    queries.recordsTotal = queries.recordsTotal.replace('WHERE', ' AND ');
+    queries.select = queries.select.replace(/NEW_CONDITION/g, ' WHERE ');
+    queries.recordsTotal = queries.recordsTotal.replace(
+      /NEW_CONDITION/g,
+      ' WHERE ',
+    );
+
+    let all_data = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      queries.select,
+      values,
+    );
+    let user_count = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      queries.recordsTotal,
+      [regionId],
+    );
+    console.log('user_count', user_count);
 
     return responseHandler.success(req, res, '', {
       result: all_data,
@@ -698,38 +707,38 @@ exports.getScheduledRideDetails = async function (req, res) {
   }
 };
 
-
 exports.getUnacceptedRideRequestUserDetails = async function (req, res) {
   try {
-    var currentDate= moment().utc().format('YYYY-MM-DD');
-    var startTime = currentDate + ' 00:00:00.000'
-    var endTime =  currentDate  + ' 23:59:59.000'
-  
-    var
-      taskType = req.query.task_type || 0,
+    var currentDate = moment().utc().format('YYYY-MM-DD');
+    var startTime = currentDate + ' 00:00:00.000';
+    var endTime = currentDate + ' 23:59:59.000';
+
+    var taskType = req.query.task_type || 0,
       cityId = req.query.city_id,
       requestRideType = req.request_ride_type,
-      startTime = req.query.start_time || moment().utc().subtract(240, 'minutes').format('YYYY-MM-DD HH:mm:ss'),
-      endTime = req.query.end_time || moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+      startTime =
+        req.query.start_time ||
+        moment().utc().subtract(240, 'minutes').format('YYYY-MM-DD HH:mm:ss'),
+      endTime =
+        req.query.end_time || moment().utc().format('YYYY-MM-DD HH:mm:ss'),
       deliveryEnabled = +req.query.delivery_enabled || 0;
-  
+
     delete req.query.token;
-  
+
     var schema = Joi.object({
       city_id: Joi.required(),
       task_type: Joi.number().min(0).max(2).required(),
       start_time: Joi.date().optional(),
       end_time: Joi.date().optional(),
-      delivery_enabled: Joi.number().min(0).max(1).optional()
+      delivery_enabled: Joi.number().min(0).max(1).optional(),
     }).unknown(true);
-  
+
     var resultt = schema.validate(req.query);
 
     if (resultt.error) {
       return responseHandler.parameterMissingResponse(res, '');
-    };
-    var
-      operatorId = req.operator_id,
+    }
+    var operatorId = req.operator_id,
       fleetId = req.fleet_id;
 
     // cityId = cityId.toString();
@@ -794,7 +803,11 @@ exports.getUnacceptedRideRequestUserDetails = async function (req, res) {
     ORDER BY 
       s.session_id desc`;
 
-    let missedRequests =  await db.RunQuery(dbConstants.DBS.LIVE_DB, missedRequestsQuery, [cityId,requestRideType]);
+    let missedRequests = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      missedRequestsQuery,
+      [cityId, requestRideType],
+    );
     let timeoutRequestsQuery = `
     SELECT 
       request_latitude, 
@@ -828,70 +841,80 @@ exports.getUnacceptedRideRequestUserDetails = async function (req, res) {
     ORDER BY 
       s.session_id desc`;
 
-    let timeoutRequests =  await db.RunQuery(dbConstants.DBS.LIVE_DB, timeoutRequestsQuery, [cityId,requestRideType]);
+    let timeoutRequests = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      timeoutRequestsQuery,
+      [cityId, requestRideType],
+    );
 
-    var resObj = { missed_requests: missedRequests ? missedRequests : [], timeout_requests: timeoutRequests ? timeoutRequests : [] };
+    var resObj = {
+      missed_requests: missedRequests ? missedRequests : [],
+      timeout_requests: timeoutRequests ? timeoutRequests : [],
+    };
 
-    var queryRides = Helper.getTaskDetailsQueryHelper(deliveryEnabled, taskType, fleetId,requestRideType);
+    var queryRides = Helper.getTaskDetailsQueryHelper(
+      deliveryEnabled,
+      taskType,
+      fleetId,
+      requestRideType,
+    );
 
-    let result =  await db.RunQuery(dbConstants.DBS.LIVE_DB, queryRides, [startTime, endTime, operatorId, cityId, requestRideType]);
+    let result = await db.RunQuery(dbConstants.DBS.LIVE_DB, queryRides, [
+      startTime,
+      endTime,
+      operatorId,
+      cityId,
+      requestRideType,
+    ]);
 
     if (deliveryEnabled) {
+      var finalResult = [],
+        dropDetailsMappingToSession = {},
+        taskMappingToSession = {};
 
-			var
-				finalResult = [],
-				dropDetailsMappingToSession = {},
-				taskMappingToSession = {};
+      for (var i in result) {
+        if (!dropDetailsMappingToSession[result[i].session_id]) {
+          dropDetailsMappingToSession[result[i].session_id] = [];
+          taskMappingToSession[result[i].session_id] = result[i];
+        }
 
-			for (var i in result) {
+        var tempDropData = {};
 
-				if (!dropDetailsMappingToSession[result[i].session_id]) {
+        tempDropData['lat'] = result[i].latitude;
+        tempDropData['long'] = result[i].longitude;
+        tempDropData['address'] = result[i].address;
+        dropDetailsMappingToSession[result[i].session_id].push(tempDropData);
 
-					dropDetailsMappingToSession[result[i].session_id] = [];
-					taskMappingToSession[result[i].session_id] = result[i];
-				}
+        delete result[i].latitude;
+        delete result[i].longitude;
+      }
 
-				var tempDropData = {};
+      for (var i in dropDetailsMappingToSession) {
+        var dropData = dropDetailsMappingToSession[i];
+        var data = taskMappingToSession[i];
 
-				tempDropData['lat'] = result[i].latitude;
-				tempDropData['long'] = result[i].longitude;
-				tempDropData['address'] = result[i].address;
-				dropDetailsMappingToSession[result[i].session_id].push(tempDropData);
+        data['drop_data'] = dropData;
 
-				delete result[i].latitude;
-				delete result[i].longitude;
-			}
+        finalResult.push(data);
 
-			for (var i in dropDetailsMappingToSession) {
+        finalResult['vehicle_name'] = result[i].vehicle_name;
+      }
 
-				var dropData = dropDetailsMappingToSession[i];
-				var data = taskMappingToSession[i];
+      resObj.assigned_data = finalResult;
 
-				data['drop_data'] = dropData;
+      return resObj;
+    }
+    // here taskType 1 stands for ongoing ride
 
-				finalResult.push(data);
+    if (taskType == 1 && result.length) {
+      var engagementIds = [];
+      var emergencyRidesEngagementIds = [];
 
-				finalResult['vehicle_name'] = result[i].vehicle_name;
-			}
+      for (var i in result) {
+        engagementIds.push(result[i].engagement_id);
+      }
 
-
-			resObj.assigned_data = finalResult;
-
-			return resObj;
-		}
-    		// here taskType 1 stands for ongoing ride
-
-		if (taskType == 1 && result.length) { 
-
-			var engagementIds = [];
-			var emergencyRidesEngagementIds = [];
-
-			for (var i in result) {
-
-				engagementIds.push(result[i].engagement_id);
-			}
-
-			var getEmergencyRidesQuery = `
+      var getEmergencyRidesQuery = `
 				SELECT 
 					engagement_id, alert_initiated_by 
 				FROM 
@@ -899,44 +922,51 @@ exports.getUnacceptedRideRequestUserDetails = async function (req, res) {
 				WHERE 
 					engagement_id IN (?) AND status = 1`;
 
-      let emergencyRides = await db.RunQuery(dbConstants.DBS.AUTH_DB, getEmergencyRidesQuery, [engagementIds]);
+      let emergencyRides = await db.RunQuery(
+        dbConstants.DBS.AUTH_DB,
+        getEmergencyRidesQuery,
+        [engagementIds],
+      );
 
       for (var i in emergencyRides) {
-
-        // 1 for customer 2 for driver 
+        // 1 for customer 2 for driver
         // [In autos DB 0 is stored for customer and 1 for driver, whereas in SM constants 1 is for customer and 2 is for driver]
         // And 3 for both ( i.e. both driver and customer have enabled sos)
 
         if (emergencyRidesEngagementIds[emergencyRides[i].engagement_id]) {
-
-          emergencyRidesEngagementIds[emergencyRides[i].engagement_id] += emergencyRides[i].alert_initiated_by + 1;
+          emergencyRidesEngagementIds[emergencyRides[i].engagement_id] +=
+            emergencyRides[i].alert_initiated_by + 1;
         } else {
-
-          emergencyRidesEngagementIds[emergencyRides[i].engagement_id] = emergencyRides[i].alert_initiated_by + 1;
+          emergencyRidesEngagementIds[emergencyRides[i].engagement_id] =
+            emergencyRides[i].alert_initiated_by + 1;
         }
       }
 
       for (var i in result) {
-
-        result[i].is_emergency_enabled = emergencyRidesEngagementIds[result[i].engagement_id] || 0;
+        result[i].is_emergency_enabled =
+          emergencyRidesEngagementIds[result[i].engagement_id] || 0;
       }
     }
 
-		resObj.assigned_data = result;
+    resObj.assigned_data = result;
 
-    return responseHandler.success(req, res, 'Data fetched successfully', resObj);
-    
+    return responseHandler.success(
+      req,
+      res,
+      'Data fetched successfully',
+      resObj,
+    );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
-}
+};
 
 exports.getEngagementInfo = async function (req, res) {
   try {
     let requestParameters = req.body;
     let operatorId = req.operator_id;
     let engagementId = requestParameters.engagement_id;
-    if(Helper.checkBlank([engagementId])){
+    if (Helper.checkBlank([engagementId])) {
       return responseHandler.parameterMissingResponse(res, '');
     }
 
@@ -945,48 +975,69 @@ exports.getEngagementInfo = async function (req, res) {
     if (data[0].master_coupon == 1) {
       data[0].coupon_title = data[0].integratedPromoTitle;
     }
-    data[0].engagement_title = 3;     // To display completed ride as default
-    let statusString = ["Ended from Panel", "Start-End Case", "Cancelled Ride", "Completed Ride",
-      "Completed(Pool) Ride", "Ongoing Ride", "Start-End Reversed Case"];
+    data[0].engagement_title = 3; // To display completed ride as default
+    let statusString = [
+      'Ended from Panel',
+      'Start-End Case',
+      'Cancelled Ride',
+      'Completed Ride',
+      'Completed(Pool) Ride',
+      'Ongoing Ride',
+      'Start-End Reversed Case',
+    ];
     if (data[0].start_end_reversed == 1) {
       data[0].engagement_title = 6;
-    }
-    else if (data[0].end_ride == 1) {
+    } else if (data[0].end_ride == 1) {
       data[0].engagement_title = 0; // To indicate ride ended from panel
-    }
-    else if (data[0].start_end == 1) {
+    } else if (data[0].start_end == 1) {
       data[0].engagement_title = 1; // To indicate that ride was a start-end case
-    }
-    else if (data[0].engagement_status == 8 || data[0].engagement_status == 13) {
+    } else if (
+      data[0].engagement_status == 8 ||
+      data[0].engagement_status == 13
+    ) {
       data[0].engagement_title = 2; // To indicate ride was a cancelled ride
-    }
-    else if (data[0].ride_type_status == 2) { // To indicate ride was a pool ride
+    } else if (data[0].ride_type_status == 2) {
+      // To indicate ride was a pool ride
       data[0].engagement_title = 4;
-    }
-    else if (data[0].engagement_status == 2 || data[0].engagement_status == 1) {
+    } else if (
+      data[0].engagement_status == 2 ||
+      data[0].engagement_status == 1
+    ) {
       data[0].engagement_title = 5;
-    }
-    else {
+    } else {
       data[0].engagement_title = 3;
     }
     data[0].engagement_title_string = statusString[data[0].engagement_title];
 
-    var customerWaitTimeFare = Helper.calculateWaitTimeFare(data[0].wait_time,
-      data[0].waiting_charges_applicable, data[0].customer_fare_threshold_waiting_time,
-      data[0].customer_fare_per_waiting_min, data[0].customer_fare_factor);
+    var customerWaitTimeFare = Helper.calculateWaitTimeFare(
+      data[0].wait_time,
+      data[0].waiting_charges_applicable,
+      data[0].customer_fare_threshold_waiting_time,
+      data[0].customer_fare_per_waiting_min,
+      data[0].customer_fare_factor,
+    );
 
+    var driverWaitTimeFare = Helper.calculateWaitTimeFare(
+      data[0].wait_time,
+      data[0].waiting_charges_applicable,
+      data[0].driver_fare_threshold_waiting_time,
+      data[0].driver_fare_per_waiting_min,
+      data[0].driver_fare_factor,
+    );
 
-      var driverWaitTimeFare = Helper.calculateWaitTimeFare(data[0].wait_time,
-      data[0].waiting_charges_applicable, data[0].driver_fare_threshold_waiting_time,
-      data[0].driver_fare_per_waiting_min, data[0].driver_fare_factor);
-
-      const waitFare = {
-          customerWaitTimeFare,driverWaitTimeFare
-      }
-    return responseHandler.success(req, res, 'Engagement info fetched successfully', {
-      waitFare: waitFare,
-      data: data[0]
-    });
+    const waitFare = {
+      customerWaitTimeFare,
+      driverWaitTimeFare,
+    };
+    return responseHandler.success(
+      req,
+      res,
+      'Engagement info fetched successfully',
+      {
+        waitFare: waitFare,
+        data: data[0],
+      },
+    );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

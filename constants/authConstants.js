@@ -12,9 +12,9 @@ exports.PANEL = {
   ANALYTICS: 2,
   FF: 4,
   SMP: 5,
-  debuggerMARKETING : 12,
+  debuggerMARKETING: 12,
   ADMIN_PANEL: 32,
-  AUTOS_PANEL: 20
+  AUTOS_PANEL: 20,
 };
 
 exports.LEVEL = {
@@ -32,7 +32,7 @@ exports.LEVEL = {
   ENROLMENT_AGENT: 2,
   ALL: -1,
   TEAM_LEAD: 5,
-  REGULAR: 0
+  REGULAR: 0,
 };
 
 exports.WALLET_TYPE = {
@@ -42,4 +42,4 @@ exports.WALLET_TYPE = {
   PAYTM: 0,
   MOBIKWIK: 1,
   FREECHARGE: 2,
-}
+};

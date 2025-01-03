@@ -5,7 +5,7 @@ const {
   responseHandler,
   generalConstants,
   authConstants,
-  rideConstants
+  rideConstants,
 } = require('../../bootstart/header');
 const { checkBlank } = require('../rides/helper');
 const Helper = require('./helper');
@@ -13,7 +13,8 @@ const Helper = require('./helper');
 exports.admin = {
   isLoggedIn: async function (req, res, next) {
     var token = req.query.token || req.body.token;
-    var cityId = req.query.city || req.body.city || req.query.city_id || req.body.city_id;
+    var cityId =
+      req.query.city || req.body.city || req.query.city_id || req.body.city_id;
     if (!token) {
       return responseHandler.unauthorized(req, res);
     }
@@ -30,7 +31,10 @@ exports.admin = {
       req.email_from_acl = validOpertor[0].email;
       req.name_from_acl = validOpertor[0].name;
       req.fleet_id = validOpertor[0].fleet_id;
-      req.operator_token = req.headers.domain_token || req.body.domain_token || req.query.domain_token;
+      req.operator_token =
+        req.headers.domain_token ||
+        req.body.domain_token ||
+        req.query.domain_token;
       req.token = token;
       next();
     } else {
@@ -40,7 +44,10 @@ exports.admin = {
   domainToken: async function (req, res, next) {
     try {
       const token = req.body.token || req.query.token;
-      const domainToken = req.headers.domain_token || req.body.domain_token || req.query.domain_token;
+      const domainToken =
+        req.headers.domain_token ||
+        req.body.domain_token ||
+        req.query.domain_token;
 
       if (!token || !domainToken) {
         return responseHandler.unauthorized(req, res);
@@ -77,42 +84,48 @@ exports.admin = {
     req.body.cp_operator_id = req.operator_id;
     req.body.operator_id = -1;
     req.body.super_admin_panel = generalConstants.SUPER_ADMIN_PANEL;
-    next()
-  }
+    next();
+  },
 };
 
 exports.city = {
   exec: function (req, res, next) {
-      var required_permissions =
-              [{
-                  panel_id: authConstants.PANEL.SMP,
-                  city_id: req.body.city || req.body.city_id || req.query.city || req.query.city_id,
-                  level_id: [
-                    authConstants.LEVEL.SUPER_ADMIN,
-                    authConstants.LEVEL.ADMIN,
-                    authConstants.LEVEL.CITY_SUPPLY_MANAGER,
-                    authConstants.LEVEL.ASSISTANT_MANAGER,
-                    authConstants.LEVEL.SENIOR_EXECUTIVE,
-                    authConstants.LEVEL.EXECUTIVE,
-                    authConstants.LEVEL.ALL
-                  ]
-              }],
-          e = null;
+    var required_permissions = [
+        {
+          panel_id: authConstants.PANEL.SMP,
+          city_id:
+            req.body.city ||
+            req.body.city_id ||
+            req.query.city ||
+            req.query.city_id,
+          level_id: [
+            authConstants.LEVEL.SUPER_ADMIN,
+            authConstants.LEVEL.ADMIN,
+            authConstants.LEVEL.CITY_SUPPLY_MANAGER,
+            authConstants.LEVEL.ASSISTANT_MANAGER,
+            authConstants.LEVEL.SENIOR_EXECUTIVE,
+            authConstants.LEVEL.EXECUTIVE,
+            authConstants.LEVEL.ALL,
+          ],
+        },
+      ],
+      e = null;
 
-      if (!Helper.verifyPermissions(req.permissions, required_permissions)) {
-          e = new Error('Not permitted, contact panel admin!');
-          e.status = 403;
-          return next(e);
-      }
-      next();
+    if (!Helper.verifyPermissions(req.permissions, required_permissions)) {
+      e = new Error('Not permitted, contact panel admin!');
+      e.status = 403;
+      return next(e);
+    }
+    next();
   },
   checkUserLevel: function (req, res, next) {
-    var permissions_required =
-      [{
-        "panel_id": authConstants.PANEL.AUTOS_PANEL,
-        "level_id": [authConstants.LEVEL.ADMIN],
-        "city_id": rideConstants.CITIES.DEFAULT_CITY_ID
-      }];
+    var permissions_required = [
+      {
+        panel_id: authConstants.PANEL.AUTOS_PANEL,
+        level_id: [authConstants.LEVEL.ADMIN],
+        city_id: rideConstants.CITIES.DEFAULT_CITY_ID,
+      },
+    ];
     req.reference_id = '';
     var e = null;
     if (!Helper.verifyPermissions(req.permissions, permissions_required)) {
@@ -123,22 +136,24 @@ exports.city = {
     next();
   },
   getEngagementInfo: function (req, res, next) {
-    var permissions_required =
-        [
-            {
-            "panel_id": authConstants.PANEL.CSP,
-            "level_id": [authConstants.LEVEL.ADMIN, authConstants.LEVEL.TEAM_LEAD,
-              authConstants.LEVEL.REGULAR],
-            "city_id": rideConstants.CITIES.DEFAULT_CITY_ID
-            }
-        ],
-        e = null;
-    req.reference_id = "";
+    var permissions_required = [
+        {
+          panel_id: authConstants.PANEL.CSP,
+          level_id: [
+            authConstants.LEVEL.ADMIN,
+            authConstants.LEVEL.TEAM_LEAD,
+            authConstants.LEVEL.REGULAR,
+          ],
+          city_id: rideConstants.CITIES.DEFAULT_CITY_ID,
+        },
+      ],
+      e = null;
+    req.reference_id = '';
 
-    if(!Helper.verifyPermissions(req.permissions,permissions_required)) {
-        var e = new Error("Not permitted, contact panel admin!");
-        e.status = 403;
-        return next(e);
+    if (!Helper.verifyPermissions(req.permissions, permissions_required)) {
+      var e = new Error('Not permitted, contact panel admin!');
+      e.status = 403;
+      return next(e);
     }
     next();
   },
@@ -151,32 +166,41 @@ exports.city = {
     if (checkValues == 1) {
       return responseHandler.parameterMissingResponse(res, '');
     }
-    var permissions_required =
-      [
+    var permissions_required = [
         {
-          "panel_id": authConstants.PANEL.CSP,
-          "level_id": [authConstants.LEVEL.REGULAR, authConstants.LEVEL.ADMIN, authConstants.LEVEL.TEAM_LEAD],
-          "city_id": authConstants.LEVEL.ALL
-        }
+          panel_id: authConstants.PANEL.CSP,
+          level_id: [
+            authConstants.LEVEL.REGULAR,
+            authConstants.LEVEL.ADMIN,
+            authConstants.LEVEL.TEAM_LEAD,
+          ],
+          city_id: authConstants.LEVEL.ALL,
+        },
       ],
       error = null;
-    req.reference_id = "";
+    req.reference_id = '';
 
     if (!Helper.verifyPermissions(req.permissions, permissions_required)) {
-      error = new Error("Not permitted, contact panel admin!");
+      error = new Error('Not permitted, contact panel admin!');
       error.status = 403;
       return next(error);
     }
     var userFound = {};
 
-    await Helper.sqlQueryForAutos(req, keyType, userId, operatorId, userFound)
-    await Helper.sqlQueryForVendors(req, keyType, userFound, userId, operatorId)
+    await Helper.sqlQueryForAutos(req, keyType, userId, operatorId, userFound);
+    await Helper.sqlQueryForVendors(
+      req,
+      keyType,
+      userFound,
+      userId,
+      operatorId,
+    );
 
-
-
-    if ((!userFound.isVendor && !userFound.isAutosUser)
-      || (operatorId != 1 && !userFound.isAutosUser)) {
-      throw new Error("INVALID USER");
+    if (
+      (!userFound.isVendor && !userFound.isAutosUser) ||
+      (operatorId != 1 && !userFound.isAutosUser)
+    ) {
+      throw new Error('INVALID USER');
     }
 
     req.body.isAutosUser = userFound.isAutosUser;
@@ -187,38 +211,42 @@ exports.city = {
   },
   getDriverInfo: async function (req, res, next) {
     var operatorId = req.operator_id;
-    var permissions_required =
-      [
+    var permissions_required = [
         {
-          "panel_id": authConstants.PANEL.CSP,
-          "level_id": [authConstants.LEVEL.REGULAR, authConstants.LEVEL.ADMIN, authConstants.LEVEL.TEAM_LEAD],
-          "city_id": authConstants.LEVEL.ALL
-        }
+          panel_id: authConstants.PANEL.CSP,
+          level_id: [
+            authConstants.LEVEL.REGULAR,
+            authConstants.LEVEL.ADMIN,
+            authConstants.LEVEL.TEAM_LEAD,
+          ],
+          city_id: authConstants.LEVEL.ALL,
+        },
       ],
-        error = null;
-    req.reference_id = "";
+      error = null;
+    req.reference_id = '';
 
     if (!Helper.verifyPermissions(req.permissions, permissions_required)) {
-      error = new Error("Not permitted, contact panel admin!");
+      error = new Error('Not permitted, contact panel admin!');
       error.status = 403;
       return next(error);
     }
 
-    var userId = req.body.driver_id, queryParams = [], operatorId = req.operator_id;
+    var userId = req.body.driver_id,
+      queryParams = [],
+      operatorId = req.operator_id;
     var searchKey = parseInt(req.body.search_key);
-    var getUserIdQuery =
-      `SELECT driver_id as user_id FROM ${dbConstants.DBS.LIVE_DB}.tb_drivers WHERE operator_id = ? `
+    var getUserIdQuery = `SELECT driver_id as user_id FROM ${dbConstants.DBS.LIVE_DB}.tb_drivers WHERE operator_id = ? `;
     queryParams.push(operatorId);
 
     switch (searchKey) {
       case rideConstants.DRIVER_DETAIL_SEARCH_KEY.DRIVER_ID:
-        getUserIdQuery += " AND driver_id = ?";
+        getUserIdQuery += ' AND driver_id = ?';
         break;
       case rideConstants.DRIVER_DETAIL_SEARCH_KEY.DRIVER_AUTO_NO:
-        getUserIdQuery += " AND vehicle_no = ?";
+        getUserIdQuery += ' AND vehicle_no = ?';
         break;
       case rideConstants.DRIVER_DETAIL_SEARCH_KEY.DRIVER_PHONE:
-        getUserIdQuery += " AND (phone_no = ? or alternate_phone_no = ? )";
+        getUserIdQuery += ' AND (phone_no = ? or alternate_phone_no = ? )';
         queryParams.push(userId);
         break;
     }
@@ -230,18 +258,19 @@ exports.city = {
       queryParams,
     );
     if (!driver) {
-      throw new Error("Invalid Driver id");
+      throw new Error('Invalid Driver id');
     }
 
     req.body.driver_id = driver[0].user_id;
 
     next();
-  }
+  },
 };
 
 exports.documents = {
   checkMultipleVehicleEnableHelper: async function (req, res, next) {
-    var cityId = req.query.city_id || req.body.city_id || req.params.city_id || "";
+    var cityId =
+      req.query.city_id || req.body.city_id || req.params.city_id || '';
 
     if (cityId) {
       var sql = `SELECT * FROM ${dbConstants.LIVE_DB.O_CITY} where city_id = ?`;
@@ -249,43 +278,42 @@ exports.documents = {
       var data = await db.RunQuery(dbConstants.DBS.LIVE_DB, sql, [cityId]);
       if (data.length) {
         req.multipleVehicleEnable = data[0].multiple_vehicles;
-      }
-      else {
+      } else {
         req.multipleVehicleEnable = 0;
       }
       next();
+    } else {
+      req.multipleVehicleEnable = 0;
+      next();
     }
-    else {
-        req.multipleVehicleEnable = 0;
-        next();
-    }
-  }
+  },
 };
 
 exports.bussinessMiddlewares = {
   fetchTokenUsingPhoneNo: async function (req, res, next) {
     try {
       var userPhone = req.body.user_phone;
-      var userName  = req.body.user_name;
+      var userName = req.body.user_name;
       var operatorId = req.operator_id;
       var countryCode = req.body.country_code;
-      if(!operatorId) {
-        throw new Error("Operator id not passed");
+      if (!operatorId) {
+        throw new Error('Operator id not passed');
       }
-      var getInformation =
-      `SELECT user_id, access_token, verification_status, total_rides_as_user, reg_as, current_country, city FROM ${dbConstants.DBS.LIVE_DB}.tb_users WHERE phone_no = ? AND operator_id = ? `
-      var user = await db.RunQuery(dbConstants.DBS.LIVE_DB, getInformation, [userPhone,operatorId]);
-      if(!user){
-        throw new Error("user not exist");
+      var getInformation = `SELECT user_id, access_token, verification_status, total_rides_as_user, reg_as, current_country, city FROM ${dbConstants.DBS.LIVE_DB}.tb_users WHERE phone_no = ? AND operator_id = ? `;
+      var user = await db.RunQuery(dbConstants.DBS.LIVE_DB, getInformation, [
+        userPhone,
+        operatorId,
+      ]);
+      if (!user) {
+        throw new Error('user not exist');
       }
 
       req.body.access_token = user[0].access_token;
-      next()
+      next();
     } catch (error) {
       errorHandler.errorHandler(error, req, res);
     }
   },
-}
-
+};
 
 exports.permissions = {};

@@ -10,12 +10,7 @@ const {
 var moment = require('moment');
 const _ = require('lodash');
 
-exports.ridesQueryHelper = function (
-  corporateId,
-  driverId,
-  fleetId,
-  status,
-) {
+exports.ridesQueryHelper = function (corporateId, driverId, fleetId, status) {
   var ridesQuery = '';
 
   var valueToBePicked = `SELECT 
@@ -57,33 +52,31 @@ exports.ridesQueryHelper = function (
                       JOIN venus_live.tb_session s ON e.session_id = s.session_id
                       `;
 
-  if (status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_REQUESTS || status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_RIDES) {
-
+  if (
+    status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_REQUESTS ||
+    status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_RIDES
+  ) {
     valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM venus_live.tb_nts_booking_info GROUP BY engagement_id) nts ON e.session_id = nts.session_id `;
-
   } else {
-
     valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM venus_live.tb_nts_booking_info WHERE is_vehicle_assigned = 1 ) nts ON e.session_id = nts.session_id `;
   }
 
   if (corporateId) {
-
     valueToBePickedFrom += `
            JOIN venus_live.tb_business_users bu ON bu.business_id = s.is_manual 
       `;
 
     valueToBePicked += ', bu.external_id AS corporate_id ';
-
   }
 
   if (driverId) {
-
-    valueToBePicked += ', d.driver_id, (e.actual_fare - e.venus_commission) AS driver_earnings,s.preferred_payment_mode ';
+    valueToBePicked +=
+      ', d.driver_id, (e.actual_fare - e.venus_commission) AS driver_earnings,s.preferred_payment_mode ';
   }
 
   if (fleetId) {
-
-    valueToBePicked += ', d.driver_id, d.external_id AS fleet_id, (e.actual_fare - e.venus_commission) AS driver_earnings, s.preferred_payment_mode  ';
+    valueToBePicked +=
+      ', d.driver_id, d.external_id AS fleet_id, (e.actual_fare - e.venus_commission) AS driver_earnings, s.preferred_payment_mode  ';
   }
 
   ridesQuery += valueToBePicked + valueToBePickedFrom;
@@ -279,8 +272,13 @@ exports.getCustomersData = async function (data) {
 };
 
 exports.getRideStatistics = async function (data) {
-  const { operator_id, start_date, end_date, utc_offset = 0, request_ride_type } =
-    data;
+  const {
+    operator_id,
+    start_date,
+    end_date,
+    utc_offset = 0,
+    request_ride_type,
+  } = data;
   try {
     const startDate = new Date(start_date);
     const endDate = new Date(end_date);
@@ -415,11 +413,10 @@ function diffInDates(startDt, endDt, diffType) {
   return diff;
 }
 
-
 exports.engagementInfofetcher = async function (engagementId, operatorId) {
   try {
     var tableName = `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES}`;
-              
+
     var sql_new = `SELECT
               tb_session_info.driver_app_versioncode,
               drivers.driver_id,
@@ -542,12 +539,14 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
             ON
               tb_coupons.coupon_id = tb_accounts.coupon_id
             WHERE
-              ${dbConstants.LIVE_DB.RIDES}.engagement_id = ?`
+              ${dbConstants.LIVE_DB.RIDES}.engagement_id = ?`;
 
-
-    const engagementInfo = await db.RunQuery(dbConstants.DBS.LIVE_DB, sql_new, [operatorId, engagementId]);
+    const engagementInfo = await db.RunQuery(dbConstants.DBS.LIVE_DB, sql_new, [
+      operatorId,
+      engagementId,
+    ]);
     if (Array.isArray(engagementInfo) && !engagementInfo.length) {
-      throw new Error("No ride data found for this engagement id");
+      throw new Error('No ride data found for this engagement id');
     }
     // let addnInfo = engagementInfo[0].addn_info;
     // addnInfo = JSON.parse(addnInfo)
@@ -556,27 +555,37 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
     // (addnInfo.driver_phone) ? engagementInfo[0].driver_phone = addnInfo.driver_phone : 0;
     // (addnInfo.driver_image) ? engagementInfo[0].driver_image = addnInfo.driver_image : 0;
 
-    return engagementInfo
-
+    return engagementInfo;
   } catch (error) {
     throw new Error(error.message);
   }
 };
 
-exports.calculateWaitTimeFare = function (waitTime, waitingChargesApplicable, fareThresholdWaitingTime, farePerWaitingMin, fareFactor) {
+exports.calculateWaitTimeFare = function (
+  waitTime,
+  waitingChargesApplicable,
+  fareThresholdWaitingTime,
+  farePerWaitingMin,
+  fareFactor,
+) {
   var waitFare = 0;
   if (waitingChargesApplicable && waitTime >= fareThresholdWaitingTime) {
-    waitFare += (waitTime - fareThresholdWaitingTime) * farePerWaitingMin * fareFactor;
+    waitFare +=
+      (waitTime - fareThresholdWaitingTime) * farePerWaitingMin * fareFactor;
   }
   return waitFare;
-}
+};
 
-
-exports.fetchNearestCity = async function (lat, long, operatorId, resultWrapper) {
+exports.fetchNearestCity = async function (
+  lat,
+  long,
+  operatorId,
+  resultWrapper,
+) {
   try {
     var dataWrapper = {};
-    await distanceFromNearestCity(lat, long, dataWrapper, operatorId)
-    await operationalHoursofCurrentDay(dataWrapper, operatorId)
+    await distanceFromNearestCity(lat, long, dataWrapper, operatorId);
+    await operationalHoursofCurrentDay(dataWrapper, operatorId);
 
     if (dataWrapper.data) {
       // dataWrapper.data.geoDistance *= 111;
@@ -586,29 +595,37 @@ exports.fetchNearestCity = async function (lat, long, operatorId, resultWrapper)
   } catch (error) {
     throw new Error(error.message);
   }
-}
+};
 
-exports.isAValidScheduleTime = async function (pickupTime, currentTimeDiff, daysLimit) {
+exports.isAValidScheduleTime = async function (
+  pickupTime,
+  currentTimeDiff,
+  daysLimit,
+) {
   // If the time difference is less than an hour for the schedule, then show user a message
   var minTimeDiff = moment(pickupTime).diff(moment(), 'minutes');
   var dayTimeDiff = moment(pickupTime).diff(moment(), 'days');
 
-  return (minTimeDiff >= currentTimeDiff) && (dayTimeDiff <= daysLimit);
-}
+  return minTimeDiff >= currentTimeDiff && dayTimeDiff <= daysLimit;
+};
 
 exports.hasAlreadyScheduled = async function (userId) {
   var getExisting = `SELECT COUNT(*) as num_schedules FROM ${dbConstants.DBS.LIVE_DB}.tb_schedules WHERE user_id = ? AND status = ? AND pickup_time > NOW()`;
   var values = [userId, rideConstants.SCHEDULE_STATUS.IN_QUEUE];
 
-  const information = await db.RunQuery(dbConstants.DBS.LIVE_DB, getExisting, values);
+  const information = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    getExisting,
+    values,
+  );
 
   if (information[0].num_schedules === 0) {
-    return false
+    return false;
   } else {
-    return true
+    return true;
   }
-}
-async function distanceFromNearestCity (lat, long, dataWrapper, operatorId) {
+};
+async function distanceFromNearestCity(lat, long, dataWrapper, operatorId) {
   if (!lat || !long) {
     throw new Error("Latitude and longitude aren't in proper format.");
   }
@@ -699,22 +716,24 @@ WHERE
 `;
   var values = [operatorId];
 
-  const nearestCity = await db.RunQuery(dbConstants.DBS.LIVE_DB, getNearestCity, values);
+  const nearestCity = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    getNearestCity,
+    values,
+  );
 
   dataWrapper.data = nearestCity[0];
 }
 
-
-async function operationalHoursofCurrentDay (dataWrapper, operatorId) {
+async function operationalHoursofCurrentDay(dataWrapper, operatorId) {
   if (dataWrapper && !dataWrapper.operational_hours_enabled) {
-    return
+    return;
   }
-
 
   lat = parseFloat(lat);
   long = parseFloat(long);
 
- var getOperationalTimings = `
+  var getOperationalTimings = `
 SELECT 
   * 
 FROM (
@@ -768,14 +787,18 @@ ORDER BY
 
   var values = [operatorId, dataWrapper.data.city_id];
 
-  const result = await db.RunQuery(dbConstants.DBS.LIVE_DB, getOperationalTimings, values);
+  const result = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    getOperationalTimings,
+    values,
+  );
 
   if (result.length == 0) {
     dataWrapper.data.is_operation_available = 0;
     dataWrapper.data.start_operation_time = '';
     dataWrapper.data.end_operation_time = '';
     dataWrapper.data.day_id = null;
-    return
+    return;
   }
 
   if (result[0] && !result[0].is_operation_available) {
@@ -784,7 +807,7 @@ ORDER BY
     date.setDate(date.getDate() - 30);
     while (date < new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000)) {
       for (var item of result) {
-        if ((date.getDay() + 1) != item.start_day_id) {
+        if (date.getDay() + 1 != item.start_day_id) {
           continue;
         }
         var operationDate = new Date(date.getTime());
@@ -800,14 +823,29 @@ ORDER BY
       return a - b;
     });
     for (var i = 0; i < operationalHoursData.length; i++) {
-      if (operationalHoursData[i] > new Date(new Date().getTime() + result[0].utc_offset * 60 * 1000)) {
+      if (
+        operationalHoursData[i] >
+        new Date(new Date().getTime() + result[0].utc_offset * 60 * 1000)
+      ) {
         var endTime = moment(operationalHoursData[i].data.end_time, 'HH:mm:ss');
-        var startTime = moment(operationalHoursData[i + 1].data.start_time, 'HH:mm:ss');
+        var startTime = moment(
+          operationalHoursData[i + 1].data.start_time,
+          'HH:mm:ss',
+        );
         var x = moment.duration(startTime.diff(endTime)).asMinutes();
-        if (x >= 0 && x < 1 && (operationalHoursData[i + 1].data.start_day_id - operationalHoursData[i].data.start_day_id == 1 || (operationalHoursData[i + 1].data.start_day_id == 1 && operationalHoursData[i].data.start_day_id == 7))) {
-          operationalHoursData[i].data.end_time = operationalHoursData[i + 1].data.end_time;
+        if (
+          x >= 0 &&
+          x < 1 &&
+          (operationalHoursData[i + 1].data.start_day_id -
+            operationalHoursData[i].data.start_day_id ==
+            1 ||
+            (operationalHoursData[i + 1].data.start_day_id == 1 &&
+              operationalHoursData[i].data.start_day_id == 7))
+        ) {
+          operationalHoursData[i].data.end_time =
+            operationalHoursData[i + 1].data.end_time;
         }
-        result[0] = operationalHoursData[i].data
+        result[0] = operationalHoursData[i].data;
         break;
       }
     }
@@ -820,8 +858,12 @@ ORDER BY
   }
 }
 
-
-exports.getTaskDetailsQueryHelper = function (deliveryEnabled, taskType, fleetId, requestRideType) {
+exports.getTaskDetailsQueryHelper = function (
+  deliveryEnabled,
+  taskType,
+  fleetId,
+  requestRideType,
+) {
   var fleetIdClause = '';
   let additionalJoin = '';
   let additionalSelect = '';
@@ -972,9 +1014,7 @@ exports.getTaskDetailsQueryHelper = function (deliveryEnabled, taskType, fleetId
 	 GROUP by a.user_id
 	 ORDER by a.date DESC`;
 
-
   if (deliveryEnabled) {
-
     unacceptedRides = `SELECT
 			   a1.session_id,
 			   a1.date,
@@ -1006,7 +1046,6 @@ exports.getTaskDetailsQueryHelper = function (deliveryEnabled, taskType, fleetId
 				)
 			GROUP by a.user_id
 				) l2 ON a1.session_id = l2.id`;
-
 
     onGoingRides = `SELECT
 			   a.session_id,
@@ -1044,25 +1083,17 @@ exports.getTaskDetailsQueryHelper = function (deliveryEnabled, taskType, fleetId
 				 ${fleetIdClause}
 				)
 			 ORDER by
-				  a.date DESC`
-
+				  a.date DESC`;
   }
 
   var queryRides;
   if (taskType == 0) {
     queryRides = unacceptedRides;
-  }
-  else if (taskType == 1) {
+  } else if (taskType == 1) {
     queryRides = onGoingRides;
   } else if (taskType == 2) {
-    queryRides = allRides
+    queryRides = allRides;
   }
 
   return queryRides;
-
-}
-
-
-
-
-
+};

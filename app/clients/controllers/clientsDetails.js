@@ -7,7 +7,7 @@ const {
   generalConstants,
 } = require('../../../bootstart/header');
 
-const Helper = require('../helper')
+const Helper = require('../helper');
 var Joi = require('joi');
 
 exports.getClients = async function (req, res) {
@@ -101,14 +101,13 @@ exports.getClients = async function (req, res) {
   }
 };
 
-
 exports.isUserPresent = async function (req, res) {
   try {
     delete req.body.token;
 
     let schema = Joi.object({
-        phone_no: Joi.string().required(),
-        secret_key: Joi.number().optional()
+      phone_no: Joi.string().required(),
+      secret_key: Joi.number().optional(),
     });
 
     let result = schema.validate(req.body);
@@ -121,21 +120,27 @@ exports.isUserPresent = async function (req, res) {
     let operatorId = req.operator_id;
     let corporateId = req.corporate_id;
 
-    let userDetails = await Helper.validateUserUsingIdOrPhone('phone_no', phoneNumber, operatorId, generalConstants.userRegistrationStatus.CUSTOMER);
+    let userDetails = await Helper.validateUserUsingIdOrPhone(
+      'phone_no',
+      phoneNumber,
+      operatorId,
+      generalConstants.userRegistrationStatus.CUSTOMER,
+    );
 
     if (corporateId) {
-      let userCorporateDetails = await Helper.checkUserCorporate(corporateId, userDetails.user_id);
+      let userCorporateDetails = await Helper.checkUserCorporate(
+        corporateId,
+        userDetails.user_id,
+      );
       if (!userCorporateDetails.length) {
-        throw new Error("The user does not exist for this corporate");
+        throw new Error('The user does not exist for this corporate');
       }
     }
     return responseHandler.success(req, res, 'User Details Sent', userDetails);
   } catch (error) {
     throw new Error(error.message);
-
   }
-}
-
+};
 
 exports.getCustomers = async function (req, res) {
   try {
@@ -144,12 +149,12 @@ exports.getCustomers = async function (req, res) {
       user_bucket: Joi.number().min(1).max(3).required(),
       city_id: Joi.number().required(),
       fetch_customer_count: Joi.number().min(0).max(1).required(),
-      secret_key: Joi.number().optional()
+      secret_key: Joi.number().optional(),
     });
     let impData = {
       user_bucket: req.query.user_bucket,
       city_id: req.query.city_id,
-      fetch_customer_count: req.query.fetch_customer_count
+      fetch_customer_count: req.query.fetch_customer_count,
     };
     let result = schema.validate(impData);
 
@@ -165,7 +170,7 @@ exports.getCustomers = async function (req, res) {
     userInfo.city = city;
 
     switch (
-    userBucket // userBucket = 1 means all users
+      userBucket // userBucket = 1 means all users
     ) {
       case 2:
         userInfo.device_type = 0; // Android Users
@@ -176,8 +181,11 @@ exports.getCustomers = async function (req, res) {
         break;
     }
 
-
-    let users = await Helper.fetchUserListWithPagination(userInfo, userBucket, req.query);
+    let users = await Helper.fetchUserListWithPagination(
+      userInfo,
+      userBucket,
+      req.query,
+    );
 
     return responseHandler.success(req, res, 'User Details Sent', users);
   } catch (error) {

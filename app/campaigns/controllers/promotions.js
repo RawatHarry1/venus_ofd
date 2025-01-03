@@ -278,16 +278,16 @@ async function getAuthCoupons(operatorId, cityId, requestRideType) {
   cityId = parseInt(cityId);
   const values = [operatorId];
   let whereClause = ``;
-  
+
   if (cityId) {
-      whereClause += ` AND city_id REGEXP ?`;
-      const cityIdRegex = `^${cityId},|,${cityId},|^${cityId}$|,${cityId}$`; // Build the REGEXP pattern
-      values.push(cityIdRegex);
+    whereClause += ` AND city_id REGEXP ?`;
+    const cityIdRegex = `^${cityId},|,${cityId},|^${cityId}$|,${cityId}$`; // Build the REGEXP pattern
+    values.push(cityIdRegex);
   }
-  
+
   // Add `requestRideType` to values
   values.push(requestRideType);
-  
+
   let couponQuery = `
     SELECT 
       promo_code, 
@@ -312,10 +312,10 @@ async function getAuthCoupons(operatorId, cityId, requestRideType) {
     WHERE operator_id = ? ${whereClause} AND service_type = ?
     ORDER BY promo_id DESC
   `;
-  
+
   // Execute the query
   let coupons = await db.RunQuery(dbConstants.DBS.AUTH_DB, couponQuery, values);
-  return coupons
+  return coupons;
 }
 
 async function getCoupons(operatorId, couponId, requestRideType, cityId) {
@@ -370,10 +370,13 @@ async function getCoupons(operatorId, couponId, requestRideType, cityId) {
   }
 
   // Execute the query
-  let coupons = await db.RunQuery(dbConstants.DBS.LIVE_DB, couponsQuery, values);
+  let coupons = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    couponsQuery,
+    values,
+  );
   return coupons;
 }
-
 
 function filterPromotionsList(promoObject) {
   for (let i in promoObject) {

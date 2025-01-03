@@ -7,5 +7,5 @@ module.exports = {
   tickets: require('../app/tickets'),
   settings: require('../app/settings'),
   pushNotifcations: require('../app/push_notification'),
-  referral: require('../app/referral_program')
+  referral: require('../app/referral_program'),
 };

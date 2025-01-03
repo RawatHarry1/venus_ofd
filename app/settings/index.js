@@ -1,36 +1,62 @@
 const VehicleController = require('./controllers/vehilces');
 const AdminMiddlewares = require('../admin/middelware');
-const CitiesController = require('./controllers/cities')
-const fareSettingsController = require('./controllers/fareSettings')
-const documentSettingsController = require('./controllers/document')
-const polygonController = require('./controllers/polygon')
-const bannersController = require('./controllers/banners')
-var multer       =     require('multer');
+const CitiesController = require('./controllers/cities');
+const fareSettingsController = require('./controllers/fareSettings');
+const documentSettingsController = require('./controllers/document');
+const polygonController = require('./controllers/polygon');
+const bannersController = require('./controllers/banners');
+var multer = require('multer');
 const { generalConstants } = require('../../bootstart/header');
 
-
-
-var upload       =     multer({dest : 'uploads/', limits: { fileSize: generalConstants.MAX_ALLOWED_FILE_SIZE }});
+var upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: generalConstants.MAX_ALLOWED_FILE_SIZE },
+});
 
 module.exports = function (app) {
-
-
-   /* 
+  /* 
   Global settings API's
   */
-  app.get('/fetch_vehicles', AdminMiddlewares.admin.domainToken, AdminMiddlewares.admin.isLoggedIn, VehicleController.fetchVehicles);
+  app.get(
+    '/fetch_vehicles',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    VehicleController.fetchVehicles,
+  );
 
-  app.get('/get_city_info_operator_wise', AdminMiddlewares.admin.domainToken, AdminMiddlewares.admin.isLoggedIn, VehicleController.operatorCityInfo);
+  app.get(
+    '/get_city_info_operator_wise',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    VehicleController.operatorCityInfo,
+  );
 
-  app.post('/fetch/operator/city/fields', AdminMiddlewares.admin.domainToken, AdminMiddlewares.admin.isLoggedIn, AdminMiddlewares.admin.useControlPanelApi, CitiesController.fetchOprCitiesFields);
+  app.post(
+    '/fetch/operator/city/fields',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.useControlPanelApi,
+    CitiesController.fetchOprCitiesFields,
+  );
 
-  app.post('/update/operator/city/fields', AdminMiddlewares.admin.domainToken, AdminMiddlewares.admin.isLoggedIn, AdminMiddlewares.admin.useControlPanelApi, CitiesController.updateTbOperatorCities);
+  app.post(
+    '/update/operator/city/fields',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.useControlPanelApi,
+    CitiesController.updateTbOperatorCities,
+  );
 
   /* 
   Vehicle fare settings API's
   */
-  app.post('/add_vehicle_make', upload.single('file'), AdminMiddlewares.admin.domainToken, AdminMiddlewares.admin.isLoggedIn,
-    CitiesController.addVehicleMake);
+  app.post(
+    '/add_vehicle_make',
+    upload.single('file'),
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CitiesController.addVehicleMake,
+  );
 
   app.post(
     '/update_vehicle_make',
@@ -103,7 +129,6 @@ module.exports = function (app) {
     fareSettingsController.fetchAvailableVehicles,
   );
 
-
   /* 
   Document settings API's
   */
@@ -131,8 +156,7 @@ module.exports = function (app) {
     documentSettingsController.updateDocument,
   );
 
-
-   /* 
+  /* 
   Polygon settings API's
   */
   app.get(
@@ -151,8 +175,7 @@ module.exports = function (app) {
     polygonController.updatePolygon,
   );
 
-
-   /* 
+  /* 
   Banners settings API's
   */
   app.post(
@@ -169,7 +192,6 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     bannersController.uploadLogoToS3,
   );
-
 
   app.get(
     '/internal/fetch_banner_types',
