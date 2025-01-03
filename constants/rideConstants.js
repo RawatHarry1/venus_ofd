@@ -128,3 +128,15 @@ exports.SCHEDULE_STATUS = {
   PROCESSED : 2,
   CANCELLED: 3
 };
+
+exports.COMMUNICATION_MEDIUM = {
+  PUSH : 0,
+  SMS: 1,
+  MKT_PUSH : 3,
+  MKT_SMS: 4,
+  EMAIL: 2
+};
+
+exports.SERVERS = {
+  AUTOS_SERVER : 'https://chuki-rides.venustaxi.in'
+}

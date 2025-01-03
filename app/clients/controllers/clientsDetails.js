@@ -135,3 +135,52 @@ exports.isUserPresent = async function (req, res) {
 
   }
 }
+
+
+exports.getCustomers = async function (req, res) {
+  try {
+    delete req.query.token;
+    let schema = Joi.object({
+      user_bucket: Joi.number().min(1).max(3).required(),
+      city_id: Joi.number().required(),
+      fetch_customer_count: Joi.number().min(0).max(1).required(),
+      secret_key: Joi.number().optional()
+    });
+    let impData = {
+      user_bucket: req.query.user_bucket,
+      city_id: req.query.city_id,
+      fetch_customer_count: req.query.fetch_customer_count
+    };
+    let result = schema.validate(impData);
+
+    if (result.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    let userInfo = {};
+    let userBucket = +req.query.user_bucket;
+    let city = +req.query.city_id;
+    let fetchCustomerCount = +req.query.fetch_customer_count;
+    userInfo.operator_id = req.operator_id;
+    userInfo.city = city;
+
+    switch (
+    userBucket // userBucket = 1 means all users
+    ) {
+      case 2:
+        userInfo.device_type = 0; // Android Users
+        break;
+      case 3:
+        userInfo.device_type = 1; // IOS Users
+        userBucket = 2;
+        break;
+    }
+
+
+    let users = await Helper.fetchUserListWithPagination(userInfo, userBucket, req.query);
+
+    return responseHandler.success(req, res, 'User Details Sent', users);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};

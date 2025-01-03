@@ -1,26 +1,31 @@
+const request = require('request');
 const {
     dbConstants,
     db,
     errorHandler,
     responseHandler,
     ResponseConstants,
+	rideConstants,
+	authConstants,
+	generalConstants,
   } = require('../../bootstart/header');
+  const moment = require('moment')
   
 
 
 
-exports.sendPush = async function (dataToSend, params) {
+exports.sendPush = async function (driverObjArray, params) {
 	try {
 		let operatorDetailsQuery = `select name from ${dbConstants.DBS.LIVE_DB}.tb_operators where operator_id = ? `
 		let operatorDetails = db.RunQuery(dbConstants.DBS.LIVE_DB, operatorDetailsQuery, [params.operator_id])
 		let message = params.message,
-			smsType = constants.communicationMedium.PUSH,
+			smsType = rideConstants.COMMUNICATION_MEDIUM.PUSH,
 			sentBy = params.sent_by,
 			timeLimit = params.time_limit || 10,
 			userArr = [];
 		const requestBody = {
 			data: [],
-			push_admin_password: config.get('autosPushPassword'),
+			push_admin_password: generalConstants.PASSWORDS.AUTOS_PUSH_PASSWORD,
 		};
 		let newArr = splitArrayIntoChunksOfLen(driverObjArray, 100);
 
@@ -37,16 +42,46 @@ exports.sendPush = async function (dataToSend, params) {
 					flag: 117,
 					title: "VENUS",
 					message: message,
-					user_type: constants.loginType.DRIVER,
+					user_type: rideConstants.LOGIN_TYPE.DRIVER,
 				});
 			}
-			await pushFromRideServer(requestBody);
-			await Promise.delay(200);
+			await pushFromRideServer(requestBody, '/send_push_from_autos');
 		}
-
-
 	} catch (error) {
 		throw new Error(error.message);
 
 	}
+}
+
+function splitArrayIntoChunksOfLen(arr, len) {
+	var chunks = [], i = 0, n = arr.length;
+	while (i < n) {
+	  chunks.push(arr.slice(i, i += len));
+	}
+	return chunks;
+}
+
+
+async function pushFromRideServer (requestBody,endpoint){
+	  try {
+		var push_options = {
+		  url: rideConstants.SERVERS.AUTOS_SERVER + endpoint,
+		  method: "POST",
+		  body: requestBody,
+		  json: true,
+		  rejectUnauthorized: false,
+		  headers: {
+			'Content-Type': 'application/json; charset=utf-8'
+		  }
+		};
+		request(push_options, function (error, response, body) {
+		  if (error || response.statusCode != '200') {
+			loggingImp.error({EVENT: "error from rides server for push", error, response});
+		  }
+
+		});
+	  } catch (error) {
+		loggingImp.error({EVENT: "error from pushFromRideServer", error, response});
+		resolve();
+	  }
 }

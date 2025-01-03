@@ -643,3 +643,53 @@ async function fetchImageTypeDocument(operatorId, vehicleType) {
     );
     return result
 }
+
+exports.fetchAvailableVehicles = async function (req, res) {
+    try {
+        var response = {},
+            cityId = req.query.city_id,
+            operatorId = req.operator_id,
+            vehicleValues = {},
+            filteredVehicleTypes = [],
+            mandatoryFields = [cityId, operatorId];
+
+        var requestRideType = req.request_ride_type;
+
+        let all_vehicle_types = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+
+        if (checkBlank(mandatoryFields)) {
+            return responseHandler.parameterMissingResponse(res, '');
+        }
+
+        var requiredVehicleKeys = ['vehicle_type'];
+        var vehicleCriteria = [
+            { key: 'operator_id', value: operatorId },
+            { key: 'city_id', value: cityId }
+        ];
+
+        if (requestRideType == rideConstants.CLIENTS.MARS) {
+            vehicleCriteria.push({ key: 'ride_type', value: rideConstants.CLIENTS_RIDE_TYPE.MARS })
+        } else {
+            vehicleCriteria.push({ key: 'ride_type', value: rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI })
+        }
+
+        vehicleValues = await db.SelectFromTable(
+            dbConstants.DBS.LIVE_DB,
+            `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS}`,
+            requiredVehicleKeys,
+            vehicleCriteria
+        );
+        const vehicleTypes = vehicleValues.map(vehicle => vehicle.vehicle_type);
+        filteredVehicleTypes = all_vehicle_types.filter(type => !vehicleTypes.includes(type));
+
+        response = {
+            occupied_vehicle_types: vehicleTypes,
+            available_vehicle_types: filteredVehicleTypes
+        };
+
+
+        return responseHandler.success(req, res, 'Vehicle list fetched.', response);
+    } catch (error) {
+        errorHandler.errorHandler(error, req, res);
+    }
+};

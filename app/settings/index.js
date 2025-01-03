@@ -96,6 +96,13 @@ module.exports = function (app) {
     fareSettingsController.insertUpdatedFareLogs,
   );
 
+  app.get(
+    '/fetch_available_vehicles',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.fetchAvailableVehicles,
+  );
+
 
   /* 
   Document settings API's
