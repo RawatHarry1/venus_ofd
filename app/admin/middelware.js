@@ -262,5 +262,30 @@ exports.documents = {
   }
 };
 
+exports.bussinessMiddlewares = {
+  fetchTokenUsingPhoneNo: async function (req, res, next) {
+    try {
+      var userPhone = req.body.user_phone;
+      var userName  = req.body.user_name;
+      var operatorId = req.operator_id;
+      var countryCode = req.body.country_code;
+      if(!operatorId) {
+        throw new Error("Operator id not passed");
+      }
+      var getInformation =
+      `SELECT user_id, access_token, verification_status, total_rides_as_user, reg_as, current_country, city FROM ${dbConstants.DBS.LIVE_DB}.tb_users WHERE phone_no = ? AND operator_id = ? `
+      var user = await db.RunQuery(dbConstants.DBS.LIVE_DB, getInformation, [userPhone,operatorId]);
+      if(!user){
+        throw new Error("user not exist");
+      }
+
+      req.body.access_token = user[0].access_token;
+      next()
+    } catch (error) {
+      errorHandler.errorHandler(error, req, res);
+    }
+  },
+}
+
 
 exports.permissions = {};

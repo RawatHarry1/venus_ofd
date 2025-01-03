@@ -1,6 +1,12 @@
 const RidesController = require('./controllers/rides');
 const vehicleTypesController = require('./controllers/vehicle');
 const AdminMiddlewares = require('../admin/middelware');
+const PackageTypesController = require('./controllers/package')
+var multer       =     require('multer');
+const { generalConstants } = require('../../bootstart/header');
+var createRideController           = require('./controllers/createRide')
+
+var upload       =     multer({dest : 'uploads/', limits: { fileSize: generalConstants.MAX_ALLOWED_FILE_SIZE }});
 
 module.exports = function (app) {
 
@@ -37,12 +43,6 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     vehicleTypesController.get_city_info_operator_wise,
   );
-  // app.get(
-  //   '/fetch_vehicles',
-  //   AdminMiddlewares.admin.isLoggedIn,
-  //   AdminMiddlewares.admin.domainToken,
-  //   vehicleTypesController.fetchVehicles,
-  // );
   app.get(
     '/fetch_vehicle_make',
     AdminMiddlewares.admin.isLoggedIn,
@@ -72,4 +72,19 @@ module.exports = function (app) {
     AdminMiddlewares.city.getEngagementInfo,
     RidesController.getEngagementInfo,
   );
+
+  /**
+   * Package Type Routes
+  **/
+  app.get('/internal/fetch_package_type', AdminMiddlewares.admin.isLoggedIn, AdminMiddlewares.admin.domainToken, PackageTypesController.fetchPackageTypes);
+
+  app.get('/internal/fetch_packages', AdminMiddlewares.admin.isLoggedIn, AdminMiddlewares.admin.domainToken, PackageTypesController.fetchPackages);
+
+  app.post("/upload_file_customer", upload.single('image'), PackageTypesController.uploadFileController)
+
+  /**
+   * Create Rides
+  **/
+  app.post('/api/v1/schedule_ride',AdminMiddlewares.admin.isLoggedIn, AdminMiddlewares.admin.domainToken, AdminMiddlewares.bussinessMiddlewares.fetchTokenUsingPhoneNo,createRideController.scheduleRideThroughBusinessUser)
+
 };

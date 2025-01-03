@@ -137,7 +137,7 @@ exports.makeDataForVehicles = (vehicleDetails) => {
 }
 
 exports.getOperatorParameters = async (paramNames, operatorId, resultWrapper) => {
-  var getParameters = `SELECT pr.param_name,COALESCE(opr.param_value, pr.param_value) AS param_value FROM tb_parameters pr LEFT JOIN tb_operator_params opr ON pr.param_id = opr.param_id AND opr.operator_id = ? WHERE pr.param_name IN (?)`;
+  var getParameters = `SELECT pr.param_name,COALESCE(opr.param_value, pr.param_value) AS param_value FROM ${dbConstants.DBS.LIVE_DB}.tb_parameters pr LEFT JOIN ${dbConstants.DBS.LIVE_DB}.tb_operator_params opr ON pr.param_id = opr.param_id AND opr.operator_id = ? WHERE pr.param_name IN (?)`;
 
   var values = [operatorId, paramNames];
   const parameters = await db.RunQuery(dbConstants.DBS.LIVE_DB, getParameters, values);
