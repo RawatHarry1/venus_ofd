@@ -74,7 +74,7 @@ exports.sendSmsPushToDriver = async function (req, res) {
       responseLog = 'Sent push and sms successfully';
     }
 
-    return responseHandler.success(req, res, '', responseLog);
+    return responseHandler.success(req, res, '', (responseLog = ''));
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

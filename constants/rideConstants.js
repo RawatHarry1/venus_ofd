@@ -143,8 +143,9 @@ exports.AUTOS_SERVERS_ENDPOINT = {
   SEND_PUSH_DRIVER: '/send_push_from_autos',
   FARE_ESTIMATE: '/partner/fare_estimate',
   FIND_DRIVERS: '/getFareEstimate',
-  REQUEST_RIDE: '/partners_api/request_ride'
-}
+  REQUEST_RIDE: '/partners_api/request_ride',
+  CANCEL_RIDE: '/cancelTheTrip',
+};
 
 exports.VEHILCE_TYPE = {
   AUTOS: 1,
@@ -177,5 +178,15 @@ exports.BID_CONFIG = {
   AUTO_ACCEPT: 1,
   AUTO_ACCEPT_AND_EARLY_TERM: 2,
   AUTO_CANCEL: 3,
-}
+};
 
+exports.USER_STATUS = {
+  FREE: 0,
+  BUSY: 1,
+};
+
+exports.SESSION_STATUS = {
+  INACTIVE: 0,
+  ACTIVE: 1,
+  TIMED_OUT: 2,
+};

@@ -47,7 +47,8 @@ exports.admin = {
       const domainToken =
         req.headers.domain_token ||
         req.body.domain_token ||
-        req.query.domain_token;
+        req.query.domain_token ||
+        req.headers.operatortoken;
 
       if (!token || !domainToken) {
         return responseHandler.unauthorized(req, res);

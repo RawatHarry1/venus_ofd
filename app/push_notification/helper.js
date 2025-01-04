@@ -11,7 +11,7 @@ const {
 const moment = require('moment');
 const axios = require('axios');
 
-exports.pushFromRideServer           =   pushFromRideServer
+exports.pushFromRideServer = pushFromRideServer;
 
 exports.sendPush = async function (driverObjArray, params) {
   try {
@@ -62,7 +62,10 @@ exports.sendPush = async function (driverObjArray, params) {
           user_type: rideConstants.LOGIN_TYPE.DRIVER,
         });
       }
-      await pushFromRideServer(requestBody, rideConstants.AUTOS_SERVERS_ENDPOINT.SEND_PUSH_DRIVER);
+      await pushFromRideServer(
+        requestBody,
+        rideConstants.AUTOS_SERVERS_ENDPOINT.SEND_PUSH_DRIVER,
+      );
     }
   } catch (error) {
     throw new Error(error.message);
@@ -81,22 +84,22 @@ function splitArrayIntoChunksOfLen(arr, len) {
 
 async function pushFromRideServer(requestBody, endpoint) {
   try {
-    let resultWrapper = {}
+    let resultWrapper = {};
     const url = rideConstants.SERVERS.AUTOS_SERVER + endpoint;
 
     let headers = {
       'Content-Type': 'application/json; charset=utf-8',
-      'operatortoken': requestBody.operator_token,
-      'accesstoken': requestBody.access_token
-    }
+      operatortoken: requestBody.operator_token,
+      accesstoken: requestBody.access_token,
+    };
 
-    if(endpoint == rideConstants.AUTOS_SERVERS_ENDPOINT.FIND_DRIVERS){
-      delete requestBody.access_token
+    if (endpoint == rideConstants.AUTOS_SERVERS_ENDPOINT.FIND_DRIVERS) {
+      delete requestBody.access_token;
     }
-    delete requestBody.operator_token
+    delete requestBody.operator_token;
 
     const response = await axios.post(url, requestBody, {
-      headers: headers
+      headers: headers,
     });
 
     if (response.data && response.data.data) {
@@ -105,7 +108,6 @@ async function pushFromRideServer(requestBody, endpoint) {
       resultWrapper = response.data;
     }
     return resultWrapper;
-
   } catch (error) {
     console.error('Error pushing to ride server:', error.message);
     throw new Error(error.response?.data?.message || error.message);

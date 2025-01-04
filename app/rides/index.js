@@ -100,11 +100,7 @@ module.exports = function (app) {
    * Create Rides
    **/
 
-  app.post(
-    '/getFareEstimate',
-    createRideController.findAvailableDrivers,
-  );
-
+  app.post('/getFareEstimate', createRideController.findAvailableDrivers);
 
   app.post(
     '/api/v1/request_ride',
@@ -128,5 +124,26 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.bussinessMiddlewares.fetchTokenUsingPhoneNo,
     createRideController.scheduleRideThroughBusinessUser,
+  );
+
+  app.post(
+    '/cancel_ride_v2',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    createRideController.cancelRideFromPanelV2,
+  );
+
+  app.post(
+    '/customer/assign_driver_to_schedule_ride',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    createRideController.assignDriverToScheduleRide,
+  );
+
+  app.post(
+    '/remove_pickup_schedule',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    createRideController.removePickupSchedule,
   );
 };

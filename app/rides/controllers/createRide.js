@@ -8,59 +8,136 @@ const {
   generalConstants,
 } = require('../../../bootstart/header');
 const Helper = require('../helper');
-var Joi = require('joi');
-var QueryBuilder = require('datatable');
-const settingsHelper = require('../../settings/helper');
 const { getOperatorParameters } = require('../../admin/helper');
 const { pushFromRideServer } = require('../../push_notification/helper');
+const moment = require('moment');
 
 exports.findAvailableDrivers = async function (req, res) {
   try {
-    req.body.operator_token = req.headers.operatortoken
-    req.body.access_token   = req.headers.accesstoken
+    req.body.operator_token = req.headers.operatortoken;
+    req.body.access_token = req.headers.accesstoken;
 
-    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.FIND_DRIVERS
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.FIND_DRIVERS;
 
-    let drivers = await pushFromRideServer(req.body, endpoint)
+    let drivers = await pushFromRideServer(req.body, endpoint);
 
     return responseHandler.success(req, res, '', drivers);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
-}
+};
 
 exports.requestRideThroughBusinessUser = async function (req, res) {
   try {
-    req.body.operator_token = req.operator_token
+    req.body.operator_token = req.operator_token;
     req.body.manual_ride_request = req.business_id || req.body.business_id;
-    req.body.super_admin_password = generalConstants.PASSWORDS.SUPER_ADMIN_PASSWORD;
+    req.body.super_admin_password =
+      generalConstants.PASSWORDS.SUPER_ADMIN_PASSWORD;
     req.body.phone_no = req.body.user_phone;
 
-    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.REQUEST_RIDE
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.REQUEST_RIDE;
 
-    let responseWrapper = await pushFromRideServer(req.body, endpoint)
+    let responseWrapper = await pushFromRideServer(req.body, endpoint);
 
     return responseHandler.success(req, res, '', responseWrapper);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
-
-}
+};
 
 exports.fareEstimateThroughBusinessUser = async function (req, res) {
   try {
-    req.body.operator_token = req.operator_token
+    req.body.operator_token = req.operator_token;
 
-    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.FARE_ESTIMATE
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.FARE_ESTIMATE;
 
-    let fareWrapper = await pushFromRideServer(req.body, endpoint)
+    let fareWrapper = await pushFromRideServer(req.body, endpoint);
 
     return responseHandler.success(req, res, '', fareWrapper);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
+};
 
-}
+exports.cancelRideFromPanelV2 = async function (req, res) {
+  try {
+    let userId = req.body.customer_id;
+    let engagementId = req.body.engagement_id;
+    let driverId = req.body.driver_id;
+    let rideTime = req.body.ride_time;
+    let distanceTravelled = req.body.distance_travelled;
+    let latitude = req.body.latitude;
+    let longitude = req.body.longitude;
+    let operatorId = req.operator_id;
+    let tollCharge = req.body.toll_charge;
+    let tipAmount = req.body.tip_amount;
+
+    let mandatoryParams = [
+      userId,
+      driverId,
+      engagementId,
+      latitude,
+      longitude,
+      distanceTravelled,
+      rideTime,
+      operatorId,
+    ];
+    if (Helper.checkBlank(mandatoryParams)) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    let checkEngagementOperatorQuery = `SELECT * FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES} WHERE user_id = ? AND driver_id = ? AND engagement_id = ? AND operator_id_x = ? `;
+
+    let checkEngagementDetails = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      checkEngagementOperatorQuery,
+      [userId, driverId, engagementId, operatorId],
+    );
+
+    if (!checkEngagementDetails || !checkEngagementDetails.length) {
+      throw new Error('No associated operator found with this ride.');
+    }
+
+    var stmt = `SELECT access_token FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} where driver_id = ? AND operator_id = ? `;
+
+    let result = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, [
+      driverId,
+      operatorId,
+    ]);
+
+    if (!result.length) {
+      throw new Error('No such driver found.');
+    }
+
+    var driverAccessToken = result[0].access_token;
+
+    var reqBody = {
+      access_token: driverAccessToken,
+      customerId: userId,
+      engagementId: engagementId,
+      latitude: latitude,
+      longitude: longitude,
+      ride_time: rideTime,
+      ride_time_in_seconds: Number(req.body.ride_time) * 60,
+      distance_travelled: distanceTravelled,
+      payment_mode: 1,
+      is_cached: 2,
+      paid_using_wallet: 0,
+      business_id: 1,
+      wait_time: 0,
+      reference_id: 0,
+      by_operator: 1,
+      user_reallocation: 0,
+    };
+
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.CANCEL_RIDE;
+    let autosResponse = await pushFromRideServer(reqBody, endpoint);
+
+    return responseHandler.success(req, res, '', autosResponse);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
 
 exports.scheduleRideThroughBusinessUser = async function (req, res) {
   try {
@@ -217,3 +294,169 @@ exports.scheduleRideThroughBusinessUser = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+exports.assignDriverToScheduleRide = async function (req, res) {
+  try {
+    var pickupId = req.body.pickup_id;
+    var driverId = req.body.driver_id;
+
+    if (!driverId || !pickupId) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var pickUpCriteria = [{ key: 'pickup_id', value: pickupId }];
+
+    // var vehicleValues = {};
+    let pickupData = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SCHEDULE_RIDE}`,
+      ['*'],
+      pickUpCriteria,
+    );
+
+    if (!pickupData) {
+      throw new Error('No pickups to assign right now');
+    }
+    var driverCriteria = [{ key: 'driver_id', value: driverId }];
+    let driverWrapper = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS}`,
+      ['*'],
+      driverCriteria,
+    );
+    if (!driverWrapper) {
+      throw new Error("The user couldn't be verified.");
+    }
+
+    var driverData = driverWrapper[0];
+    pickupData = pickupData[0];
+    var pickupStatus = pickupData.status;
+
+    if (driverData.status == rideConstants.USER_STATUS.BUSY) {
+      throw new Error('Driver is busy on another ride');
+    }
+
+    if (pickupStatus == rideConstants.SCHEDULE_STATUS.IN_PROCESS) {
+      throw new Error('Sorry! This Schedule is already in progress');
+    }
+
+    if (pickupStatus == rideConstants.SCHEDULE_STATUS.CANCELLED) {
+      throw new Error('Sorry! This Schedule is cancelled');
+    }
+
+    if (pickupStatus == rideConstants.SCHEDULE_STATUS.PROCESSED) {
+      throw new Error('Sorry! This Schedule is already completed');
+    }
+
+    if (pickupData.session_id != -1) {
+      let sessionWrapper = await db.SelectFromTable(
+        dbConstants.DBS.LIVE_DB,
+        `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.IN_THE_AIR}`,
+        ['is_active'],
+        [{ key: 'session_id', value: pickupData.session_id }],
+      );
+
+      sessionWrapper = sessionWrapper[0];
+      if (sessionWrapper.is_active == rideConstants.SESSION_STATUS.ACTIVE) {
+        throw new Error('Sorry! The ride is already in progress');
+      }
+    }
+
+    if (pickupStatus == rideConstants.SCHEDULE_STATUS.IN_QUEUE) {
+      updateKeys = { driver_to_engage: driverId };
+      updateCriteria = [{ key: 'pickup_id', value: pickupId }];
+      await db.updateTable(
+        dbConstants.DBS.LIVE_DB,
+        `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SCHEDULE_RIDE}`,
+        updateKeys,
+        updateCriteria,
+      );
+    }
+
+    return responseHandler.success(req, res, '', '');
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.removePickupSchedule = async function (req, res) {
+  try {
+    var operatorId = req.operator_id;
+    var pickupId = req.body.pickup_id;
+    // var accessToken = req.headers.accesstoken;
+
+    var checkValues = Helper.checkBlank([pickupId, operatorId]);
+
+    if (checkValues === 1) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var query = `SELECT cr.operator_id FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} cr JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SCHEDULE_RIDE} ts
+    ON ts.region_id = cr.region_id
+    WHERE ts.pickup_id = ? `;
+
+    let operatorDetails = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, [
+      pickupId,
+    ]);
+
+    if (!operatorDetails || !operatorDetails.length) {
+      throw new Error('No associated operator found.');
+    }
+
+    if (operatorDetails[0].operator_id != operatorId) {
+      throw new Error('Invalid operator.');
+    }
+
+    var pickupReqKeys = ['status', 'pickup_time'];
+    var pickupCriteria = [{ key: 'pickup_id', value: pickupId }];
+    var pickup = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SCHEDULE_RIDE}`,
+      pickupReqKeys,
+      pickupCriteria,
+    );
+    if (!pickup.length) {
+      throw new Error('No pickup found');
+    }
+    pickup = pickup[0];
+
+    var paramsWrapper = {};
+
+    await getOperatorParameters(
+      'schedule_cancel_window',
+      operatorId,
+      paramsWrapper,
+    );
+
+    let cancelWindowTime = paramsWrapper.schedule_cancel_window || 0;
+
+    if (!canBeRemovedNow(pickup.pickup_time, cancelWindowTime)) {
+      throw new Error('Sorry, pickup cannot be cancelled at this moment');
+    }
+
+    updateKeys = { status: rideConstants.SCHEDULE_STATUS.CANCELLED };
+    updateCriteria = [{ key: 'pickup_id', value: pickupId }];
+    await db.updateTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SCHEDULE_RIDE}`,
+      updateKeys,
+      updateCriteria,
+    );
+
+    return responseHandler.success(
+      req,
+      res,
+      'Scheduled cancelled successfully',
+      '',
+    );
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+function canBeRemovedNow(pickupTime, cancelTime) {
+  if (moment(pickupTime).diff(moment(), 'minutes') < cancelTime) {
+    return false;
+  }
+  return true;
+}
