@@ -109,7 +109,7 @@ exports.insertOperatorVehicleType = async function (req, res) {
     ];
     var cityCriteria = [
       { key: 'city_id', value: body.city_id },
-      { key: 'operator_id', value: body.operatorId  },
+      { key: 'operator_id', value: body.operatorId },
     ];
     const requiredDocFields = {
       operator_id: operatorId,

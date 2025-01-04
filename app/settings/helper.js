@@ -511,7 +511,8 @@ async function insertCitySubRegion(body) {
     display_order: parseInt(body.display_order) || 0,
     vehicle_tax: parseFloat(body.vehicle_tax) || 0,
     reverse_bidding_enabled: parseInt(body.reverse_bidding_enabled) || 0,
-    bid_config: parseInt(body.bid_config) || rideConstants.BID_CONFIG.AUTO_CANCEL,
+    bid_config:
+      parseInt(body.bid_config) || rideConstants.BID_CONFIG.AUTO_CANCEL,
     images: body.images,
     applicable_gender: body.applicable_gender || null,
   };
