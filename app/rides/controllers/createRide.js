@@ -12,6 +12,55 @@ var Joi = require('joi');
 var QueryBuilder = require('datatable');
 const settingsHelper = require('../../settings/helper');
 const { getOperatorParameters } = require('../../admin/helper');
+const { pushFromRideServer } = require('../../push_notification/helper');
+
+exports.findAvailableDrivers = async function (req, res) {
+  try {
+    req.body.operator_token = req.headers.operatortoken
+    req.body.access_token   = req.headers.accesstoken
+
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.FIND_DRIVERS
+
+    let drivers = await pushFromRideServer(req.body, endpoint)
+
+    return responseHandler.success(req, res, '', drivers);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+}
+
+exports.requestRideThroughBusinessUser = async function (req, res) {
+  try {
+    req.body.operator_token = req.operator_token
+    req.body.manual_ride_request = req.business_id || req.body.business_id;
+    req.body.super_admin_password = generalConstants.PASSWORDS.SUPER_ADMIN_PASSWORD;
+    req.body.phone_no = req.body.user_phone;
+
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.REQUEST_RIDE
+
+    let responseWrapper = await pushFromRideServer(req.body, endpoint)
+
+    return responseHandler.success(req, res, '', responseWrapper);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+
+}
+
+exports.fareEstimateThroughBusinessUser = async function (req, res) {
+  try {
+    req.body.operator_token = req.operator_token
+
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.FARE_ESTIMATE
+
+    let fareWrapper = await pushFromRideServer(req.body, endpoint)
+
+    return responseHandler.success(req, res, '', fareWrapper);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+
+}
 
 exports.scheduleRideThroughBusinessUser = async function (req, res) {
   try {

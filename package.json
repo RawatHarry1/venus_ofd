@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.1692.0",
+    "axios": "^1.7.9",
     "chalk": "^5.3.0",
     "cors": "^2.8.5",
     "datatable": "^2.0.2",
@@ -27,7 +28,6 @@
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.11.5",
     "pm2": "^5.4.3",
-    "request": "^2.88.2",
     "winston": "^3.17.0"
   },
   "devDependencies": {

@@ -138,3 +138,44 @@ exports.COMMUNICATION_MEDIUM = {
 exports.SERVERS = {
   AUTOS_SERVER: 'https://chuki-rides.venustaxi.in',
 };
+
+exports.AUTOS_SERVERS_ENDPOINT = {
+  SEND_PUSH_DRIVER: '/send_push_from_autos',
+  FARE_ESTIMATE: '/partner/fare_estimate',
+  FIND_DRIVERS: '/getFareEstimate',
+  REQUEST_RIDE: '/partners_api/request_ride'
+}
+
+exports.VEHILCE_TYPE = {
+  AUTOS: 1,
+  BIKES: 2,
+  TAXI: 3,
+  MINI_TRUCK: 4,
+  E_RICK: 5,
+  OTHER: 6,
+};
+
+// Define default icon sets
+exports.DEFAULT_ICON_SET = {
+  AUTO: 'ORANGE AUTO',
+  BIKE: 'ORANGE BIKE',
+  TAXI: 'YELLOW TAXI',
+  HELICOPTER: 'HELICOPTER',
+  E_RICK: 'E-RICK',
+};
+
+// Define icon set mapping for vehicle types
+exports.ICON_SET_VEHICLE_MAP = {
+  [exports.VEHILCE_TYPE.AUTOS]: 'YELLOW AUTO',
+  [exports.VEHILCE_TYPE.BIKES]: 'RED BIKE',
+  [exports.VEHILCE_TYPE.TAXI]: 'YELLOW CAR',
+  [exports.VEHILCE_TYPE.MINI_TRUCK]: 'RED AUTO',
+  [exports.VEHILCE_TYPE.E_RICK]: 'E-RICK',
+};
+
+exports.BID_CONFIG = {
+  AUTO_ACCEPT: 1,
+  AUTO_ACCEPT_AND_EARLY_TERM: 2,
+  AUTO_CANCEL: 3,
+}
+
