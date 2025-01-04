@@ -1,4 +1,3 @@
-const request = require('request');
 const {
   dbConstants,
   db,
@@ -85,10 +84,19 @@ async function pushFromRideServer(requestBody, endpoint) {
     let resultWrapper = {}
     const url = rideConstants.SERVERS.AUTOS_SERVER + endpoint;
 
+    let headers = {
+      'Content-Type': 'application/json; charset=utf-8',
+      'operatortoken': requestBody.operator_token,
+      'accesstoken': requestBody.access_token
+    }
+
+    if(endpoint == rideConstants.AUTOS_SERVERS_ENDPOINT.FIND_DRIVERS){
+      delete requestBody.access_token
+    }
+    delete requestBody.operator_token
+
     const response = await axios.post(url, requestBody, {
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-      },
+      headers: headers
     });
 
     if (response.data && response.data.data) {

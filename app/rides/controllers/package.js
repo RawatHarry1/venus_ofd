@@ -30,7 +30,7 @@ exports.fetchPackageTypes = async function (req, res) {
 exports.fetchPackages = async function (req, res) {
   try {
     let query = `SELECT * FROM ${dbConstants.DBS.LIVE_DB}.tb_delivery_packages`;
-    let result = await runQuery(handlerInfo, { query, params: [] });
+    let result = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, []);
     return responseHandler.success(req, res, '', result);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);

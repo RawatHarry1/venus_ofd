@@ -99,6 +99,21 @@ module.exports = function (app) {
   /**
    * Create Rides
    **/
+
+  app.post(
+    '/getFareEstimate',
+    createRideController.findAvailableDrivers,
+  );
+
+
+  app.post(
+    '/api/v1/request_ride',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.bussinessMiddlewares.fetchTokenUsingPhoneNo,
+    createRideController.requestRideThroughBusinessUser,
+  );
+
   app.post(
     '/api/v1/fare_estimate',
     AdminMiddlewares.admin.isLoggedIn,

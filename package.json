@@ -28,7 +28,6 @@
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.11.5",
     "pm2": "^5.4.3",
-    "request": "^2.88.2",
     "winston": "^3.17.0"
   },
   "devDependencies": {

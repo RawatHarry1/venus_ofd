@@ -141,7 +141,9 @@ exports.SERVERS = {
 
 exports.AUTOS_SERVERS_ENDPOINT = {
   SEND_PUSH_DRIVER: '/send_push_from_autos',
-  FARE_ESTIMATE: '/partner/fare_estimate'
+  FARE_ESTIMATE: '/partner/fare_estimate',
+  FIND_DRIVERS: '/getFareEstimate',
+  REQUEST_RIDE: '/partners_api/request_ride'
 }
 
 exports.VEHILCE_TYPE = {
