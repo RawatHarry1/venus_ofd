@@ -4,6 +4,7 @@ const {
   errorHandler,
   responseHandler,
   ResponseConstants,
+  rideConstants,
 } = require('../../../bootstart/header');
 
 const rideConstant = require('../../../constants/rideConstants');
@@ -12,6 +13,8 @@ const Helper = require('../helper');
 const globalHelper = require('../globalHelper');
 var Joi = require('joi');
 var QueryBuilder = require('datatable');
+const { checkBlank } = require('../../rides/helper');
+const { getOperatorParameters } = require('../../admin/helper');
 
 exports.getCaptains = async function (req, res) {
   try {
@@ -536,6 +539,185 @@ exports.getAvilableDrivers = async function (req, res) {
       'Data fetched successfully.',
       data,
     );
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.getDriverDocumentDetails_v2 = async function (req, res) {
+  try {
+    var operatorId = req.operator_id || 1;
+    var driverId = req.body.driver_id;
+
+    if (checkBlank([operatorId, driverId])) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    const query = `SELECT driver_id, name, phone_no, vehicle_no, city_id,
+    vehicle_type, app_versioncode, device_type, vehicle_year,
+    email, date_of_birth, vehicle_make_id,iban_number, access_token,doc_visibility_status,app_versioncode   
+FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} WHERE driver_id = ?`;
+    const values = [driverId];
+
+    var driver = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
+
+    if (!driver.length) {
+      throw new Error('No driver found');
+    }
+    driver = driver[0];
+
+    var documents = await Helper.fetchDriverDocs(req.body, driver);
+
+    let documentsList = [];
+
+    if (documents) {
+      documentsList = documents;
+
+      for (let i = 0; i < documentsList.length; i++) {
+        documentsList[i].doc_status =
+          rideConstants.DOCUMENT_STATUS[documentsList[i].doc_status];
+      }
+    }
+
+    let operatorParams = {
+      vehicle_model_enabled: 0,
+    };
+
+    await getOperatorParameters(
+      ['vehicle_model_enabled'],
+      operatorId,
+      operatorParams,
+    );
+
+    var requiredKeys = ['elm_verification_enabled', 'vehicle_model_enabled'];
+    const cityCriteria = [
+      { key: 'is_active', value: 1 },
+      { key: 'operator_id', value: operatorId },
+      { key: 'city_id', value: driver.city_id },
+    ];
+
+    var city = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.O_CITY}`,
+      requiredKeys,
+      cityCriteria,
+    );
+
+    var vehicle_no = '',
+      vehicle_type = '',
+      vehicleMappingId = '',
+      vehicle_id = '';
+
+    let VehicleDetails = await Helper.getCurrentVehicleInfo(driverId);
+
+    if (VehicleDetails.length) {
+      vehicle_no = VehicleDetails[0].vehicle_no;
+      vehicle_type = VehicleDetails[0].vehicle_type;
+      vehicleMappingId = VehicleDetails[0].mapping_id;
+      vehicle_id = VehicleDetails[0].vehicle_id;
+    } else {
+      vehicle_no = driver.vehicle_no;
+      vehicle_type = driver.vehicle_type;
+    }
+
+    // let TFLinfo = await getDriverTFLInfo(driverId);
+
+    let dbs_checked = 0;
+    let license_checked = 0;
+    let updated_by = '';
+    // if (TFLinfo.length) {
+    //     dbs_checked = TFLinfo[0].dbs_checked;
+    //     license_checked = TFLinfo[0].license_checked;
+    //     updated_by = TFLinfo[0].updated_by;
+    // }
+
+    var response = {};
+    response.data = {
+      driver_id: driver.driver_id,
+      phone_no: driver.phone_no,
+      vehicle_no: vehicle_no,
+      vehicle_id: vehicle_id,
+      vehicle_type: vehicle_type,
+      vehicle_year: driver.vehicle_year,
+      name: driver.name,
+      iban_number: driver.iban_number,
+      vehicle_mapping_id: vehicleMappingId,
+      device_type: driver.device_type,
+      app_versioncode: driver.app_versioncode,
+      documents: documentsList || [],
+      dbs_checked: dbs_checked,
+      license_checked: license_checked,
+      updated_by: updated_by,
+    };
+
+    response.data.elm_registered = city[0].elm_verification_enabled;
+    response.data.vehicle_model_enabled_status = city[0].vehicle_model_enabled;
+    response.data.captain_number = '';
+    response.data.email = driver.email;
+    response.data.date_of_birth = driver.date_of_birth;
+    return responseHandler.success(
+      req,
+      res,
+      'Data fetched successfully.',
+      response.data,
+    );
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.uploadDocument_v2 = async function (req, res) {
+  try {
+    return responseHandler.success(req, res, 'Data fetched successfully.', '');
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.updateDocumentStatus_v2 = async function (req, res) {
+  try {
+    var requestParameters = req.body;
+    var operatorId = req.operator_id;
+    var driver_id = requestParameters.driver_id;
+    var document_id = requestParameters.document_id;
+    var status = requestParameters.status;
+    var reason = requestParameters.reason;
+    var email_id = req.email_from_acl;
+    var city = requestParameters.city;
+    var expiry_date = requestParameters.expiry_date;
+    var agent_id = req.user_id || 0;
+    var source = requestParameters.source || 0; // 0 -> Panel, 1 -> Venus
+    var hotSeat = requestParameters.hotSeat || 0;
+    var driverVehicleMappingId = requestParameters.driver_vehicle_mapping_id;
+    var vehicleId = requestParameters.vehicle_id;
+    var vehicleNo = requestParameters.vehicle_no;
+    var vehicleMapping = requestParameters.vehicle_mapping_id;
+    var token = requestParameters.token;
+    var domain_token = req.headers.domain_token;
+
+    let result = await Helper.updateDocumentStatusBackChannelHelper_v2(
+      driver_id,
+      email_id,
+      city,
+      agent_id,
+      source,
+      hotSeat,
+      document_id,
+      operatorId,
+      status,
+      reason,
+      expiry_date,
+      driverVehicleMappingId,
+      vehicleId,
+      vehicleNo,
+      vehicleMapping,
+      token,
+      domain_token,
+    );
+
+    delete result.flag;
+
+    return responseHandler.success(req, res, '', result);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

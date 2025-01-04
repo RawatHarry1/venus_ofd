@@ -4,7 +4,14 @@ const {
   errorHandler,
   responseHandler,
   ResponseConstants,
+  rideConstants,
+  generalConstants,
 } = require('../.././bootstart/header');
+const { getOperatorParameters } = require('../admin/helper');
+const {
+  fetchFromRideServer,
+  pushFromRideServer,
+} = require('../push_notification/helper');
 
 exports.getLimitedDriverDetailsQueryHelper = function (
   deliveryEnabled,
@@ -130,4 +137,85 @@ exports.getLimitedDriverDetailsQueryHelper = function (
   fetchDriverDetailsQuery =
     selectClause + fromClause + whereClause + orderByClause;
   return fetchDriverDetailsQuery;
+};
+
+exports.fetchDriverDocs = async function (body, driverWrapper) {
+  try {
+    body.access_token = driverWrapper.access_token;
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.FETCH_REQUIRED_DOCS;
+
+    let responseWrapper = await fetchFromRideServer(body, endpoint);
+
+    return responseWrapper;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
+exports.getCurrentVehicleInfo = async function (driverId) {
+  var query = `SELECT 
+  dvm.id mapping_id, 
+  dvm.vehicle_status, 
+  dvm.ownership_status, 
+  v.vehicle_no,
+  v.vehicle_image,
+  v.vehicle_brand,
+  v.vehicle_brand,
+  v.vehicle_name,
+  v.vehicle_year,
+  v.vehicle_type,
+  v.vehicle_make_id,
+  v.vehicle_fleet_id,
+  v.vehicle_id
+FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_MAPPING} dvm 
+LEFT join ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLES} v on v.vehicle_id = dvm.vehicle_id
+where dvm.driver_id =? and dvm.vehicle_status =? AND  dvm.status not in (2)`;
+
+  var values = [driverId, 1];
+
+  return await db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
+  // return utils.executePromiseConnectionQuery(connection_live, query, values);
+};
+
+exports.updateDocumentStatusBackChannelHelper_v2 = async function (
+  driver_id,
+  email_id,
+  city_id,
+  agent_id,
+  source,
+  hotSeat,
+  document_id,
+  operatorId,
+  status,
+  reason,
+  expiry_date,
+  driverVehicleMappingId,
+  vehicleId,
+  vehicleNo,
+  vehicleMapping,
+  aclToken,
+  domain_token,
+) {
+  try {
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.UPDATE_DOCS;
+    let body = {
+      city_id: city_id,
+      driver_id: driver_id.toString(),
+      document_id: document_id.toString(),
+      operator_id: operatorId,
+      status: status.toString(),
+      reason: reason.toString(),
+      expiry_date: expiry_date,
+      password: generalConstants.PASSWORDS.SUPER_ADMIN_PASSWORD,
+      vehicle_mapping_id: vehicleMapping,
+      vehicle_id: vehicleId,
+      vehicle_no: vehicleNo,
+      token: aclToken,
+      domain_token: domain_token,
+    };
+    let responseWrapper = await pushFromRideServer(body, endpoint);
+    return responseWrapper;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 };

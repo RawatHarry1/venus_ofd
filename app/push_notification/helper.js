@@ -12,6 +12,7 @@ const moment = require('moment');
 const axios = require('axios');
 
 exports.pushFromRideServer = pushFromRideServer;
+exports.fetchFromRideServer = fetchFromRideServer;
 
 exports.sendPush = async function (driverObjArray, params) {
   try {
@@ -91,6 +92,7 @@ async function pushFromRideServer(requestBody, endpoint) {
       'Content-Type': 'application/json; charset=utf-8',
       operatortoken: requestBody.operator_token,
       accesstoken: requestBody.access_token,
+      domain_token: requestBody.domain_token,
     };
 
     if (endpoint == rideConstants.AUTOS_SERVERS_ENDPOINT.FIND_DRIVERS) {
@@ -110,6 +112,39 @@ async function pushFromRideServer(requestBody, endpoint) {
     return resultWrapper;
   } catch (error) {
     console.error('Error pushing to ride server:', error.message);
+    throw new Error(error.response?.data?.message || error.message);
+  }
+}
+
+async function fetchFromRideServer(queryParams, endpoint) {
+  try {
+    const url = rideConstants.SERVERS.AUTOS_SERVER + endpoint;
+
+    let headers = {
+      'Content-Type': 'application/json; charset=utf-8',
+      operatortoken: queryParams.operator_token,
+      accesstoken: queryParams.access_token,
+    };
+
+    if (endpoint === rideConstants.AUTOS_SERVERS_ENDPOINT.FIND_DRIVERS) {
+      delete queryParams.access_token;
+    }
+    delete queryParams.operator_token;
+
+    const response = await axios.get(url, {
+      headers: headers,
+      params: queryParams, // Attach query parameters to the GET request
+    });
+
+    let resultWrapper = {};
+    if (response.data && response.data.data) {
+      resultWrapper = response.data.data;
+    } else {
+      resultWrapper = response.data;
+    }
+    return resultWrapper;
+  } catch (error) {
+    console.error('Error fetching from ride server:', error.message);
     throw new Error(error.response?.data?.message || error.message);
   }
 }
