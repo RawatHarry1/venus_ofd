@@ -145,6 +145,8 @@ exports.AUTOS_SERVERS_ENDPOINT = {
   FIND_DRIVERS: '/getFareEstimate',
   REQUEST_RIDE: '/partners_api/request_ride',
   CANCEL_RIDE: '/cancelTheTrip',
+  FETCH_REQUIRED_DOCS: '/fetchRequiredDocs',
+  UPDATE_DOCS: '/driver/panel/v2/update_document_status',
 };
 
 exports.VEHILCE_TYPE = {
@@ -190,3 +192,22 @@ exports.SESSION_STATUS = {
   ACTIVE: 1,
   TIMED_OUT: 2,
 };
+
+exports.DOCUMENT_STATUS = {
+  APPROVED: 3,
+  PENDING: 1,
+  REJECTED: 2,
+  UPLOADED: 4,
+  NOT_UPLOADED: 0,
+  EXPIRED: 5,
+};
+
+// exports.DRIVER_DOCUMENT_TYPE = {
+//   MAP_IMAGES: 7,
+//   DRIVER_BRANDING: 6,
+//   QUASI_STATE: 5,
+//   POST_DRIVING: 4,
+//   MANDATORY_REGISTER: 3,
+//   MANDATORY_DRIVE: 1,
+//   OPTIONAL: 0,
+// };

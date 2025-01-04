@@ -47,6 +47,7 @@ exports.LIVE_DB = {
   BANNERS_TYPE: 'banner_types',
   BANNERS: 'banners',
   SCHEDULE_RIDE: 'tb_schedules',
+  VEHICLE_MAPPING: 'tb_driver_vehicle_mapping',
 };
 
 exports.LIVE_LOGS = {

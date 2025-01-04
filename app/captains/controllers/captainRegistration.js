@@ -32,6 +32,14 @@ var activeDrivers = function (driver, mandatoryDocCount) {
   return driver.verification_status == 1;
 };
 
+var elmExpiredDrivers = function (driver, mandatoryDocCount) {
+  if (driver.expired_docs > 0) {
+    return driver.expired_docs > 0 && driver.verification_status == 1;
+  } else {
+    return false;
+  }
+};
+
 exports.getCaptainEnrollment = async function (req, res) {
   try {
     var response = {};
@@ -80,6 +88,9 @@ exports.getCaptainEnrollment = async function (req, res) {
         break;
       case 3:
         filterFn = activeDrivers;
+        break;
+      case 4:
+        filterFn = elmExpiredDrivers;
         break;
       default:
         console.error('Invalid tab type');

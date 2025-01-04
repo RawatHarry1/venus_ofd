@@ -3,6 +3,13 @@ const CaptainDetail = require('./controllers/captainDetails');
 const PayoutController = require('./controllers/payout');
 const customerController = require('./controllers/customerDetails');
 const AdminMiddlewares = require('../admin/middelware');
+var multer = require('multer');
+const { generalConstants } = require('../../bootstart/header');
+
+var upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: generalConstants.MAX_ALLOWED_FILE_SIZE },
+});
 
 module.exports = function (app) {
   app.post(
@@ -31,6 +38,28 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     PayoutController.getPayouts,
+  );
+
+  app.post(
+    '/v2/upload_document',
+    upload.single('image'),
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.uploadDocument_v2,
+  );
+
+  app.post(
+    '/v2/get_driver_document_details',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.getDriverDocumentDetails_v2,
+  );
+
+  app.post(
+    '/v2/updateDocumentStatus',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.updateDocumentStatus_v2,
   );
 
   /**
