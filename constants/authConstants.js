@@ -43,3 +43,21 @@ exports.WALLET_TYPE = {
   MOBIKWIK: 1,
   FREECHARGE: 2,
 };
+
+exports.CLIENTS_ID = {
+  INVOICING_CLIENT_ID: 'IVrfJ6nNtfbc6Xmb',
+  AUTOS_CLIENT_ID: 'EEBUOvQq7RRJBxJm',
+  DELIVERY_CUSTOMER_CLIENT_ID: 'DC311uhPSZV6tKjT',
+  surya_CLIENT_ID: 'F20A9fb009e282F1',
+};
+
+exports.OFFERING_TYPE = {
+  0: exports.CLIENTS_ID.AUTOS_CLIENT_ID,
+  1: exports.CLIENTS_ID.DELIVERY_CUSTOMER_CLIENT_ID,
+  2: exports.CLIENTS_ID.surya_CLIENT_ID,
+};
+
+exports.driverWalletCardsInOneGo = {
+  MAX: 50,
+  MIN: 1,
+};

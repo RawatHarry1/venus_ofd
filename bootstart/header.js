@@ -4,6 +4,7 @@
 const dbConstants = require('../constants/dbconstants');
 const ResponseConstants = require('../constants/responesConstans');
 const documentsConstants = require('../constants/document');
+const PromoConstant = require('../constants/campaings');
 
 // Importing helpers
 /* const helpers = require('../helpers/index');  */
@@ -46,4 +47,5 @@ module.exports = {
   rideConstants,
   generalConstants,
   documentsConstants,
+  PromoConstant,
 };

@@ -494,7 +494,6 @@ async function insertCityDocument(cityDocFields) {
 }
 
 async function insertCitySubRegion(body) {
-  var queryToInsertIntoTable = 'INSERT INTO tb_city_sub_regions SET ?';
   var tableRow = {
     city_id: parseInt(body.city_id),
     operator_id: body.operatorId,
@@ -517,11 +516,16 @@ async function insertCitySubRegion(body) {
     applicable_gender: body.applicable_gender || null,
   };
 
-  var result = await db.RunQuery(
-    dbConstants.DBS.LIVE_DB,
-    queryToInsertIntoTable,
-    tableRow,
-  );
+  // Extract keys and values from insertObj
+  const keys = Object.keys(tableRow);
+  const values = Object.values(tableRow);
+
+  // Build the SET part dynamically
+  const setClause = keys.map((key) => `\`${key}\` = ?`).join(', ');
+
+  var insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} SET ${setClause}`;
+
+  var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, insertQuery, values);
 
   return result;
 }

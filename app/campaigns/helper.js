@@ -3,6 +3,7 @@ const {
   db,
   errorHandler,
   responseHandler,
+  authConstants,
 } = require('../../bootstart/header');
 const PromoConstant = require('../../constants/campaings');
 function checkBlankAndZero(arr) {
@@ -95,26 +96,24 @@ exports.PROMO = {
       if (PromoConstant.VEHICLE_COUPON[tempString]) {
         return tempString;
       } else {
-        loggingImp.error(handlerInfo, { ERROR: 'Unknown allowedVehicles' });
         return '';
       }
     } else {
-      loggingImp.error(handlerInfo, { ERROR: 'Invalid allowedVehicles' });
       return '';
     }
   },
   isPromoValid: function (promoObj, promoOrCoupon) {
     var allowedBenefitTypes = [
-      PromoConstant.BENEFIT_TYPE.DISCOUNT,
-      PromoConstant.BENEFIT_TYPE.CAPPED_FARE,
-      PromoConstant.BENEFIT_TYPE.CASHBACK,
-      PromoConstant.BENEFIT_TYPE.MARKETING_FARE,
-      PromoConstant.BENEFIT_TYPE.SUBSCRIPTION_FARE,
+      PromoConstant.PromoConstant.BENEFIT_TYPE.DISCOUNT,
+      PromoConstant.PromoConstant.BENEFIT_TYPE.CAPPED_FARE,
+      PromoConstant.PromoConstant.BENEFIT_TYPE.CASHBACK,
+      PromoConstant.PromoConstant.BENEFIT_TYPE.MARKETING_FARE,
+      PromoConstant.PromoConstant.BENEFIT_TYPE.SUBSCRIPTION_FARE,
     ];
     var allowedPromoType = [
-      PromoConstant.PROMO_TYPE.LOCATION_INSENSITIVE,
-      PromoConstant.PROMO_TYPE.PICK_UP_BASED,
-      PromoConstant.PROMO_TYPE.DROP_BASED,
+      PromoConstant.PromoConstant.PROMO_TYPE.LOCATION_INSENSITIVE,
+      PromoConstant.PromoConstant.PROMO_TYPE.PICK_UP_BASED,
+      PromoConstant.PromoConstant.PROMO_TYPE.DROP_BASED,
     ];
     var benefitType = +promoObj.benefit_type;
     var promoType = +promoObj.promo_type || +promoObj.coupon_type;
@@ -126,10 +125,10 @@ exports.PROMO = {
       return 0;
     }
     switch (promoType) {
-      case PromoConstant.PROMO_TYPE.LOCATION_INSENSITIVE:
+      case PromoConstant.PromoConstant.PROMO_TYPE.LOCATION_INSENSITIVE:
         return 1;
 
-      case PromoConstant.PROMO_TYPE.PICK_UP_BASED:
+      case PromoConstant.PromoConstant.PROMO_TYPE.PICK_UP_BASED:
         if (promoOrCoupon == PromoConstant.PROMOTION_TYPE.PROMOS) {
           return (
             !checkBlankAndZero([promoObj.pickup_radius]) &&
@@ -147,7 +146,7 @@ exports.PROMO = {
         }
         break;
 
-      case PromoConstant.PROMO_TYPE.DROP_BASED:
+      case PromoConstant.PromoConstant.PROMO_TYPE.DROP_BASED:
         if (promoOrCoupon == PromoConstant.PROMOTION_TYPE.PROMOS) {
           return (
             !checkBlankAndZero([promoObj.drop_radius]) &&
@@ -163,7 +162,9 @@ exports.PROMO = {
               promoObj.drop_lat,
               promoObj.drop_long,
               promoObj.drop_radius,
-            ]) && benefitType != PromoConstant.BENEFIT_TYPE.MARKETING_FARE
+            ]) &&
+            benefitType !=
+              PromoConstant.PromoConstant.BENEFIT_TYPE.MARKETING_FARE
           );
         }
         break;
@@ -180,4 +181,91 @@ exports.PROMO = {
     }
     return tempString.slice(0, -1);
   },
+};
+
+exports.isEmptyObject = function (obj) {
+  if (Object.keys(obj).length === 0 && obj.constructor === Object) {
+    //empty object
+    return 1;
+  }
+  return 0;
+};
+
+exports.makeCoupon = function (operatorId, couponObj) {
+  var coupon = {
+    operator_id: operatorId,
+    is_active: 1,
+    title: couponObj.title,
+    subtitle: couponObj.subtitle || '',
+    description: couponObj.description,
+    coupon_type: couponObj.coupon_type,
+    benefit_type: couponObj.benefit_type,
+    allowed_vehicles: couponObj.allowed_vehicles,
+    discount_percentage:
+      couponObj.benefit_type == PromoConstant.BENEFIT_TYPE.DISCOUNT
+        ? couponObj.value
+        : 0,
+    discount_maximum:
+      couponObj.benefit_type == PromoConstant.BENEFIT_TYPE.DISCOUNT
+        ? couponObj.max_value
+        : 0,
+    cashback_percentage:
+      couponObj.benefit_type == PromoConstant.BENEFIT_TYPE.CASHBACK
+        ? couponObj.value
+        : 0,
+    cashback_maximum:
+      couponObj.benefit_type == PromoConstant.BENEFIT_TYPE.CASHBACK
+        ? couponObj.max_value
+        : 0,
+    capped_fare:
+      couponObj.benefit_type == PromoConstant.BENEFIT_TYPE.CAPPED_FARE
+        ? couponObj.value
+        : -1,
+    capped_fare_maximum:
+      couponObj.benefit_type == PromoConstant.BENEFIT_TYPE.CAPPED_FARE
+        ? couponObj.max_value
+        : -1,
+    discount:
+      couponObj.benefit_type == PromoConstant.BENEFIT_TYPE.DISCOUNT
+        ? couponObj.value
+        : 0,
+    maximum:
+      couponObj.benefit_type == PromoConstant.BENEFIT_TYPE.DISCOUNT
+        ? couponObj.max_value
+        : 0,
+    pickup_latitude:
+      couponObj.coupon_type == PromoConstant.PROMO_TYPE.PICK_UP_BASED
+        ? couponObj.pickup_lat
+        : 0,
+    pickup_longitude:
+      couponObj.coupon_type == PromoConstant.PROMO_TYPE.PICK_UP_BASED
+        ? couponObj.pickup_long
+        : 0,
+    pickup_radius:
+      couponObj.coupon_type == PromoConstant.PROMO_TYPE.PICK_UP_BASED
+        ? couponObj.pickup_radius
+        : 0,
+    drop_latitude:
+      couponObj.coupon_type == PromoConstant.PROMO_TYPE.DROP_BASED
+        ? couponObj.drop_lat
+        : 0,
+    drop_longitude:
+      couponObj.coupon_type == PromoConstant.PROMO_TYPE.DROP_BASED
+        ? couponObj.drop_long
+        : 0,
+    drop_radius:
+      couponObj.coupon_type == PromoConstant.PROMO_TYPE.DROP_BASED
+        ? couponObj.drop_radius
+        : 0,
+    image: couponObj.image || '',
+    type: 1,
+    no_coupons_to_give: couponObj.no_coupons_to_give,
+    created_by: couponObj.created_by,
+    service_type: couponObj.service_type,
+  };
+  if (couponObj.is_flat) {
+    coupon.discount_percentage = 100;
+    coupon.discount_maximum = couponObj.value;
+  }
+  return coupon;
 };
