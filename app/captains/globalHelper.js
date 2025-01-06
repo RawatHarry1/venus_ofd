@@ -175,7 +175,7 @@ async function get_paytmTransactions(
     FROM
       ${dbConstants.DBS.AUTH_DB}.tb_paytm_wallet_add_money_txns adds
     JOIN
-      ${dbConstants.DBS.AUTH_DB}.tb_users
+      ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}
     ON
       tb_users.user_id = adds.cust_id
     JOIN
@@ -195,7 +195,7 @@ async function get_paytmTransactions(
     FROM
       ${dbConstants.DBS.AUTH_DB}.tb_paytm_wallet_withdraw_money_txns draws
     JOIN
-      ${dbConstants.DBS.AUTH_DB}.tb_users
+      ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}
     ON
       tb_users.user_id = draws.cust_id
     JOIN
@@ -219,7 +219,7 @@ async function get_paytmTransactions(
     ON
       txns.order_id = refund.order_id
     JOIN
-      ${dbConstants.DBS.AUTH_DB}.tb_users
+      ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}
     ON
       tb_users.user_id = txns.user_id
     WHERE
@@ -236,7 +236,7 @@ async function get_paytmTransactions(
     FROM
       ${dbConstants.DBS.AUTH_DB}.tb_paytm_transfer_money transfers
     JOIN
-      ${dbConstants.DBS.AUTH_DB}.tb_users
+      ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}
     ON
       tb_users.user_id = transfers.receiver_user_id
     JOIN
@@ -269,7 +269,7 @@ async function get_paytmTransactions(
     FROM
       ${dbConstants.DBS.AUTH_DB}.tb_paytm_wallet_add_money_txns adds
     JOIN
-      ${dbConstants.DBS.AUTH_DB}.tb_users
+      ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}
     ON
       tb_users.user_id = adds.cust_id
     JOIN
@@ -299,7 +299,7 @@ async function get_paytmTransactions(
     ON
       txns.order_id = refund.order_id
     JOIN
-      ${dbConstants.DBS.AUTH_DB}.tb_users
+      ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}
     ON
       tb_users.user_id = txns.user_id
     LEFT JOIN
@@ -322,7 +322,7 @@ async function get_paytmTransactions(
     FROM
       ${dbConstants.DBS.AUTH_DB}.tb_paytm_wallet_withdraw_money_txns draws
     JOIN
-      ${dbConstants.DBS.AUTH_DB}.tb_users
+      ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}
     ON
       tb_users.user_id = draws.cust_id
     JOIN
@@ -348,7 +348,7 @@ async function get_paytmTransactions(
     FROM
       ${dbConstants.DBS.AUTH_DB}.tb_paytm_transfer_money transfers
     JOIN
-      ${dbConstants.DBS.AUTH_DB}.tb_users
+      ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}
     ON
       tb_users.user_id = transfers.receiver_user_id
     JOIN
@@ -414,7 +414,7 @@ FROM
       mobikwikTxns.* 
     FROM 
       ${dbConstants.DBS.AUTH_DB}.tb_mobikwik_wallet_txns as mobikwikTxns 
-      JOIN ${dbConstants.DBS.AUTH_DB}.tb_users as users ON mobikwikTxns.user_id = users.user_id 
+      JOIN ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} as users ON mobikwikTxns.user_id = users.user_id 
     WHERE 
       users.${userString} = ? 
     UNION 
@@ -422,7 +422,7 @@ FROM
       refundTxns.* 
     FROM 
       ${dbConstants.DBS.AUTH_DB}.tb_mobikwik_wallet_txns as txns 
-      JOIN ${dbConstants.DBS.AUTH_DB}.tb_users as users ON users.user_id = txns.user_id 
+      JOIN ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} as users ON users.user_id = txns.user_id 
       JOIN ${dbConstants.DBS.AUTH_DB}.tb_mobikwik_refund_money_txns as refundTxns ON refundTxns.order_id = txns.order_id 
     WHERE 
       users.${userString} = ?
@@ -451,7 +451,7 @@ FROM
     FROM
       ${dbConstants.DBS.AUTH_DB}.tb_mobikwik_wallet_txns AS mobikwikTxns
     JOIN
-      ${dbConstants.DBS.AUTH_DB}.tb_users AS users
+      ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} AS users
     ON
       mobikwikTxns.user_id = users.user_id
     LEFT JOIN
@@ -473,7 +473,7 @@ FROM
     FROM
       ${dbConstants.DBS.AUTH_DB}.tb_mobikwik_wallet_txns AS txns
     JOIN
-      ${dbConstants.DBS.AUTH_DB}.tb_users AS users
+      ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} AS users
     ON
       users.user_id = txns.user_id
     JOIN
@@ -531,7 +531,7 @@ FROM
       freechargeTxns.* 
     FROM 
       ${dbConstants.DBS.AUTH_DB}.tb_freecharge_wallet_txns as freechargeTxns 
-      JOIN ${dbConstants.DBS.AUTH_DB}.tb_users as users ON freechargeTxns.user_id = users.user_id 
+      JOIN ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} as users ON freechargeTxns.user_id = users.user_id 
     WHERE 
       users.${userString} = ? ) as a
 `;
@@ -555,7 +555,7 @@ FROM
                         FROM
                           ${dbConstants.DBS.AUTH_DB}.tb_freecharge_wallet_txns AS freechargeTxns
                         JOIN
-                          ${dbConstants.DBS.AUTH_DB}.tb_users AS users
+                          ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} AS users
                         ON
                           freechargeTxns.user_id = users.user_id
                         LEFT JOIN
@@ -608,7 +608,7 @@ FROM
       razorPay.* 
     FROM 
       ${dbConstants.DBS.AUTH_DB}.tb_razorpay_txns as razorPay 
-      JOIN ${dbConstants.DBS.AUTH_DB}.tb_users as users ON razorPay.user_id = users.user_id 
+      JOIN ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} as users ON razorPay.user_id = users.user_id 
     WHERE 
       users.${userString} = ? ) as a
 `;
@@ -637,7 +637,7 @@ FROM
   ) AS engagement_id 
 FROM 
   ${dbConstants.DBS.AUTH_DB}.tb_razorpay_txns AS razorPay 
-  JOIN ${dbConstants.DBS.AUTH_DB}.tb_users AS users ON razorPay.user_id = users.user_id 
+  JOIN ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} AS users ON razorPay.user_id = users.user_id 
   LEFT JOIN tb_order_txns AS order_txns ON razorPay.reference_id = order_txns.txn_id 
   and razorPay.client_id = order_txns.client_id 
 WHERE 
@@ -700,7 +700,7 @@ async function getIciciTransactions(
   ) AS engagement_id 
 FROM 
   ${dbConstants.DBS.AUTH_DB}.tb_icici_upi_txns AS icici 
-  JOIN ${dbConstants.DBS.AUTH_DB}.tb_users AS users ON icici.user_id = users.user_id 
+  JOIN ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} AS users ON icici.user_id = users.user_id 
   LEFT JOIN tb_order_txns AS order_txns ON icici.reference_id = order_txns.txn_id 
   and icici.client_id = order_txns.client_id 
 WHERE 
@@ -753,7 +753,7 @@ FROM
       mpesa.*
     FROM 
       ${dbConstants.DBS.AUTH_DB}.tb_mpesa_transactions as mpesa 
-      JOIN ${dbConstants.DBS.AUTH_DB}.tb_users as users ON mpesa.user_id = users.user_id 
+      JOIN ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} as users ON mpesa.user_id = users.user_id 
     WHERE 
       users.${userString} = ? ) as a
 `;
@@ -782,7 +782,7 @@ FROM
   ) AS engagement_id 
 FROM 
   ${dbConstants.DBS.AUTH_DB}.tb_mpesa_transactions AS mpesa 
-  JOIN ${dbConstants.DBS.AUTH_DB}.tb_users AS users ON mpesa.user_id = users.user_id 
+  JOIN ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} AS users ON mpesa.user_id = users.user_id 
   LEFT JOIN tb_order_txns AS order_txns ON mpesa.reference_id = order_txns.txn_id 
   and mpesa.client_id = order_txns.client_id 
 WHERE 
@@ -862,7 +862,7 @@ async function get_transaction_details(
   users.venus_autos_app_version,
   live_users.user_image AS customer_image
 FROM 
-  ${dbConstants.DBS.AUTH_DB}.tb_users as users 
+  ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} as users 
   LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} as live_users ON live_users.user_id = users.venus_autos_user_id
 WHERE 
   users.${userString} = ?
@@ -923,7 +923,7 @@ FROM
         Select 
           user_id 
         from 
-          ${dbConstants.DBS.AUTH_DB}.tb_users 
+          ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} 
         where 
           ${userString} = ?
       ) 
@@ -945,7 +945,7 @@ FROM
        FROM
          ${dbConstants.DBS.AUTH_DB}.tb_wallet_transactions as a 
          JOIN 
-         ${dbConstants.DBS.AUTH_DB}.tb_users as users on a.user_id = users.user_id
+         ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} as users on a.user_id = users.user_id
          LEFT JOIN
          ${dbConstants.DBS.AUTH_DB}.tb_order_txns as order_txns on 
          a.reference_id = order_txns.txn_id and
@@ -981,7 +981,7 @@ FROM
   reasons.reason 
 From 
   ${dbConstants.DBS.AUTH_DB}.tb_can_request_reason reasons 
-  Inner Join ${dbConstants.DBS.AUTH_DB}.tb_users users on reasons.user_id = users.user_id 
+  Inner Join ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} users on reasons.user_id = users.user_id 
 Where 
   users.${userString} = ? 
 order by 
@@ -1474,19 +1474,19 @@ async function get_friends_details(user_id, details) {
                         END AS is_duplicate,
                         fub.failed_reason
                       FROM
-                        ${dbConstants.DBS.AUTH_DB}.tb_users u
+                        ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} u
                       JOIN
-                        ${dbConstants.DBS.AUTH_DB}.tb_users u2
+                        ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} u2
                       ON
                         u.referral_code_used = u2.referral_code
                         AND u2.referral_code!=''
                         AND u2.venus_autos_user_id = ?
                       JOIN
-                        ${dbConstants.DBS.LIVE_DB}.tb_users AS b
+                        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} AS b
                       ON
                         u.venus_autos_user_id = b.user_id
                       LEFT JOIN
-                        ${dbConstants.DBS.AUTH_DB}.tb_users u3
+                        ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} u3
                       ON
                         u.user_id != u3.user_id
                         AND u.unique_device_id_reg IS NOT NULL
@@ -1748,12 +1748,14 @@ async function getFirstRideCity(user_id, firstRideCity) {
       user_id,
     ]);
 
-    if (data.length === 0) {
+    if (data.length == 0) {
       firstRideCity[0] = [];
+    } else {
+      firstRideCity[0] = data[0].city;
     }
-
-    firstRideCity[0] = data[0].city;
   } catch (err) {
+    console.log(err);
+
     throw new Error('Error fetching first ride city: ', err.message);
   }
 }
@@ -2002,21 +2004,23 @@ async function updatePaginationDetails(driverId, paginationDetails, endAt) {
     endAt,
     endAt,
   ]);
-  paginationDetails.startDate = result[0].engagement_date;
-  paginationDetails.startFrom -= parseInt(result[0].startCounter);
+  if (result.length) {
+    paginationDetails.startDate = result[0].engagement_date;
+    paginationDetails.startFrom -= parseInt(result[0].startCounter);
 
-  if (endAt > parseInt(result[result.length - 1].endCounter)) {
-    paginationDetails.endDate = '2011-01-01 00:00:00';
-  } else {
-    paginationDetails.endDate = result[result.length - 1]['engagement_date'];
+    if (endAt > parseInt(result[result.length - 1].endCounter)) {
+      paginationDetails.endDate = '2011-01-01 00:00:00';
+    } else {
+      paginationDetails.endDate = result[result.length - 1]['engagement_date'];
+    }
   }
 }
 
 async function getDriverRideInfo(driverId, paginationDetails, responseData) {
-  var startFrom = paginationDetails.startFrom;
-  var pageSize = paginationDetails.pageSize;
-  var endDate = paginationDetails.endDate;
-  var startDate = paginationDetails.startDate;
+  var startFrom = paginationDetails.startFrom || '';
+  var pageSize = paginationDetails.pageSize || '';
+  var endDate = paginationDetails.endDate || '';
+  var startDate = paginationDetails.startDate || '';
   const sql = `
                  SELECT 
               tb_engagements.engagement_id, 

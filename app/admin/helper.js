@@ -156,7 +156,7 @@ exports.getOperatorParameters = async (
   operatorId,
   resultWrapper,
 ) => {
-  var getParameters = `SELECT pr.param_name,COALESCE(opr.param_value, pr.param_value) AS param_value FROM ${dbConstants.DBS.LIVE_DB}.tb_parameters pr LEFT JOIN ${dbConstants.DBS.LIVE_DB}.tb_operator_params opr ON pr.param_id = opr.param_id AND opr.operator_id = ? WHERE pr.param_name IN (?)`;
+  var getParameters = `SELECT pr.param_name,COALESCE(opr.param_value, pr.param_value) AS param_value FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.PARAMETER} pr LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATOR_PARAMS} opr ON pr.param_id = opr.param_id AND opr.operator_id = ? WHERE pr.param_name IN (?)`;
 
   var values = [operatorId, paramNames];
   const parameters = await db.RunQuery(
@@ -178,7 +178,7 @@ exports.sqlQueryForAutos = async (
 ) => {
   try {
     let stmt = `SELECT u.user_id
-                FROM ${dbConstants.DBS.LIVE_DB}.tb_users u
+                FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u
                 WHERE u.operator_id = ? and `;
 
     // Constructing query based on keyType
@@ -227,7 +227,7 @@ exports.sqlQueryForVendors = async (
     return;
   }
   try {
-    let stmt = `SELECT a.user_id ,a.verification_status FROM ${dbConstants.DBS.AUTH_DB}.tb_users AS a JOIN  ${dbConstants.DBS.AUTH_DB}.tb_users_delivery AS b ON a.user_id = b.user_id WHERE`;
+    let stmt = `SELECT a.user_id ,a.verification_status FROM ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.CUSTOMERS} AS a JOIN  ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.CUSTOMERS_DELIVERY} AS b ON a.user_id = b.user_id WHERE`;
 
     switch (keyType) {
       case rideConstants.USER_DETAIL_SEARCH_KEY.USER_ID:
@@ -261,4 +261,53 @@ exports.sqlQueryForVendors = async (
   } catch (error) {
     throw new Error(error.message);
   }
+};
+
+exports.unflatten = (master_menu_obj, updated_access_menu) => {
+  var tree = [],
+    mappedArr = {},
+    arrElem,
+    mappedElem;
+
+  console.log('master_menu_obj---', master_menu_obj.length);
+  console.log('updated_access_menu---', updated_access_menu);
+
+  // First map the nodes of the array to an object -> create a hash table.
+  for (var i = 0, len = master_menu_obj.length; i < len; i++) {
+    arrElem = master_menu_obj[i];
+    mappedArr[arrElem.id] = arrElem;
+
+    mappedArr[arrElem.id].page_permission = 'false';
+    mappedArr[arrElem.id].permission_type = '';
+
+    if (updated_access_menu != undefined && updated_access_menu.length > 0) {
+      var decode_json = JSON.parse(updated_access_menu);
+      decode_json.forEach(function (data) {
+        if (data.id == master_menu_obj[i].id) {
+          mappedArr[arrElem.id].page_permission = 'true';
+          mappedArr[arrElem.id].permission_type = data.type;
+        }
+      });
+    }
+
+    mappedArr[arrElem.id]['children'] = [];
+  }
+
+  for (var id in mappedArr) {
+    if (mappedArr.hasOwnProperty(id)) {
+      mappedElem = mappedArr[id];
+      // If the element is not at the root level, add it to its parent array of children.
+      if (mappedElem.parent_id) {
+        mappedArr[mappedElem['parent_id']]['children'].push(mappedElem);
+      }
+      // If the element is at the root level, add it to first level elements array.
+      else {
+        var new_obj = new Object();
+        new_obj.main_menu = mappedElem;
+        tree.push(new_obj);
+      }
+    }
+  }
+
+  return tree;
 };

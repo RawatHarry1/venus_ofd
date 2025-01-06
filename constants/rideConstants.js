@@ -208,6 +208,12 @@ exports.BLOCK_USER_FLAGS = {
   UNBLOCK_USER: 1,
 };
 
+exports.REFFERAL_BONUS_TYPE = {
+  CREDIT: 0,
+  COUPON: 1,
+  NONE: 2,
+};
+
 // exports.DRIVER_DOCUMENT_TYPE = {
 //   MAP_IMAGES: 7,
 //   DRIVER_BRANDING: 6,

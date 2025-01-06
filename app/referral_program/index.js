@@ -8,4 +8,11 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     Referral.updatedOperatorCityReferral,
   );
+
+  app.get(
+    '/get_operator_city_referral',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    Referral.getOperatorCityReferral,
+  );
 };

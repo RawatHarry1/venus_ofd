@@ -10,12 +10,14 @@ exports.DBS = {
 exports.ADMIN_AUTH = {
   ACL_USER: 'tb_acl_users',
   TOKENS: 'tb_acl_tokens',
+  ACL_ACCESS_MENUS: 'tb_acl_access_menu',
 };
 exports.AUTH_DB = {
   AUTH_OPERATORS: 'tb_operator_cities',
   TNX: 'tb_wallet_transactions',
   AUTH_USERS: 'tb_users',
   PENDING_TNX: 'tb_pending_wallet_txns',
+  CUSTOMERS_DELIVERY: 'tb_users_delivery',
 };
 exports.LIVE_DB = {
   OPERATPRS: 'tb_operators',
@@ -50,6 +52,8 @@ exports.LIVE_DB = {
   VEHICLE_MAPPING: 'tb_driver_vehicle_mapping',
   COUPONS: 'tb_coupons',
   AUTH_PROMO: 'tb_promotions',
+  PARAMETER: 'tb_parameters',
+  OPERATOR_PARAMS: 'tb_operator_params',
 };
 
 exports.LIVE_LOGS = {

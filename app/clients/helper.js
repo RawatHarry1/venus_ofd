@@ -17,7 +17,7 @@ exports.validateUserUsingIdOrPhone = async function (
   try {
     let userQuery;
     if (loginType == 0) {
-      userQuery = `SELECT user_id, user_name, phone_no, user_email, user_name, current_location_latitude as lat, current_location_latitude as lng, access_token AS user_access_token FROM ${dbConstants.DBS.LIVE_DB}.tb_users WHERE ${fieldName} = ? AND operator_id = ?`;
+      userQuery = `SELECT user_id, user_name, phone_no, user_email, user_name, current_location_latitude as lat, current_location_latitude as lng, access_token AS user_access_token FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE ${fieldName} = ? AND operator_id = ?`;
     } else if (loginType == 1) {
       userQuery = `SELECT customer_id FROM  ${dbConstants.DBS.LIVE_DB}.tb_customers WHERE customer_id = ? AND operator_id = ?`;
     }
@@ -57,7 +57,7 @@ exports.fetchUserListWithPagination = async function (
   userBucket,
   queryParams,
 ) {
-  let userQuery = ` ${dbConstants.DBS.LIVE_DB}.tb_users ~NEW_CONDITION~ `;
+  let userQuery = ` ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} ~NEW_CONDITION~ `;
   let values = [];
 
   let limit = Number(queryParams.iDisplayLength || 50);

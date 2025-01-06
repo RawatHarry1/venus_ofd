@@ -313,7 +313,7 @@ async function getAuthCoupons(operatorId, cityId, requestRideType) {
       coupon_id_autos, 
       promo_id, 
       promo_owner_client_id
-    FROM ${dbConstants.DBS.AUTH_DB}.tb_promotions
+    FROM ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.AUTH_PROMO}
     WHERE operator_id = ? ${whereClause} AND service_type = ?
     ORDER BY promo_id DESC
   `;
@@ -364,7 +364,7 @@ async function getCoupons(operatorId, couponId, requestRideType, cityId) {
         WHEN is_active = 1 THEN 1
         ELSE 0 
       END AS is_coupon_active
-    FROM ${dbConstants.DBS.LIVE_DB}.tb_coupons
+    FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.COUPONS}
     WHERE operator_id = ? AND service_type = ? ${whereClause}
   `;
 
