@@ -104,16 +104,16 @@ exports.PROMO = {
   },
   isPromoValid: function (promoObj, promoOrCoupon) {
     var allowedBenefitTypes = [
-      PromoConstant.PromoConstant.BENEFIT_TYPE.DISCOUNT,
-      PromoConstant.PromoConstant.BENEFIT_TYPE.CAPPED_FARE,
-      PromoConstant.PromoConstant.BENEFIT_TYPE.CASHBACK,
-      PromoConstant.PromoConstant.BENEFIT_TYPE.MARKETING_FARE,
-      PromoConstant.PromoConstant.BENEFIT_TYPE.SUBSCRIPTION_FARE,
+      PromoConstant.BENEFIT_TYPE.DISCOUNT,
+      PromoConstant.BENEFIT_TYPE.CAPPED_FARE,
+      PromoConstant.BENEFIT_TYPE.CASHBACK,
+      PromoConstant.BENEFIT_TYPE.MARKETING_FARE,
+      PromoConstant.BENEFIT_TYPE.SUBSCRIPTION_FARE,
     ];
     var allowedPromoType = [
-      PromoConstant.PromoConstant.PROMO_TYPE.LOCATION_INSENSITIVE,
-      PromoConstant.PromoConstant.PROMO_TYPE.PICK_UP_BASED,
-      PromoConstant.PromoConstant.PROMO_TYPE.DROP_BASED,
+      PromoConstant.PROMO_TYPE.LOCATION_INSENSITIVE,
+      PromoConstant.PROMO_TYPE.PICK_UP_BASED,
+      PromoConstant.PROMO_TYPE.DROP_BASED,
     ];
     var benefitType = +promoObj.benefit_type;
     var promoType = +promoObj.promo_type || +promoObj.coupon_type;
@@ -125,10 +125,10 @@ exports.PROMO = {
       return 0;
     }
     switch (promoType) {
-      case PromoConstant.PromoConstant.PROMO_TYPE.LOCATION_INSENSITIVE:
+      case PromoConstant.PROMO_TYPE.LOCATION_INSENSITIVE:
         return 1;
 
-      case PromoConstant.PromoConstant.PROMO_TYPE.PICK_UP_BASED:
+      case PromoConstant.PROMO_TYPE.PICK_UP_BASED:
         if (promoOrCoupon == PromoConstant.PROMOTION_TYPE.PROMOS) {
           return (
             !checkBlankAndZero([promoObj.pickup_radius]) &&
@@ -146,7 +146,7 @@ exports.PROMO = {
         }
         break;
 
-      case PromoConstant.PromoConstant.PROMO_TYPE.DROP_BASED:
+      case PromoConstant.PROMO_TYPE.DROP_BASED:
         if (promoOrCoupon == PromoConstant.PROMOTION_TYPE.PROMOS) {
           return (
             !checkBlankAndZero([promoObj.drop_radius]) &&
@@ -162,9 +162,7 @@ exports.PROMO = {
               promoObj.drop_lat,
               promoObj.drop_long,
               promoObj.drop_radius,
-            ]) &&
-            benefitType !=
-              PromoConstant.PromoConstant.BENEFIT_TYPE.MARKETING_FARE
+            ]) && benefitType != PromoConstant.BENEFIT_TYPE.MARKETING_FARE
           );
         }
         break;

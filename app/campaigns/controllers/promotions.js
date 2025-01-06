@@ -444,104 +444,211 @@ function filterPromotionsList(promoObject) {
 
 exports.createAuthPromo = async function (req, res) {
   try {
-    let operatorId = (req.body.operator_id = req.operator_id);
-    let couponId = req.body.coupon_id_autos;
-    let bonusType = +req.body.bonus_type;
-    let count = req.body.count;
-    let loginType = (req.body.user_type =
-      req.body.user_type || GeneralConstant.loginType.CUSTOMER);
-    let startDate = moment(req.body.start_date, 'YYYY-MM-DD');
-    let endDate = moment(req.body.end_date, 'YYYY-MM-DD');
-    let walletSerialNumber = req.body.wallet_serial_number;
-    let requestRideType = req.request_ride_type;
+    //   let operatorId = (req.body.operator_id = req.operator_id);
+    //   let couponId = req.body.coupon_id_autos;
+    //   let bonusType = +req.body.bonus_type;
+    //   let count = req.body.count;
+    //   let loginType = (req.body.user_type =
+    //     req.body.user_type || GeneralConstant.loginType.CUSTOMER);
+    //   let startDate = moment(req.body.start_date, 'YYYY-MM-DD');
+    //   let endDate = moment(req.body.end_date, 'YYYY-MM-DD');
+    //   let walletSerialNumber = req.body.wallet_serial_number;
+    //   let requestRideType = req.request_ride_type;
 
-    if (loginType == GeneralConstant.loginType.DRIVER) {
-      req.body.coupons_validity_autos = moment
-        .duration(endDate.diff(startDate))
-        .asDays();
-    }
-    const schema = Joi.object({
-      token: Joi.string().required(),
-      operator_id: Joi.number().integer().positive().required(),
-      bonus_type: Joi.number().required(),
-      user_type: Joi.number().required(),
-      coupon_id_autos: Joi.number().when('bonus_type', {
-        is: PromoConstant.authPromotionBonusType.COUPON,
-        then: Joi.number().required(),
-        otherwise: Joi.forbidden(),
-      }),
-      amount: Joi.number().when('bonus_type', {
-        is: PromoConstant.authPromotionBonusType.CASH,
-        then: Joi.number().positive().required(),
-        otherwise: Joi.forbidden(),
-      }),
-      max_number: Joi.number().positive().required(),
-      start_date: Joi.string().required(),
-      end_date: Joi.string().required(),
-      promo_code: Joi.string().when('user_type', {
-        is: GeneralConstant.loginType.CUSTOMER,
-        then: Joi.string().required(),
-        otherwise: Joi.forbidden(),
-      }),
-      coupons_validity_autos: Joi.number().positive().required(),
-      offering_type: Joi.number().optional(),
-      count: Joi.number().when('user_type', {
-        is: GeneralConstant.loginType.DRIVER,
-        then: Joi.number().required(),
-        otherwise: Joi.forbidden(),
-      }),
-      city_id: Joi.optional(),
-      wallet_serial_number: Joi.string().length(4).optional(),
-      service_type: Joi.string().allow('').optional(),
-    });
+    //   if (loginType == GeneralConstant.loginType.DRIVER) {
+    //     req.body.coupons_validity_autos = moment
+    //       .duration(endDate.diff(startDate))
+    //       .asDays();
+    //   }
+    //   const schema = Joi.object({
+    //     token: Joi.string().required(),
+    //     operator_id: Joi.number().integer().positive().required(),
+    //     bonus_type: Joi.number().required(),
+    //     user_type: Joi.number().required(),
+    //     coupon_id_autos: Joi.number().when('bonus_type', {
+    //       is: PromoConstant.authPromotionBonusType.COUPON,
+    //       then: Joi.number().required(),
+    //       otherwise: Joi.forbidden(),
+    //     }),
+    //     amount: Joi.number().when('bonus_type', {
+    //       is: PromoConstant.authPromotionBonusType.CASH,
+    //       then: Joi.number().positive().required(),
+    //       otherwise: Joi.forbidden(),
+    //     }),
+    //     max_number: Joi.number().positive().required(),
+    //     start_date: Joi.string().required(),
+    //     end_date: Joi.string().required(),
+    //     promo_code: Joi.string().when('user_type', {
+    //       is: GeneralConstant.loginType.CUSTOMER,
+    //       then: Joi.string().required(),
+    //       otherwise: Joi.forbidden(),
+    //     }),
+    //     coupons_validity_autos: Joi.number().positive().required(),
+    //     offering_type: Joi.number().optional(),
+    //     count: Joi.number().when('user_type', {
+    //       is: GeneralConstant.loginType.DRIVER,
+    //       then: Joi.number().required(),
+    //       otherwise: Joi.forbidden(),
+    //     }),
+    //     city_id: Joi.optional(),
+    //     wallet_serial_number: Joi.string().length(4).optional(),
+    //     service_type: Joi.string().allow('').optional(),
+    //   });
 
-    const result = schema.validate(req.body);
-    if (result.error) {
-      return responseHandler.parameterMissingResponse(res, '');
-    }
+    //   const result = schema.validate(req.body);
+    //   if (result.error) {
+    //     return responseHandler.parameterMissingResponse(res, '');
+    //   }
 
-    let driverWalletCardEnabled = {};
-    const clientId =
-      authConstants.OFFERING_TYPE[req.body.offering_type] ||
-      authConstants.CLIENTS_ID.AUTOS_CLIENT_ID;
-    req.body.service_type = requestRideType;
+    //   let driverWalletCardEnabled = {};
+    //   const clientId =
+    //     authConstants.OFFERING_TYPE[req.body.offering_type] ||
+    //     authConstants.CLIENTS_ID.AUTOS_CLIENT_ID;
+    //   req.body.service_type = requestRideType;
 
-    if (loginType == generalConstants.loginType.DRIVER) {
-      req.body.max_number = 1; // Driver can use the wallet card only once.
-      if (count > authConstants.driverWalletCardsInOneGo.MAX) {
-        count = authConstants.driverWalletCardsInOneGo.MAX;
-      }
-    }
+    //   if (loginType == generalConstants.loginType.DRIVER) {
+    //     req.body.max_number = 1; // Driver can use the wallet card only once.
+    //     if (count > authConstants.driverWalletCardsInOneGo.MAX) {
+    //       count = authConstants.driverWalletCardsInOneGo.MAX;
+    //     }
+    //   }
 
-    await getOperatorParameters(
-      ['driver_wallet_card_enabled'],
-      operatorId,
-      driverWalletCardEnabled,
-    );
+    //   await getOperatorParameters(
+    //     ['driver_wallet_card_enabled'],
+    //     operatorId,
+    //     driverWalletCardEnabled,
+    //   );
 
-    if (
-      loginType == generalConstants.loginType.DRIVER &&
-      driverWalletCardEnabled == generalConstants.ACTIVE_STATUS.INACTIVE
-    ) {
-      throw new Error('Driver Wallet Card not enabled.');
-    }
-    req.body.login_type = req.body.user_type;
+    //   if (
+    //     loginType == generalConstants.loginType.DRIVER &&
+    //     driverWalletCardEnabled == generalConstants.ACTIVE_STATUS.INACTIVE
+    //   ) {
+    //     throw new Error('Driver Wallet Card not enabled.');
+    //   }
+    //   req.body.login_type = req.body.user_type;
 
-    if (bonusType == PromoConstant.authPromotionBonusType.COUPON) {
-      let coupons = await getCoupons(
-        operatorId,
-        couponId,
-        clientId,
-        requestRideType,
-      );
-      let couponCheck = filterPromotionsList(coupons);
+    //   if (bonusType == PromoConstant.authPromotionBonusType.COUPON) {
+    //     let coupons = await getCoupons(
+    //       operatorId,
+    //       couponId,
+    //       clientId,
+    //       requestRideType,
+    //     );
+    //     let couponCheck = filterPromotionsList(coupons);
 
-      if (!couponCheck.length) {
-        throw new Error('No such coupon exists.');
-      }
-      req.body.amount = 50; //random value in case of coupons
-    }
-    req.body.client_id = clientId;
+    //     if (!couponCheck.length) {
+    //       throw new Error('No such coupon exists.');
+    //     }
+    //     req.body.amount = 50; //random value in case of coupons
+    //   }
+    //   req.body.client_id = clientId;
+
+    //   var promotionArr = [];
+
+    //   if (phone_no && (phone_no.length != 10 ||
+    //     isNaN(parseInt(phoneNo.slice(-10))))) {
+    //     return res.send("Invalid phone number");
+    //   }
+
+    //   if (loginType == rideConstants.LOGIN_TYPE.DRIVER) {
+
+    //     /*
+    //     PENDING
+    //     */
+    //     // if (count) {
+    //     //     await createPromotionForDriver();
+    //     // }
+    //   } else {
+    //     //Means user_type/login_type is either not defined or set to default by sm-panel.
+    //     if (!promo_code) {
+    //       throw new Error('Invalid promo code');
+    //     }
+
+    //     promo_code = promo_code.trim();
+    //     if (promo_code === '') {
+    //       throw new Error('Invalid promo code');
+    //     }
+
+    //     var stmnt = `SELECT COUNT(*) as num, 'promo' as type
+    //         FROM
+    //      ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.AUTH_PROMO}
+    //         WHERE promo_code = ? AND operator_id = ? AND (
+    //          ( ? >=start_date AND ? <= end_date ) OR
+    //          ( ? <= start_date AND ? >= start_date)) AND
+    //          end_date >= NOW()
+
+    //      UNION
+
+    //      SELECT COUNT(*) as num, 'referral' as type
+    //         FROM
+    //      ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.CUSTOMERS}
+    //         WHERE referral_code = ? AND operator_id = ?`;
+
+    //     var promoExistenceArray = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmnt, [
+    //       promoCode, operatorId, startDate, startDate, startDate, endDate, promoCode, operatorId
+    //     ]);
+
+    //     var promoExists = promoExistenceArray.filter((element) => {
+    //       return element.type == 'promo';
+    //     });
+
+    //     var referralExists = promoExistenceArray.filter((element) => {
+    //       return element.type == 'referral';
+    //     });
+
+    //     if (promoExists[0].num > 0 || referralExists[0].num > 0) {
+    //       response = 'This promotion code already exists';
+    //       return response;
+    //     }
+
+    //     if (!masterId) {
+    //       var stmnt = "SELECT COALESCE(MAX(master_id),0)+1 AS new_master_id FROM tb_promotions FOR UPDATE";
+
+    //       var promoMasterObj = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmnt, []);
+
+    //       if (!promoMasterObj || !promoMasterObj.length) {
+    //           throw new Error('Failed to select master id');
+    //       }
+    //       masterId = promoMasterObj[0].new_master_id;
+    //   }
+
+    //   var promotion = {
+    //     promo_code               : promo_code,
+    //     master_id                : masterId,
+    //     money_to_add             : promoAmount,//to be chaned
+    //     validity_window          : validityWindow,
+    //     start_date               : new Date(startDate),
+    //     end_date                 : new Date(endDate),
+    //     can_use_with_referral    : canUseWithReferral,
+    //     max_number               : maxNumber,
+    //     num_redeemed             : 0,
+    //     notify_user              : 1,
+    //     notify_sales             : emailId === '' ? 0 : 1,
+    //     sales_email              : emailId,
+    //     promo_type               : 3,
+    //     coupon_id_autos          : couponIdAutos,
+    //     num_coupons_autos        : maxNumber,
+    //     promo_owner_client_id    : clientId,
+    //     bonus_type               : bonusType,
+    //     operator_id              : operatorId,
+    //     city_id                  : cityId,
+    //     service_type             : serviceType
+    // };
+
+    // if (phoneNo)
+    //     promotion.sales_phone_no = phoneNo;
+
+    // if (couponsValidityAutos) {
+    //     promotion.coupons_validity_autos = couponsValidityAutos;
+    // }
+
+    //     await db.InsertIntoTable(
+    //       dbConstants.DBS.LIVE_DB,
+    //       `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.AUTH_PROMO}`,
+    //       promotion,
+    //     );
+
+    //   }
 
     // call Auth Server.
 

@@ -722,3 +722,92 @@ exports.updateDocumentStatus_v2 = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+exports.updateCanRequest = async function (req, res) {
+  try {
+    // var adminAccessToken        = req.body.admin_access_token;
+    // var checkBlankFields        = [adminAccessToken];
+    // var checkBlankStatus        = checkBlank(checkBlankFields);
+
+    var userEmail = req.body.user_email;
+    var reasonCode = parseInt(req.body.reason);
+    var requestType = parseInt(req.body.request_type);
+    var reasonMessage = req.body.request_message;
+
+    var operatorParams = req.body.operator_params;
+
+    var operatorId = req.operator_id || 14915;
+
+    if (typeof requestType === 'undefined') {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var canRequest =
+      requestType === rideConstant.BLOCK_USER_FLAGS.BLOCK_USER ? 0 : 1;
+
+    var userInfo = `SELECT venus_autos_user_id FROM ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE user_email = ? AND operator_id = ?`;
+
+    let result = await db.RunQuery(dbConstants.DBS.AUTH_DB, userInfo, [
+      userEmail,
+      operatorId,
+    ]);
+
+    if (result.length > 0) {
+      /* 
+      Update Live Server
+      */
+      var stmt = `SELECT reg_as FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE user_id = ?`;
+
+      var loginType = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, [
+        result[0].venus_autos_user_id,
+      ]);
+      loginType = loginType[0].reg_as;
+
+      if (!loginType) {
+        throw new Error('No user found');
+      }
+
+      if (loginType == rideConstant.LOGIN_TYPE.DRIVER) {
+        var blockDriverInLiveTable = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} SET can_request = ? ,autos_enabled = ? WHERE user_email = ? AND operator_id = ?`;
+
+        await db.RunQuery(dbConstants.DBS.LIVE_DB, blockDriverInLiveTable, [
+          canRequest,
+          0,
+          userEmail,
+          operatorId,
+        ]);
+        var blockDriverInDriversTable = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} SET autos_enabled = ? WHERE operator_id = ? AND driver_id = ?`;
+
+        await db.RunQuery(dbConstants.DBS.LIVE_DB, blockDriverInDriversTable, [
+          canRequest,
+          0,
+          operatorId,
+          result[0].venus_autos_user_id,
+        ]);
+      } else {
+        var blockDriverInLiveTable = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} SET can_request = ? ,autos_enabled = ? WHERE user_email = ? AND operator_id = ?`;
+
+        await db.RunQuery(dbConstants.DBS.LIVE_DB, blockDriverInLiveTable, [
+          canRequest,
+          0,
+          userEmail,
+          operatorId,
+        ]);
+      }
+    }
+    return responseHandler.success(req, res, '', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.giveCreditsToUser = async function (req, res) {
+  try {
+    /* 
+    PENDING
+    */
+    return responseHandler.success(req, res, '', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};

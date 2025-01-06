@@ -49,6 +49,7 @@ exports.LIVE_DB = {
   SCHEDULE_RIDE: 'tb_schedules',
   VEHICLE_MAPPING: 'tb_driver_vehicle_mapping',
   COUPONS: 'tb_coupons',
+  AUTH_PROMO: 'tb_promotions',
 };
 
 exports.LIVE_LOGS = {
