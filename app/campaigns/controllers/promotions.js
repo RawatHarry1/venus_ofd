@@ -1053,7 +1053,7 @@ exports.editCoupon = async function (req, res) {
             couponCriteria,
           );
         }
-      } else if (!isEmptyObject(fareUpdateKeys)) {
+      } else if (!Helper.isEmptyObject(fareUpdateKeys)) {
         //update only fare
         await db.updateTable(
           dbConstants.DBS.LIVE_DB,
