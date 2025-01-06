@@ -71,7 +71,7 @@ exports.adminLogin = async (req, res) => {
       TTL: TTL || null,
     };
     const token = await createToken(tokenData);
-    let stmt = `SELECT operator_id FROM venus_live.tb_operators WHERE token = ? `;
+    let stmt = `SELECT operator_id FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATPRS} WHERE token = ? `;
     let values = [req.headers.domain_token];
     let operatorId = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, values);
 
@@ -139,7 +139,7 @@ exports.loginUsingToken = async function (req, res) {
     var values = [req.user_id];
     let uerData = await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
     response.access_menu = JSON.parse(uerData[0].access_menu);
-    let stmt = `SELECT operator_id FROM venus_live.tb_operators WHERE token = ? `;
+    let stmt = `SELECT operator_id FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATPRS} WHERE token = ? `;
     var values = [req.headers.domain_token];
     let operatorId = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, values);
 
@@ -303,23 +303,37 @@ exports.suspendAdmin = async function (req, res) {
 };
 
 exports.getPageWithPermission = async function (req, res) {
-  var response = {};
   try {
     if (!req.body.admin_id) {
       return responseHandler.parameterMissingResponse(res, ['admin_id']);
     }
 
     const { admin_id } = req.body;
-    const query = `SELECT access_menu FROM ${dbConstants.ADMIN_AUTH.ACL_USER} WHERE id = ?`;
-    const values = [admin_id];
-    const [userData] = await db.RunQuery(
+    var query = `SELECT access_menu FROM ${dbConstants.DBS.ADMIN_AUTH}.${dbConstants.ADMIN_AUTH.ACL_USER} WHERE id = ?`;
+    var values = [admin_id];
+    var [userData] = await db.RunQuery(
       dbConstants.DBS.ADMIN_AUTH,
       query,
       values,
     );
-    response.access_menu = JSON.parse(userData.access_menu);
+    var query = `SELECT * FROM ${dbConstants.DBS.ADMIN_AUTH}.${dbConstants.ADMIN_AUTH.ACL_ACCESS_MENUS} WHERE status = 1`;
+    var values = [admin_id];
+    const master_menu_obj = await db.RunQuery(
+      dbConstants.DBS.ADMIN_AUTH,
+      query,
+      [],
+    );
 
-    return responseHandler.success(req, res, '', response);
+    if (userData.access_menu != undefined) {
+      var _master_menu_obj = Helper.unflatten(
+        master_menu_obj,
+        userData.access_menu,
+      );
+    } else {
+      var _master_menu_obj = Helper.unflatten(master_menu_obj, new Object());
+    }
+
+    return responseHandler.success(req, res, '', _master_menu_obj);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

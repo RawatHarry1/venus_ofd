@@ -136,7 +136,7 @@ exports.insertOperatorVehicleType = async function (req, res) {
       (async () => {
         subRegionsWrapper = await db.SelectFromTableIn(
           dbConstants.DBS.LIVE_DB,
-          `${dbConstants.DBS.LIVE_DB}.tb_city_sub_regions`,
+          `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SUB_REGIONS}`,
           subRegionsReqdKeys,
           subRegionsCriteria,
         );

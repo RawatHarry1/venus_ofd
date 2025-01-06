@@ -762,11 +762,6 @@ exports.updateCanRequest = async function (req, res) {
         result[0].venus_autos_user_id,
       ]);
       loginType = loginType[0].reg_as;
-
-      if (!loginType) {
-        throw new Error('No user found');
-      }
-
       if (loginType == rideConstant.LOGIN_TYPE.DRIVER) {
         var blockDriverInLiveTable = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} SET can_request = ? ,autos_enabled = ? WHERE user_email = ? AND operator_id = ?`;
 

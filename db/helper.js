@@ -9,12 +9,11 @@ exports.executeQuery = async (dbName, query, params = []) => {
 
     // Log query in development environment with colorful logs
     if (process.env.NODE_ENV === 'development') {
+      const formattedQuery = mysql.format(query, params);
       console.log(
         chalk.default.blue(`Executing query on ${chalk.default.bold(dbName)}:`),
       ); // DB name in blue with bold
-      console.log(
-        chalk.default.green('SQL Query: ') + chalk.default.yellow(query),
-      ); // SQL query in yellow
+      console.log(chalk.default.yellow(`formatted Query: ${formattedQuery}`));
       console.log(
         chalk.default.green('Parameters: ') +
           chalk.default.cyan(JSON.stringify(params)),

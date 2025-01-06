@@ -236,7 +236,7 @@ exports.city = {
       queryParams = [],
       operatorId = req.operator_id;
     var searchKey = parseInt(req.body.search_key);
-    var getUserIdQuery = `SELECT driver_id as user_id FROM ${dbConstants.DBS.LIVE_DB}.tb_drivers WHERE operator_id = ? `;
+    var getUserIdQuery = `SELECT driver_id as user_id FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} WHERE operator_id = ? `;
     queryParams.push(operatorId);
 
     switch (searchKey) {
@@ -300,7 +300,7 @@ exports.bussinessMiddlewares = {
       if (!operatorId) {
         throw new Error('Operator id not passed');
       }
-      var getInformation = `SELECT user_id, access_token, verification_status, total_rides_as_user, reg_as, current_country, city FROM ${dbConstants.DBS.LIVE_DB}.tb_users WHERE phone_no = ? AND operator_id = ? `;
+      var getInformation = `SELECT user_id, access_token, verification_status, total_rides_as_user, reg_as, current_country, city FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE phone_no = ? AND operator_id = ? `;
       var user = await db.RunQuery(dbConstants.DBS.LIVE_DB, getInformation, [
         userPhone,
         operatorId,

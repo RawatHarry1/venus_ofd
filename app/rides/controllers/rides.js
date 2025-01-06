@@ -384,22 +384,22 @@ d.current_longitude,
       s.cancellation_reasons`;
 
       var valueToBePickedFrom = `
-  venus_live.tb_engagements e
+  ${dbConstants.DBS.LIVE_DB}.tb_engagements e
   
-  JOIN venus_live.tb_users u ON e.user_id = u.user_id
+  JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u ON e.user_id = u.user_id
   
-  JOIN venus_live.tb_drivers d ON e.driver_id = d.driver_id
+  JOIN ${dbConstants.DBS.LIVE_DB}.tb_drivers d ON e.driver_id = d.driver_id
 
-  JOIN venus_live.tb_session s ON e.session_id = s.session_id
+  JOIN ${dbConstants.DBS.LIVE_DB}.tb_session s ON e.session_id = s.session_id
   `;
 
       if (
         status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_REQUESTS ||
         status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_RIDES
       ) {
-        valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM venus_live.tb_nts_booking_info GROUP BY engagement_id) nts ON e.session_id = nts.session_id `;
+        valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM ${dbConstants.DBS.LIVE_DB}.tb_nts_booking_info GROUP BY engagement_id) nts ON e.session_id = nts.session_id `;
       } else {
-        valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM venus_live.tb_nts_booking_info WHERE is_vehicle_assigned = 1 ) nts ON e.session_id = nts.session_id `;
+        valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM ${dbConstants.DBS.LIVE_DB}.tb_nts_booking_info WHERE is_vehicle_assigned = 1 ) nts ON e.session_id = nts.session_id `;
       }
 
       valueToBePickedFrom += `  NEW_CONDITION e.city = ? AND 
@@ -411,7 +411,7 @@ d.current_longitude,
       //       if (corporateId) {
 
       //         valueToBePickedFrom += `
-      // JOIN venus_live.tb_business_users bu ON bu.business_id = s.is_manual
+      // JOIN ${dbConstants.DBS.LIVE_DB}.tb_business_users bu ON bu.business_id = s.is_manual
       // `;
 
       //         valueToBePicked += ', bu.external_id AS corporate_id ';
@@ -631,11 +631,11 @@ exports.getScheduledRideDetails = async function (req, res) {
 				0 AS is_vip`;
 
     var valueToBePickedFrom = `
-			  venus_live.tb_schedules sc 
+			  ${dbConstants.DBS.LIVE_DB}.tb_schedules sc 
 			JOIN 
-				venus_live.tb_users u ON u.user_id = sc.user_id
+				${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u ON u.user_id = sc.user_id
 			JOIN 
-				venus_live.tb_city_sub_regions cr ON cr.region_id = sc.region_id
+				${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SUB_REGIONS} cr ON cr.region_id = sc.region_id
 `;
 
     valueToBePickedFrom += `  NEW_CONDITION sc.region_id in (?) AND 
@@ -787,7 +787,7 @@ exports.getUnacceptedRideRequestUserDetails = async function (req, res) {
     LEFT JOIN 
       ${dbConstants.DBS.LIVE_DB}.tb_cities c ON s.city=c.city_id
     LEFT JOIN 
-      ${dbConstants.DBS.LIVE_DB}.tb_users u ON s.user_id=u.user_id
+      ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u ON s.user_id=u.user_id
     LEFT JOIN 
        ${dbConstants.DBS.LIVE_DB}.tb_engagements eng ON s.session_id=eng.session_id
      
@@ -833,7 +833,7 @@ exports.getUnacceptedRideRequestUserDetails = async function (req, res) {
     LEFT JOIN 
       ${dbConstants.DBS.LIVE_DB}.tb_cities c ON s.city=c.city_id
     LEFT JOIN 
-      ${dbConstants.DBS.LIVE_DB}.tb_users u ON s.user_id=u.user_id
+      ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u ON s.user_id=u.user_id
     LEFT JOIN 
         ${dbConstants.DBS.LIVE_DB}.tb_engagements eng ON s.session_id=eng.session_id
     WHERE  

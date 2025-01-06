@@ -43,27 +43,27 @@ exports.ridesQueryHelper = function (corporateId, driverId, fleetId, status) {
                           s.cancellation_reasons`;
 
   var valueToBePickedFrom = `
-                      FROM venus_live.tb_engagements e
+                      FROM ${dbConstants.DBS.LIVE_DB}.tb_engagements e
                       
-                      JOIN venus_live.tb_users u ON e.user_id = u.user_id
+                      JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u ON e.user_id = u.user_id
                       
-                      JOIN venus_live.tb_drivers d ON e.driver_id = d.driver_id
+                      JOIN ${dbConstants.DBS.LIVE_DB}.tb_drivers d ON e.driver_id = d.driver_id
 
-                      JOIN venus_live.tb_session s ON e.session_id = s.session_id
+                      JOIN ${dbConstants.DBS.LIVE_DB}.tb_session s ON e.session_id = s.session_id
                       `;
 
   if (
     status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_REQUESTS ||
     status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_RIDES
   ) {
-    valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM venus_live.tb_nts_booking_info GROUP BY engagement_id) nts ON e.session_id = nts.session_id `;
+    valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM ${dbConstants.DBS.LIVE_DB}.tb_nts_booking_info GROUP BY engagement_id) nts ON e.session_id = nts.session_id `;
   } else {
-    valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM venus_live.tb_nts_booking_info WHERE is_vehicle_assigned = 1 ) nts ON e.session_id = nts.session_id `;
+    valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM ${dbConstants.DBS.LIVE_DB}.tb_nts_booking_info WHERE is_vehicle_assigned = 1 ) nts ON e.session_id = nts.session_id `;
   }
 
   if (corporateId) {
     valueToBePickedFrom += `
-           JOIN venus_live.tb_business_users bu ON bu.business_id = s.is_manual 
+           JOIN ${dbConstants.DBS.LIVE_DB}.tb_business_users bu ON bu.business_id = s.is_manual 
       `;
 
     valueToBePicked += ', bu.external_id AS corporate_id ';
@@ -503,7 +503,7 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
             ON
               ${dbConstants.LIVE_DB.RIDES}.sub_region_id = cities.region_id
             LEFT JOIN
-              ${dbConstants.DBS.LIVE_DB}.tb_users AS users
+              ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} AS users
             ON
               users.user_id = ${dbConstants.LIVE_DB.RIDES}.user_id
             JOIN
@@ -894,7 +894,7 @@ exports.getTaskDetailsQueryHelper = function (
 		   b1.user_image
 		FROM
 		   ${dbConstants.DBS.LIVE_DB}.tb_session a1
-		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_users b1 ON a1.user_id = b1.user_id
+		   JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} b1 ON a1.user_id = b1.user_id
 		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_engagements c1 ON a1.session_id = c1.session_id
 		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_vehicle_type d1 ON c1.vehicle_type = d1.vehicle_type
 		   JOIN
@@ -902,7 +902,7 @@ exports.getTaskDetailsQueryHelper = function (
 		   max(a.session_id) AS id
 		FROM 
 		   ${dbConstants.DBS.LIVE_DB}.tb_session a
-		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_users b ON a.user_id = b.user_id
+		   JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} b ON a.user_id = b.user_id
 		WHERE 
 		  (
 			a.ride_acceptance_flag = 0
@@ -964,7 +964,7 @@ exports.getTaskDetailsQueryHelper = function (
 		   ${dbConstants.DBS.LIVE_DB}.tb_session a
 		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_engagements c ON a.session_id = c.session_id
 		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_drivers d ON c.driver_id = d.driver_id
-		   JOIN ${dbConstants.DBS.LIVE_DB}.tb_users b ON a.user_id = b.user_id
+		   JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} b ON a.user_id = b.user_id
 		   ${additionalJoin} -- Add join for tb_additional_table if condition is met
 		WHERE
 		   (
@@ -1000,7 +1000,7 @@ exports.getTaskDetailsQueryHelper = function (
 		${dbConstants.DBS.LIVE_DB}.tb_session a
 		JOIN ${dbConstants.DBS.LIVE_DB}.tb_engagements c ON a.session_id = c.session_id
 		JOIN ${dbConstants.DBS.LIVE_DB}.tb_drivers d ON c.driver_id = d.driver_id
-		JOIN ${dbConstants.DBS.LIVE_DB}.tb_users b ON a.user_id = b.user_id
+		JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} b ON a.user_id = b.user_id
 	WHERE
 		(
 			a.date > ?
