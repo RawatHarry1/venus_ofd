@@ -696,6 +696,8 @@ exports.getScheduledRideDetails = async function (req, res) {
       queries.recordsTotal,
       [regionId],
     );
+    console.log('all_data', all_data);
+
     console.log('user_count', user_count);
 
     return responseHandler.success(req, res, '', {
@@ -925,7 +927,7 @@ exports.getUnacceptedRideRequestUserDetails = async function (req, res) {
       let emergencyRides = await db.RunQuery(
         dbConstants.DBS.AUTH_DB,
         getEmergencyRidesQuery,
-        [engagementIds],
+        [engagementIds.join(',')],
       );
 
       for (var i in emergencyRides) {

@@ -4,14 +4,19 @@ const {
   errorHandler,
   responseHandler,
   ResponseConstants,
+  rideConstants,
+  PromoConstant,
+  authConstants,
+  generalConstants,
 } = require('../../../bootstart/header');
 
-const PromoConstant = require('../../../constants/campaings');
 const GeneralConstant = require('../../../constants/general');
 const Helper = require('../helper');
 var Joi = require('joi');
 var QueryBuilder = require('datatable');
 var moment = require('moment');
+const { checkBlank } = require('../../rides/helper');
+const { getOperatorParameters } = require('../../admin/helper');
 
 exports.insertPomotions = async function (req, res) {
   try {
@@ -246,7 +251,7 @@ exports.promotionList = async function (req, res) {
         promoList = await getAuthCoupons(operatorId, cityId, requestRideType);
         break;
     }
-    return responseHandler.success(req, res, 'User Details Sents', promoList);
+    return responseHandler.success(req, res, 'Promo fetched', promoList);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
@@ -439,67 +444,628 @@ function filterPromotionsList(promoObject) {
 
 exports.createAuthPromo = async function (req, res) {
   try {
-    let operatorId = (req.body.operator_id = req.operator_id);
-    let couponId = req.body.coupon_id_autos;
-    let bonusType = +req.body.bonus_type;
-    let count = req.body.count;
-    let loginType = (req.body.user_type =
-      req.body.user_type || GeneralConstant.loginType.CUSTOMER);
-    let startDate = moment(req.body.start_date, 'YYYY-MM-DD');
-    let endDate = moment(req.body.end_date, 'YYYY-MM-DD');
-    let walletSerialNumber = req.body.wallet_serial_number;
-    let requestRideType = req.request_ride_type;
+    //   let operatorId = (req.body.operator_id = req.operator_id);
+    //   let couponId = req.body.coupon_id_autos;
+    //   let bonusType = +req.body.bonus_type;
+    //   let count = req.body.count;
+    //   let loginType = (req.body.user_type =
+    //     req.body.user_type || GeneralConstant.loginType.CUSTOMER);
+    //   let startDate = moment(req.body.start_date, 'YYYY-MM-DD');
+    //   let endDate = moment(req.body.end_date, 'YYYY-MM-DD');
+    //   let walletSerialNumber = req.body.wallet_serial_number;
+    //   let requestRideType = req.request_ride_type;
 
-    if (loginType == GeneralConstant.loginType.DRIVER) {
-      req.body.coupons_validity_autos = moment
-        .duration(endDate.diff(startDate))
-        .asDays();
-    }
-    const schema = Joi.object({
-      token: Joi.string().required(),
-      operator_id: Joi.number().integer().positive().required(),
-      bonus_type: Joi.number().required(),
-      user_type: Joi.number().required(),
-      coupon_id_autos: Joi.number().when('bonus_type', {
-        is: PromoConstant.authPromotionBonusType.COUPON,
-        then: Joi.number().required(),
-        otherwise: Joi.forbidden(),
-      }),
-      amount: Joi.number().when('bonus_type', {
-        is: PromoConstant.authPromotionBonusType.CASH,
-        then: Joi.number().positive().required(),
-        otherwise: Joi.forbidden(),
-      }),
-      max_number: Joi.number().positive().required(),
-      start_date: Joi.string().required(),
-      end_date: Joi.string().required(),
-      promo_code: Joi.string().when('user_type', {
-        is: GeneralConstant.loginType.CUSTOMER,
-        then: Joi.string().required(),
-        otherwise: Joi.forbidden(),
-      }),
-      coupons_validity_autos: Joi.number().positive().required(),
-      offering_type: Joi.number().optional(),
-      count: Joi.number().when('user_type', {
-        is: GeneralConstant.loginType.DRIVER,
-        then: Joi.number().required(),
-        otherwise: Joi.forbidden(),
-      }),
-      city_id: Joi.optional(),
-      wallet_serial_number: Joi.string().length(4).optional(),
-      service_type: Joi.string().allow('').optional(),
-    });
+    //   if (loginType == GeneralConstant.loginType.DRIVER) {
+    //     req.body.coupons_validity_autos = moment
+    //       .duration(endDate.diff(startDate))
+    //       .asDays();
+    //   }
+    //   const schema = Joi.object({
+    //     token: Joi.string().required(),
+    //     operator_id: Joi.number().integer().positive().required(),
+    //     bonus_type: Joi.number().required(),
+    //     user_type: Joi.number().required(),
+    //     coupon_id_autos: Joi.number().when('bonus_type', {
+    //       is: PromoConstant.authPromotionBonusType.COUPON,
+    //       then: Joi.number().required(),
+    //       otherwise: Joi.forbidden(),
+    //     }),
+    //     amount: Joi.number().when('bonus_type', {
+    //       is: PromoConstant.authPromotionBonusType.CASH,
+    //       then: Joi.number().positive().required(),
+    //       otherwise: Joi.forbidden(),
+    //     }),
+    //     max_number: Joi.number().positive().required(),
+    //     start_date: Joi.string().required(),
+    //     end_date: Joi.string().required(),
+    //     promo_code: Joi.string().when('user_type', {
+    //       is: GeneralConstant.loginType.CUSTOMER,
+    //       then: Joi.string().required(),
+    //       otherwise: Joi.forbidden(),
+    //     }),
+    //     coupons_validity_autos: Joi.number().positive().required(),
+    //     offering_type: Joi.number().optional(),
+    //     count: Joi.number().when('user_type', {
+    //       is: GeneralConstant.loginType.DRIVER,
+    //       then: Joi.number().required(),
+    //       otherwise: Joi.forbidden(),
+    //     }),
+    //     city_id: Joi.optional(),
+    //     wallet_serial_number: Joi.string().length(4).optional(),
+    //     service_type: Joi.string().allow('').optional(),
+    //   });
 
-    const result = schema.validate(req.body);
-    if (result.error) {
-      let response = {
-        flag: ResponseConstants.RESPONSE_STATUS.ACTION_FAILED,
-        message: 'Some parameters are not valid.',
-      };
-      return res.send(response);
-    }
+    //   const result = schema.validate(req.body);
+    //   if (result.error) {
+    //     return responseHandler.parameterMissingResponse(res, '');
+    //   }
+
+    //   let driverWalletCardEnabled = {};
+    //   const clientId =
+    //     authConstants.OFFERING_TYPE[req.body.offering_type] ||
+    //     authConstants.CLIENTS_ID.AUTOS_CLIENT_ID;
+    //   req.body.service_type = requestRideType;
+
+    //   if (loginType == generalConstants.loginType.DRIVER) {
+    //     req.body.max_number = 1; // Driver can use the wallet card only once.
+    //     if (count > authConstants.driverWalletCardsInOneGo.MAX) {
+    //       count = authConstants.driverWalletCardsInOneGo.MAX;
+    //     }
+    //   }
+
+    //   await getOperatorParameters(
+    //     ['driver_wallet_card_enabled'],
+    //     operatorId,
+    //     driverWalletCardEnabled,
+    //   );
+
+    //   if (
+    //     loginType == generalConstants.loginType.DRIVER &&
+    //     driverWalletCardEnabled == generalConstants.ACTIVE_STATUS.INACTIVE
+    //   ) {
+    //     throw new Error('Driver Wallet Card not enabled.');
+    //   }
+    //   req.body.login_type = req.body.user_type;
+
+    //   if (bonusType == PromoConstant.authPromotionBonusType.COUPON) {
+    //     let coupons = await getCoupons(
+    //       operatorId,
+    //       couponId,
+    //       clientId,
+    //       requestRideType,
+    //     );
+    //     let couponCheck = filterPromotionsList(coupons);
+
+    //     if (!couponCheck.length) {
+    //       throw new Error('No such coupon exists.');
+    //     }
+    //     req.body.amount = 50; //random value in case of coupons
+    //   }
+    //   req.body.client_id = clientId;
+
+    //   var promotionArr = [];
+
+    //   if (phone_no && (phone_no.length != 10 ||
+    //     isNaN(parseInt(phoneNo.slice(-10))))) {
+    //     return res.send("Invalid phone number");
+    //   }
+
+    //   if (loginType == rideConstants.LOGIN_TYPE.DRIVER) {
+
+    //     /*
+    //     PENDING
+    //     */
+    //     // if (count) {
+    //     //     await createPromotionForDriver();
+    //     // }
+    //   } else {
+    //     //Means user_type/login_type is either not defined or set to default by sm-panel.
+    //     if (!promo_code) {
+    //       throw new Error('Invalid promo code');
+    //     }
+
+    //     promo_code = promo_code.trim();
+    //     if (promo_code === '') {
+    //       throw new Error('Invalid promo code');
+    //     }
+
+    //     var stmnt = `SELECT COUNT(*) as num, 'promo' as type
+    //         FROM
+    //      ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.AUTH_PROMO}
+    //         WHERE promo_code = ? AND operator_id = ? AND (
+    //          ( ? >=start_date AND ? <= end_date ) OR
+    //          ( ? <= start_date AND ? >= start_date)) AND
+    //          end_date >= NOW()
+
+    //      UNION
+
+    //      SELECT COUNT(*) as num, 'referral' as type
+    //         FROM
+    //      ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.CUSTOMERS}
+    //         WHERE referral_code = ? AND operator_id = ?`;
+
+    //     var promoExistenceArray = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmnt, [
+    //       promoCode, operatorId, startDate, startDate, startDate, endDate, promoCode, operatorId
+    //     ]);
+
+    //     var promoExists = promoExistenceArray.filter((element) => {
+    //       return element.type == 'promo';
+    //     });
+
+    //     var referralExists = promoExistenceArray.filter((element) => {
+    //       return element.type == 'referral';
+    //     });
+
+    //     if (promoExists[0].num > 0 || referralExists[0].num > 0) {
+    //       response = 'This promotion code already exists';
+    //       return response;
+    //     }
+
+    //     if (!masterId) {
+    //       var stmnt = "SELECT COALESCE(MAX(master_id),0)+1 AS new_master_id FROM tb_promotions FOR UPDATE";
+
+    //       var promoMasterObj = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmnt, []);
+
+    //       if (!promoMasterObj || !promoMasterObj.length) {
+    //           throw new Error('Failed to select master id');
+    //       }
+    //       masterId = promoMasterObj[0].new_master_id;
+    //   }
+
+    //   var promotion = {
+    //     promo_code               : promo_code,
+    //     master_id                : masterId,
+    //     money_to_add             : promoAmount,//to be chaned
+    //     validity_window          : validityWindow,
+    //     start_date               : new Date(startDate),
+    //     end_date                 : new Date(endDate),
+    //     can_use_with_referral    : canUseWithReferral,
+    //     max_number               : maxNumber,
+    //     num_redeemed             : 0,
+    //     notify_user              : 1,
+    //     notify_sales             : emailId === '' ? 0 : 1,
+    //     sales_email              : emailId,
+    //     promo_type               : 3,
+    //     coupon_id_autos          : couponIdAutos,
+    //     num_coupons_autos        : maxNumber,
+    //     promo_owner_client_id    : clientId,
+    //     bonus_type               : bonusType,
+    //     operator_id              : operatorId,
+    //     city_id                  : cityId,
+    //     service_type             : serviceType
+    // };
+
+    // if (phoneNo)
+    //     promotion.sales_phone_no = phoneNo;
+
+    // if (couponsValidityAutos) {
+    //     promotion.coupons_validity_autos = couponsValidityAutos;
+    // }
+
+    //     await db.InsertIntoTable(
+    //       dbConstants.DBS.LIVE_DB,
+    //       `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.AUTH_PROMO}`,
+    //       promotion,
+    //     );
+
+    //   }
+
+    // call Auth Server.
 
     return responseHandler.success(req, res, 'User Details Sents', []);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.editPromo = async function (req, res) {
+  try {
+    var promoId = req.body.promo_id;
+    var operatorId = req.operator_id;
+    var userId = req.user_id;
+    var isActive = req.body.is_active;
+    var updatedBy = req.email_from_acl;
+
+    var mandatoryFields = [promoId];
+    if (checkBlank(mandatoryFields)) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    if (isActive) {
+      isActive = +isActive > 0 ? 1 : 0;
+    }
+
+    //list of columns in tb_ride_promotions and tb_fare which are allowed to be updated
+    var promoKeyList = [
+      'title',
+      'value',
+      'max_value',
+      'per_user_limit',
+      'per_day_limit',
+      'tnc',
+      'max_allowed',
+      'is_selected',
+    ];
+    var fareKeyList = [
+      'fare_fixed',
+      'fare_threshold_distance',
+      'fare_per_km_threshold_distance',
+      'fare_per_km_after_threshold',
+      'fare_per_km_before_threshold',
+      'fare_per_min',
+      'fare_threshold_time',
+      'fare_per_waiting_min',
+      'fare_threshold_waiting_time',
+    ];
+
+    //retrieve promo details
+    var requiredKeysPromo = [
+      'promo_id',
+      'promo_type',
+      'benefit_type',
+      'is_active',
+      'is_selected',
+      'fare_id',
+    ];
+    var promoCriteria = [
+      { key: 'operator_id', value: operatorId },
+      { key: 'promo_id', value: promoId },
+      { key: 'is_active', value: 1 },
+    ];
+
+    var promoDetails = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.GLOBAL_PROMO}`,
+      requiredKeysPromo,
+      promoCriteria,
+    );
+    promoDetails = promoDetails[0];
+
+    if (!promoDetails) {
+      throw new Error('No promo found for this operator.');
+    }
+    /**
+     * Promo deactivation has the first priority followed by general
+     * updates. The above mentioned operations are handled as mutually exclusive.
+     * */
+    if (+isActive == 0) {
+      var promoQuery = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.GLOBAL_PROMO} SET is_active = ?, updated_by = ? WHERE promo_id = ? AND is_active = 1 AND operator_id = ? `;
+
+      await db.RunQuery(dbConstants.DBS.LIVE_DB, promoQuery, [
+        0,
+        updatedBy,
+        promoId,
+        operatorId,
+      ]);
+    } else {
+      var fareCriteria = [];
+      if (promoDetails.fare_id) {
+        fareCriteria.push({ key: 'id', value: promoDetails.fare_id });
+      }
+      //creating the promoUpdateKeys, an object of <promoColumnName: newValue> pairs.
+      var promoUpdateKeys = {};
+      for (var key of promoKeyList) {
+        if (req.body[key]) {
+          if (key == 'value') {
+            //modify the key 'value' according to the corresponding benefit_type
+            switch (promoDetails.benefit_type) {
+              case PromoConstant.BENEFIT_TYPE.DISCOUNT:
+                promoUpdateKeys['discount_percentage'] = req.body[key];
+                break;
+              case PromoConstant.BENEFIT_TYPE.CAPPED_FARE:
+                promoUpdateKeys['capped_fare'] = req.body[key];
+                break;
+              case PromoConstant.BENEFIT_TYPE.CASHBACK:
+                promoUpdateKeys['cashback_percentage'] = req.body[key];
+                break;
+              case PromoConstant.BENEFIT_TYPE.MARKETING_FARE:
+                break;
+            }
+          } else if (key == 'max_value') {
+            //modify the key 'max_value' according to the corresponding benefit_type
+            switch (promoDetails.benefit_type) {
+              case PromoConstant.BENEFIT_TYPE.DISCOUNT:
+                promoUpdateKeys['discount_maximum'] = req.body[key];
+                break;
+              case PromoConstant.BENEFIT_TYPE.CAPPED_FARE:
+                promoUpdateKeys['capped_fare_maximum'] = req.body[key];
+                break;
+              case PromoConstant.BENEFIT_TYPE.CASHBACK:
+                promoUpdateKeys['cashback_maximum'] = req.body[key];
+                break;
+              case PromoConstant.BENEFIT_TYPE.MARKETING_FARE:
+                break;
+            }
+          } else if (key == 'tnc') {
+            promoUpdateKeys['terms_n_conds'] = req.body[key];
+          } else {
+            promoUpdateKeys[key] = req.body[key];
+          }
+        }
+      }
+
+      //creating the fareUpdateKeys, an object of <fareColumnName: newValue> pairs
+      var fareUpdateKeys = {};
+      if (promoDetails.fare_id) {
+        for (var key of fareKeyList) {
+          if (req.body[key]) {
+            fareUpdateKeys[key] = req.body[key];
+          }
+        }
+      }
+
+      if (!Helper.isEmptyObject(promoUpdateKeys)) {
+        if (!Helper.isEmptyObject(fareUpdateKeys)) {
+          //update fare and promo in a transaction
+          promoUpdateKeys['updated_by'] = updatedBy;
+
+          await db.updateTable(
+            dbConstants.DBS.LIVE_DB,
+            `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.GLOBAL_PROMO}`,
+            promoUpdateKeys,
+            promoCriteria,
+          );
+
+          await db.updateTable(
+            dbConstants.DBS.LIVE_DB,
+            `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_FARE}`,
+            fareUpdateKeys,
+            fareCriteria,
+          );
+        } else {
+          //update promo only
+          promoUpdateKeys['updated_by'] = updatedBy;
+          await db.updateTable(
+            dbConstants.DBS.LIVE_DB,
+            `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.GLOBAL_PROMO}`,
+            promoUpdateKeys,
+            promoCriteria,
+          );
+        }
+      } else if (!Helper.isEmptyObject(fareUpdateKeys)) {
+        //update fare only
+        await db.updateTable(
+          dbConstants.DBS.LIVE_DB,
+          `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_FARE}`,
+          fareUpdateKeys,
+          fareCriteria,
+        );
+      } else {
+        throw Error('Nothing to update.');
+      }
+    }
+    return responseHandler.success(req, res, 'Promo edited successfully.', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.insertCoupon = async function (req, res) {
+  try {
+    var benefitType = req.body.benefit_type;
+    var couponType = req.body.coupon_type;
+    var operatorId = req.operator_id;
+    var value = req.body.value;
+    var title = req.body.title;
+    var description = req.body.description;
+    var maxValue = req.body.max_value;
+    var noOfCouponsToGive = req.body.no_coupons_to_give;
+    var userId = req.user_id;
+    req.body.created_by = req.email_from_acl;
+
+    var fareFixed = req.body.fare_fixed;
+    var fareThresholdDistance = req.body.fare_threshold_distance;
+    var farePerKmThresholdDistance = req.body.fare_per_km_threshold_distance;
+    var farePerKmBeforeThresholdDistance =
+      req.body.fare_per_km_before_threshold;
+    var farePerKmAfterThresholdDistance = req.body.fare_per_km_after_threshold;
+    var regionId = req.body.region_id;
+    var city = req.body.city;
+    var requestRideType = req.request_ride_type;
+    req.body.service_type = requestRideType;
+
+    req.body.allowed_vehicles =
+      Helper.PROMO.formatAllowedVehiclesString(allowedVehicles);
+    var allowedVehicles = req.body.allowed_vehicles;
+
+    var mandatoryFields = [
+      benefitType,
+      couponType,
+      title,
+      description,
+      operatorId,
+      noOfCouponsToGive,
+    ];
+
+    if (benefitType == PromoConstant.BENEFIT_TYPE.MARKETING_FARE) {
+      mandatoryFields.push(
+        fareFixed,
+        fareThresholdDistance,
+        farePerKmThresholdDistance,
+        farePerKmBeforeThresholdDistance,
+        farePerKmAfterThresholdDistance,
+        regionId,
+        city,
+      );
+    } else {
+      mandatoryFields.push(value, maxValue);
+    }
+
+    if (
+      checkBlank(mandatoryFields) ||
+      (benefitType != PromoConstant.BENEFIT_TYPE.MARKETING_FARE &&
+        benefitType != PromoConstant.BENEFIT_TYPE.CAPPED_FARE &&
+        (+maxValue <= 0 || +value <= 0))
+    ) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    if (
+      !Helper.PROMO.isPromoValid(req.body, PromoConstant.PROMOTION_TYPE.COUPONS)
+    ) {
+      throw new Error('Trying to add wrong Coupon. Please try again.');
+    }
+
+    var couponObject = Helper.makeCoupon(operatorId, req.body);
+
+    if (benefitType == PromoConstant.BENEFIT_TYPE.MARKETING_FARE) {
+      /* 
+      PENDING
+      */
+      // var fareObject = await Helper.makeFare(handlerInfo, operatorId, req.body);
+      // await insertMarketingFarePromo(handlerInfo, fareObject, "tb_coupons", couponObject);
+    } else {
+      await db.InsertIntoTable(
+        dbConstants.DBS.LIVE_DB,
+        `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.COUPONS}`,
+        couponObject,
+      );
+    }
+
+    return responseHandler.success(req, res, 'Coupons added successfully.', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.editCoupon = async function (req, res) {
+  try {
+    var couponId = req.body.coupon_id;
+    var reason = req.body.reason;
+    var operatorId = req.operator_id;
+    var aclUserId = req.user_id;
+    var isActive = req.body.is_active;
+    req.body.updated_by = req.email_from_acl;
+
+    if (isActive) {
+      isActive = +isActive > 0 ? 1 : 0;
+    }
+
+    var mandatoryFields = [couponId];
+    if (+isActive == 0) {
+      mandatoryFields.push(reason);
+    }
+    if (checkBlank(mandatoryFields)) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    //list of columns in tb_coupons and tb_fare which are allowed to be updated
+    var couponKeyList = ['title', 'subtitle', 'description', 'is_selected'];
+    var fareKeyList = [
+      'fare_fixed',
+      'fare_threshold_distance',
+      'fare_per_km_threshold_distance',
+      'fare_per_km_after_threshold',
+      'fare_per_km_before_threshold',
+      'fare_per_min',
+      'fare_threshold_time',
+      'fare_per_waiting_min',
+      'fare_threshold_waiting_time',
+    ];
+
+    //retrieve the coupon/validate coupon
+    var couponDetails = {};
+    var requiredKeysCoupon = [
+      'coupon_id',
+      'coupon_type',
+      'benefit_type',
+      'is_active',
+      'fare_id',
+    ];
+    var couponCriteria = [
+      { key: 'operator_id', value: operatorId },
+      { key: 'coupon_id', value: couponId },
+      { key: 'is_active', value: 1 },
+    ];
+
+    var couponDetails = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.COUPONS}`,
+      requiredKeysCoupon,
+      couponCriteria,
+    );
+    couponDetails = couponDetails[0];
+
+    if (!couponDetails) {
+      throw new Error('No coupon found for this operator.');
+    }
+
+    /**
+     * Coupon deactivation is the first priority followed
+     * by other general updates. These operations are
+     * mutually exclusive.
+     */
+    if (+isActive == 0) {
+      /* 
+      PENDING
+      */
+      // yield deactivateCoupon(handlerInfo, {coupon_id: couponId, operator_id: operatorId, updated_by: req.email_from_acl});
+      // yield removeCouponForUserHelper(handlerInfo, reason, couponId);
+      // yield deactivateAuthPromoInternal(handlerInfo, null, couponId, operatorId);
+    } else {
+      var fareCriteria = [];
+      if (couponDetails.fare_id) {
+        fareCriteria.push({ key: 'id', value: couponDetails.fare_id });
+      }
+      //creating the couponUpdateKeys, an Object of <couponColumnName: newValue> pairs.
+      var couponUpdateKeys = {};
+      for (var key of couponKeyList) {
+        if (req.body[key]) {
+          couponUpdateKeys[key] = req.body[key];
+        }
+      }
+
+      //creating the fareUpdateKeys, an object of <fareColumnName: newValue> pairs
+      var fareUpdateKeys = {};
+      if (couponDetails.fare_id) {
+        for (var key of fareKeyList) {
+          if (req.body[key]) {
+            fareUpdateKeys[key] = req.body[key];
+          }
+        }
+      }
+
+      if (!Helper.isEmptyObject(couponUpdateKeys)) {
+        if (!Helper.isEmptyObject(fareUpdateKeys)) {
+          //update fare and coupon in a transaction
+          couponUpdateKeys['updated_by'] = req.body.updated_by;
+
+          await db.updateTable(
+            dbConstants.DBS.LIVE_DB,
+            `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.COUPONS}`,
+            couponUpdateKeys,
+            couponCriteria,
+          );
+
+          await db.updateTable(
+            dbConstants.DBS.LIVE_DB,
+            `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_FARE}`,
+            fareUpdateKeys,
+            fareCriteria,
+          );
+        } else {
+          //update the coupon only
+          couponUpdateKeys['updated_by'] = req.body.updated_by;
+          await db.updateTable(
+            dbConstants.DBS.LIVE_DB,
+            `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.COUPONS}`,
+            couponUpdateKeys,
+            couponCriteria,
+          );
+        }
+      } else if (!Helper.isEmptyObject(fareUpdateKeys)) {
+        //update only fare
+        await db.updateTable(
+          dbConstants.DBS.LIVE_DB,
+          `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_FARE}`,
+          fareUpdateKeys,
+          fareCriteria,
+        );
+      } else {
+        throw Error('Nothing to update.');
+      }
+    }
+    return responseHandler.success(req, res, 'Coupon edited successfully.', {});
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

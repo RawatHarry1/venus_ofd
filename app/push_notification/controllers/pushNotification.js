@@ -79,3 +79,15 @@ exports.sendSmsPushToDriver = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+exports.contactCustomers = async function (req, res) {
+  try {
+    /* 
+    PENDING
+    */
+
+    return responseHandler.success(req, res, '', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};

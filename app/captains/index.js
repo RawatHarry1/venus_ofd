@@ -90,4 +90,24 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     CaptainDetail.getAvilableDrivers,
   );
+
+  /*
+  Block User
+  */
+  app.post(
+    '/update_can_request',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.updateCanRequest,
+  );
+
+  /*
+  Credit/Debit User
+  */
+  app.post(
+    '/give_user_credits',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.giveCreditsToUser,
+  );
 };

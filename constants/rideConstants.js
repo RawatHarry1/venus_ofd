@@ -202,6 +202,12 @@ exports.DOCUMENT_STATUS = {
   EXPIRED: 5,
 };
 
+exports.BLOCK_USER_FLAGS = {
+  PASSWORD_TO_BLOCK_USER: '',
+  BLOCK_USER: 0,
+  UNBLOCK_USER: 1,
+};
+
 // exports.DRIVER_DOCUMENT_TYPE = {
 //   MAP_IMAGES: 7,
 //   DRIVER_BRANDING: 6,

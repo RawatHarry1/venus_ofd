@@ -37,3 +37,8 @@ exports.PASSWORDS = {
   SUPER_ADMIN_PASSWORD: 'gJJi0mlw2iVU5Syu58ImglbNYm0tJKyB',
   AUTOS_PUSH_PASSWORD: 'gJJi0mlw2iVU5Syu58ImglbNYm0tJKyB',
 };
+
+exports.ACTIVE_STATUS = {
+  INACTIVE: 0,
+  ACTIVE: 1,
+};

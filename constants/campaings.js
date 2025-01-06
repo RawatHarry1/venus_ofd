@@ -40,3 +40,9 @@ exports.VEHICLE_COUPON = {
   36: [3, 6],
   15: [1, 5],
 };
+
+exports.BENEFIT_TYPE_BUSINESS_FARE = {
+  [this.BENEFIT_TYPE.MARKETING_FARE]: 4,
+  [this.BENEFIT_TYPE.SUBSCRIPTION_FARE]: 5,
+  DEFAULT: 1,
+};
