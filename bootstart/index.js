@@ -43,7 +43,7 @@ module.exports = async function (app) {
       });
     },
   });
-  app.use(limiter);
+  // app.use(limiter);
   app.use(express.json());
 
   /**
