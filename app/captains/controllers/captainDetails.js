@@ -780,13 +780,21 @@ exports.updateCanRequest = async function (req, res) {
           result[0].venus_autos_user_id,
         ]);
       } else {
-        var blockDriverInLiveTable = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} SET can_request = ? ,autos_enabled = ? WHERE user_email = ? AND operator_id = ?`;
+        var blockUserInLive = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} SET can_request = ? ,autos_enabled = ? WHERE user_email = ? AND operator_id = ?`;
 
-        await db.RunQuery(dbConstants.DBS.LIVE_DB, blockDriverInLiveTable, [
+        await db.RunQuery(dbConstants.DBS.LIVE_DB, blockUserInLive, [
           canRequest,
           0,
           userEmail,
           operatorId,
+        ]);
+
+        var blockUserInAuthTable = `UPDATE ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} SET can_request = ? WHERE operator_id = ? AND venus_autos_user_id = ?`;
+
+        await db.RunQuery(dbConstants.DBS.AUTH_DB, blockUserInAuthTable, [
+          canRequest,
+          operatorId,
+          result[0].venus_autos_user_id,
         ]);
       }
     }
@@ -802,6 +810,95 @@ exports.giveCreditsToUser = async function (req, res) {
     PENDING
     */
     return responseHandler.success(req, res, '', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.get_all_suspended_drivers = async function (req, res) {
+  try {
+    var city = req.query.city;
+    var vehicleType = req.query.vehicle_type;
+    var requestRideType = req.request_ride_type;
+    var category = req.query.category;
+    var operatorId = req.operator_id;
+    var fleetId = req.fleet_id;
+    var sqlCondition = ``;
+    var queryParams = [];
+
+    sqlCondition += `AND drivers.operator_id = ? `;
+    queryParams.push(operatorId);
+    if (requestRideType) {
+      sqlCondition += ` AND drivers.service_type = ? `;
+      queryParams.push(requestRideType);
+    }
+
+    switch (category) {
+      case '0': //only autos
+        sqlCondition += `AND drivers.autos_enabled = 0`;
+        break;
+      case '1': //only delivery
+        sqlCondition += ` AND drivers.delivery_enabled = 0 `;
+        break;
+      case '2': //only autos(include dodo)
+        sqlCondition += ` AND drivers.driver_suspended = 1 AND drivers.autos_enabled = 0  `; //OR (drivers.autos_enabled = 0 AND drivers.delivery_enabled = 0))
+        break;
+      case '3': //only delivery(include autos)
+        sqlCondition += ` AND (drivers.delivery_enabled = 0 OR (drivers.autos_enabled = 0 AND drivers.delivery_enabled = 0)) `;
+        break;
+      case '4': //all drivers
+        sqlCondition += ` AND drivers.driver_suspended = 1 `;
+        break;
+      case '5': //gps locks
+        sqlCondition += ` AND (drivers.device_type IN (${rideConstants.DEVICE_TYPE['BL10_GPSLOCK']}, ${rideConstants.DEVICE_TYPE['BL10_GPSLOCK']}, ${rideConstants.DEVICE_TYPE['BL10_GPSLOCK']}) AND (drivers.driver_suspended = 1 OR drivers.autos_enabled = 0)) `;
+    }
+
+    var cityCheck = ``;
+    if (city > 0) {
+      cityCheck = ` AND drivers.city_id = ? `;
+      queryParams.push(city);
+    }
+
+    var vehicleTypeParam = ``;
+    if (vehicleType > 0) {
+      vehicleTypeParam = ` AND drivers.vehicle_type = ? `;
+      queryParams.push(vehicleType);
+    }
+
+    if (fleetId) {
+      sqlCondition += ` AND fleet_id IN (?) `;
+      queryParams.push(fleetId);
+    }
+
+    var get_driver_details =
+      `SELECT
+            drivers.driver_id,
+            drivers.name AS driver_name,
+            drivers.external_id,
+            drivers.city_id AS city,
+            drivers.last_login,
+            drivers.phone_no,
+            drivers.vehicle_type,
+            drivers.vehicle_no AS vehicle_number,
+            IF(DATE(drivers.last_ride_on) != DATE('0000-00-00'), drivers.last_ride_on, NULL) AS last_ride_on,
+            IF(DATE(drivers.last_delivery_on) != NULL, drivers.last_delivery_on, NULL) AS last_delivery_on,
+            drivers.driver_suspended,
+            drivers.autos_enabled,
+            drivers.delivery_enabled
+          FROM
+            ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} AS drivers 
+          JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} AS live_users ON live_users.user_id=drivers.driver_id
+            WHERE live_users.can_request = 0 ` +
+      `GROUP BY
+            drivers.driver_id`;
+
+    let data_drivers = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      get_driver_details,
+      queryParams,
+    );
+
+    return responseHandler.success(req, res, '', data_drivers);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

@@ -531,7 +531,6 @@ async function insertCitySubRegion(body) {
 }
 
 async function insertDefaultFares(body, type) {
-
   var tableRow = {
     city: parseInt(body.city_id),
     operator_id: body.operatorId,
@@ -552,7 +551,7 @@ async function insertDefaultFares(body, type) {
     business_id: 1,
     region_id: body.region_id || 0,
     start_time: '00:00:00',
-    end_time: '24:00:00'
+    end_time: '24:00:00',
   };
 
   // Extract keys and values from insertObj
@@ -566,7 +565,7 @@ async function insertDefaultFares(body, type) {
 
   var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, insertQuery, values);
 
-  return result
+  return result;
 }
 
 module.exports = {
@@ -579,5 +578,5 @@ module.exports = {
   formatOperatorCityFields,
   readImageFile,
   uploadFileToS3,
-  insertDefaultFares
+  insertDefaultFares,
 };

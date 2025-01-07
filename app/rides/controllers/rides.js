@@ -37,7 +37,7 @@ exports.getRides = async function (req, res) {
       status: Joi.number().min(1).max(50).required(),
     }).unknown(true);
 
-    var requestRideType = req.request_ride_type
+    var requestRideType = req.request_ride_type;
 
     if (status !== rideConstant.DASHBOARD_RIDE_STATUS.COMPLETED) {
       const validation = schema.validate(req.query);

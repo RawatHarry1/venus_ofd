@@ -210,35 +210,38 @@ exports.insertOperatorVehicleType = async function (req, res) {
     if (body.ride_type != rideConstants.RIDE_TYPE.SHUTTLE) {
       /* TODO Have to done */
       if (!fareWrapper.length) {
-        customerDefaultFare =  await Helper.insertDefaultFares( body, 0);
-        driverDefaultFare =  await Helper.insertDefaultFares( body, 1);
+        customerDefaultFare = await Helper.insertDefaultFares(body, 0);
+        driverDefaultFare = await Helper.insertDefaultFares(body, 1);
       } else if (fareWrapper.length == 1) {
         if (fareWrapper[0].type == 0) {
-          driverDefaultFare =  await Helper.insertDefaultFares( body, 1);
+          driverDefaultFare = await Helper.insertDefaultFares(body, 1);
         } else {
-          customerDefaultFare =  await Helper.insertDefaultFares(body, 0);
+          customerDefaultFare = await Helper.insertDefaultFares(body, 0);
         }
       }
 
       if (!fareWrapper.length || fareWrapper.length == 1) {
         var packageObj = {
-            package_name: 'Rental',
-            customer_fare_id: Object.keys(customerDefaultFare).length ? customerDefaultFare.insertId : fareWrapper[0].id,
-            driver_fare_id: Object.keys(driverDefaultFare).length ? driverDefaultFare.insertId : fareWrapper[0].id
+          package_name: 'Rental',
+          customer_fare_id: Object.keys(customerDefaultFare).length
+            ? customerDefaultFare.insertId
+            : fareWrapper[0].id,
+          driver_fare_id: Object.keys(driverDefaultFare).length
+            ? driverDefaultFare.insertId
+            : fareWrapper[0].id,
         };
 
         if (body.ride_type == rideConstants.RIDE_TYPE.RENTAL) {
-            //  await utils.insertIntoTable('tb_rental_packages', packageObj);
-        } else if (body.ride_type ==  rideConstants.RIDE_TYPE.OUTSTATION) {
-            packageObj.package_name = 'Outstation';
-            packageObj.from_city_id = body.from_city_id;
-            packageObj.to_city_id = body.to_city_id;
-            packageObj.return_trip = body.return_trip;
+          //  await utils.insertIntoTable('tb_rental_packages', packageObj);
+        } else if (body.ride_type == rideConstants.RIDE_TYPE.OUTSTATION) {
+          packageObj.package_name = 'Outstation';
+          packageObj.from_city_id = body.from_city_id;
+          packageObj.to_city_id = body.to_city_id;
+          packageObj.return_trip = body.return_trip;
 
-            //  await utils.insertIntoTable('tb_rental_packages', packageObj);
+          //  await utils.insertIntoTable('tb_rental_packages', packageObj);
         }
-    }
-
+      }
     }
 
     response = {

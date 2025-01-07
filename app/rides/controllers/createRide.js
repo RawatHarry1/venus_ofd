@@ -460,3 +460,197 @@ function canBeRemovedNow(pickupTime, cancelTime) {
   }
   return true;
 }
+
+exports.reAssignDriver = async function (req, res) {
+  try {
+    var accessToken = req.body.access_token;
+    var engagementId = req.body.trip_id;
+    var driverId = req.body.driver_id;
+    var userId = req.body.user_id || '';
+    var isFromWeb = req.body.is_from_web || 0;
+    var requestRideType = req.request_ride_type || 1;
+    var operatorId = req.operator_id;
+    let response;
+
+    if (!driverId || !engagementId) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var queryParameters = isFromWeb
+      ? [{ key: 'user_id', value: userId }]
+      : [{ key: 'access_token', value: accessToken }];
+
+    var getExistingUser = `SELECT 
+  user_id, 
+  is_blocked, 
+  user_name, 
+  first_name, 
+  last_name, 
+  address, 
+  phone_no, 
+  country_code, 
+  user_email, 
+  email_verification_status, 
+  date_registered, 
+  access_token, 
+  referral_code, 
+  city, 
+  can_request, 
+  can_schedule, 
+  assign_station, 
+  unique_device_id, 
+  user_category, 
+  reg_as, 
+  operator_id, 
+  total_rating_user / total_rating_got_user AS rating, 
+  current_location_latitude, 
+  current_location_longitude, 
+  current_user_status, 
+  reg_as, 
+  vehicle_type, 
+  assign_station, 
+  app_versioncode, 
+  device_type, 
+  device_name, 
+  total_rides_as_user, 
+  status, 
+  is_available, 
+  autos_available, 
+  driver_car_no, 
+  referred_by, 
+  user_image, 
+  verification_status, 
+  is_guest_account, 
+  paytm_usage_count, 
+  gender, 
+  date_of_birth, 
+  req_stat AS customer_verification_status, 
+  locale, 
+  current_country 
+FROM 
+  ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} 
+WHERE
+ `;
+
+    var values = [];
+
+    for (var i = 0; i < queryParameters.length; i++) {
+      getExistingUser += `` + queryParameters[i].key + ` = ?`;
+      if (i !== queryParameters.length - 1) {
+        getExistingUser += ` AND `;
+      }
+      values.push(queryParameters[i].value);
+    }
+
+    var userWrapper = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      getExistingUser,
+      values,
+    );
+
+    if (!userWrapper.length) {
+      throw new Error('user not exist');
+    }
+    userWrapper = userWrapper[0];
+
+    var driverCriteria = [{ key: 'driver_id', value: driverId }];
+
+    var driverWrapper = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS}`,
+      ['*'],
+      driverCriteria,
+    );
+
+    if (!driverWrapper.length) {
+      throw new Error('Driver not exist');
+    }
+
+    driverWrapper = driverWrapper[0];
+
+    var engagementWrapper = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES}`,
+      ['*', 'tb_engagements.current_time AS created_at'],
+      [{ key: 'engagement_id', value: engagementId }],
+    );
+
+    if (!engagementWrapper.length) {
+      throw new Error('Ride not exist');
+    }
+
+    engagementWrapper = engagementWrapper[0];
+
+    if (engagementWrapper.status == rideConstants.ENGAGEMENT_STATUS.STARTED) {
+      throw new Error('Ride already accepted by other driver');
+    }
+
+    if (engagementWrapper.status == rideConstants.ENGAGEMENT_STATUS.ACCEPTED) {
+      throw new Error('This request has been accepted by other driver');
+    }
+
+    await db.updateTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES}`,
+      { status: 0, driver_id: driverId },
+      [{ key: 'engagement_id', value: engagementId }],
+    );
+
+    await db.updateTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.IN_THE_AIR}`,
+      { is_active: 1, ride_acceptance_flag: 0 },
+      [{ key: 'session_id', value: engagementWrapper.session_id }],
+    );
+
+    if (requestRideType == rideConstants.CLIENTS.MARS) {
+      await db.updateTable(
+        dbConstants.DBS.LIVE_DB,
+        `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.PACKAGE_SESSION}`,
+        {
+          delivery_status: rideConstants.DELIVERY_PACKAGE_STATUS.REQUESTED,
+          package_image_while_pickup: null,
+        },
+        [{ key: 'engagement_id', value: engagementId }],
+      );
+    }
+
+    var updatedEngagementWrapper = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES}`,
+      ['*', 'tb_engagements.current_time AS created_at'],
+      [{ key: 'engagement_id', value: engagementId }],
+    );
+
+    updatedEngagementWrapper = updatedEngagementWrapper[0];
+
+    if (
+      updatedEngagementWrapper.status ==
+      rideConstants.ENGAGEMENT_STATUS.REQUESTED
+    ) {
+      if (driverWrapper.status == rideConstants.USER_STATUS.BUSY) {
+        throw new Error('Driver is busy on another ride');
+      }
+
+      var requestBody = {
+        access_token: driverWrapper.access_token,
+        latitude: driverWrapper.current_latitude,
+        longitude: driverWrapper.current_longitude,
+        is_delivery: 0,
+        tripId: engagementId.toString(),
+        customerId: userWrapper.user_id,
+        operator_token: req.operator_token,
+      };
+      console.log('requestBody', requestBody);
+
+      response = await pushFromRideServer(
+        requestBody,
+        '/driver/acceptTripRequest',
+      );
+    }
+
+    return responseHandler.success(req, res, '', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};

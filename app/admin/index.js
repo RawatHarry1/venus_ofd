@@ -46,4 +46,11 @@ module.exports = function (app) {
     Middlewares.admin.isLoggedIn,
     loginController.editAdmin,
   );
+
+  app.post(
+    '/update_permission',
+    Middlewares.admin.domainToken,
+    Middlewares.admin.isLoggedIn,
+    loginController.update_permission,
+  );
 };
