@@ -444,196 +444,208 @@ function filterPromotionsList(promoObject) {
 
 exports.createAuthPromo = async function (req, res) {
   try {
-    //   let operatorId = (req.body.operator_id = req.operator_id);
-    //   let couponId = req.body.coupon_id_autos;
-    //   let bonusType = +req.body.bonus_type;
-    //   let count = req.body.count;
-    //   let loginType = (req.body.user_type =
-    //     req.body.user_type || GeneralConstant.loginType.CUSTOMER);
-    //   let startDate = moment(req.body.start_date, 'YYYY-MM-DD');
-    //   let endDate = moment(req.body.end_date, 'YYYY-MM-DD');
-    //   let walletSerialNumber = req.body.wallet_serial_number;
-    //   let requestRideType = req.request_ride_type;
+      let operatorId = (req.body.operator_id = req.operator_id);
+      let couponId = req.body.coupon_id_autos;
+      let bonusType = +req.body.bonus_type;
+      let count = req.body.count;
+      let loginType = (req.body.user_type =
+        req.body.user_type || GeneralConstant.loginType.CUSTOMER);
+      let startDate = moment(req.body.start_date, 'YYYY-MM-DD');
+      let endDate = moment(req.body.end_date, 'YYYY-MM-DD');
+      let walletSerialNumber = req.body.wallet_serial_number;
+      let requestRideType = req.request_ride_type;
 
-    //   if (loginType == GeneralConstant.loginType.DRIVER) {
-    //     req.body.coupons_validity_autos = moment
-    //       .duration(endDate.diff(startDate))
-    //       .asDays();
-    //   }
-    //   const schema = Joi.object({
-    //     token: Joi.string().required(),
-    //     operator_id: Joi.number().integer().positive().required(),
-    //     bonus_type: Joi.number().required(),
-    //     user_type: Joi.number().required(),
-    //     coupon_id_autos: Joi.number().when('bonus_type', {
-    //       is: PromoConstant.authPromotionBonusType.COUPON,
-    //       then: Joi.number().required(),
-    //       otherwise: Joi.forbidden(),
-    //     }),
-    //     amount: Joi.number().when('bonus_type', {
-    //       is: PromoConstant.authPromotionBonusType.CASH,
-    //       then: Joi.number().positive().required(),
-    //       otherwise: Joi.forbidden(),
-    //     }),
-    //     max_number: Joi.number().positive().required(),
-    //     start_date: Joi.string().required(),
-    //     end_date: Joi.string().required(),
-    //     promo_code: Joi.string().when('user_type', {
-    //       is: GeneralConstant.loginType.CUSTOMER,
-    //       then: Joi.string().required(),
-    //       otherwise: Joi.forbidden(),
-    //     }),
-    //     coupons_validity_autos: Joi.number().positive().required(),
-    //     offering_type: Joi.number().optional(),
-    //     count: Joi.number().when('user_type', {
-    //       is: GeneralConstant.loginType.DRIVER,
-    //       then: Joi.number().required(),
-    //       otherwise: Joi.forbidden(),
-    //     }),
-    //     city_id: Joi.optional(),
-    //     wallet_serial_number: Joi.string().length(4).optional(),
-    //     service_type: Joi.string().allow('').optional(),
-    //   });
+      if (loginType == GeneralConstant.loginType.DRIVER) {
+        req.body.coupons_validity_autos = moment
+          .duration(endDate.diff(startDate))
+          .asDays();
+      }
+      const schema = Joi.object({
+        token: Joi.string().required(),
+        operator_id: Joi.number().integer().positive().required(),
+        bonus_type: Joi.number().required(),
+        user_type: Joi.number().required(),
+        coupon_id_autos: Joi.number().when('bonus_type', {
+          is: PromoConstant.authPromotionBonusType.COUPON,
+          then: Joi.number().required(),
+          otherwise: Joi.forbidden(),
+        }),
+        amount: Joi.number().when('bonus_type', {
+          is: PromoConstant.authPromotionBonusType.CASH,
+          then: Joi.number().positive().required(),
+          otherwise: Joi.forbidden(),
+        }),
+        max_number: Joi.number().positive().required(),
+        start_date: Joi.string().required(),
+        end_date: Joi.string().required(),
+        promo_code: Joi.string().when('user_type', {
+          is: GeneralConstant.loginType.CUSTOMER,
+          then: Joi.string().required(),
+          otherwise: Joi.forbidden(),
+        }),
+        coupons_validity_autos: Joi.number().positive().required(),
+        offering_type: Joi.number().optional(),
+        count: Joi.number().when('user_type', {
+          is: GeneralConstant.loginType.DRIVER,
+          then: Joi.number().required(),
+          otherwise: Joi.forbidden(),
+        }),
+        city_id: Joi.optional(),
+        wallet_serial_number: Joi.string().length(4).optional(),
+        service_type: Joi.string().allow('').optional(),
+      });
 
-    //   const result = schema.validate(req.body);
-    //   if (result.error) {
-    //     return responseHandler.parameterMissingResponse(res, '');
-    //   }
+      const result = schema.validate(req.body);
+      if (result.error) {
+        return responseHandler.parameterMissingResponse(res, '');
+      }
 
-    //   let driverWalletCardEnabled = {};
-    //   const clientId =
-    //     authConstants.OFFERING_TYPE[req.body.offering_type] ||
-    //     authConstants.CLIENTS_ID.AUTOS_CLIENT_ID;
-    //   req.body.service_type = requestRideType;
+      let driverWalletCardEnabled = {};
+      const clientId =
+        authConstants.OFFERING_TYPE[req.body.offering_type] ||
+        authConstants.CLIENTS_ID.AUTOS_CLIENT_ID;
+      req.body.service_type = requestRideType;
 
-    //   if (loginType == generalConstants.loginType.DRIVER) {
-    //     req.body.max_number = 1; // Driver can use the wallet card only once.
-    //     if (count > authConstants.driverWalletCardsInOneGo.MAX) {
-    //       count = authConstants.driverWalletCardsInOneGo.MAX;
-    //     }
-    //   }
+      if (loginType == generalConstants.loginType.DRIVER) {
+        req.body.max_number = 1; // Driver can use the wallet card only once.
+        if (count > authConstants.driverWalletCardsInOneGo.MAX) {
+          count = authConstants.driverWalletCardsInOneGo.MAX;
+        }
+      }
 
-    //   await getOperatorParameters(
-    //     ['driver_wallet_card_enabled'],
-    //     operatorId,
-    //     driverWalletCardEnabled,
-    //   );
+      await getOperatorParameters(
+        ['driver_wallet_card_enabled'],
+        operatorId,
+        driverWalletCardEnabled,
+      );
 
-    //   if (
-    //     loginType == generalConstants.loginType.DRIVER &&
-    //     driverWalletCardEnabled == generalConstants.ACTIVE_STATUS.INACTIVE
-    //   ) {
-    //     throw new Error('Driver Wallet Card not enabled.');
-    //   }
-    //   req.body.login_type = req.body.user_type;
+      if (
+        loginType == generalConstants.loginType.DRIVER &&
+        driverWalletCardEnabled == generalConstants.ACTIVE_STATUS.INACTIVE
+      ) {
+        throw new Error('Driver Wallet Card not enabled.');
+      }
+      req.body.login_type = req.body.user_type;
 
-    //   if (bonusType == PromoConstant.authPromotionBonusType.COUPON) {
-    //     let coupons = await getCoupons(
-    //       operatorId,
-    //       couponId,
-    //       clientId,
-    //       requestRideType,
-    //     );
-    //     let couponCheck = filterPromotionsList(coupons);
+      if (bonusType == PromoConstant.authPromotionBonusType.COUPON) {
 
-    //     if (!couponCheck.length) {
-    //       throw new Error('No such coupon exists.');
-    //     }
-    //     req.body.amount = 50; //random value in case of coupons
-    //   }
-    //   req.body.client_id = clientId;
+        let couponsQuery = `SELECT coupon_id, title,subtitle,description, coupon_type AS promo_type,
+        benefit_type, discount_percentage,discount_maximum, cashback_percentage, cashback_maximum, capped_fare, capped_fare_maximum, pickup_radius,no_coupons_to_give,
+        is_active, allowed_vehicles, pickup_radius, pickup_latitude, pickup_longitude,  drop_radius, drop_latitude, drop_longitude, fare_id, usuage AS current_usage_count,  
+        CASE 
+        WHEN is_active = 1 THEN 1
+        ELSE 0 END AS is_coupon_active
+        FROM venus_live.tb_coupons
+        WHERE operator_id = ? AND service_type = ? AND coupon_id = ?`;
 
-    //   var promotionArr = [];
 
-    //   if (phone_no && (phone_no.length != 10 ||
-    //     isNaN(parseInt(phoneNo.slice(-10))))) {
-    //     return res.send("Invalid phone number");
-    //   }
+        let values = [operatorId,requestRideType,couponId];
 
-    //   if (loginType == rideConstants.LOGIN_TYPE.DRIVER) {
+        var coupons = await db.RunQuery(dbConstants.DBS.LIVE_DB, couponsQuery, values);
 
-    //     /*
-    //     PENDING
-    //     */
-    //     // if (count) {
-    //     //     await createPromotionForDriver();
-    //     // }
-    //   } else {
-    //     //Means user_type/login_type is either not defined or set to default by sm-panel.
-    //     if (!promo_code) {
-    //       throw new Error('Invalid promo code');
-    //     }
+        let couponCheck = filterPromotionsList(coupons);
 
-    //     promo_code = promo_code.trim();
-    //     if (promo_code === '') {
-    //       throw new Error('Invalid promo code');
-    //     }
+        if (!couponCheck.length) {
+          throw new Error('No such coupon exists.');
+        }
+        req.body.amount = 50; //random value in case of coupons
+      }
+      req.body.client_id = clientId;
 
-    //     var stmnt = `SELECT COUNT(*) as num, 'promo' as type
-    //         FROM
-    //      ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.AUTH_PROMO}
-    //         WHERE promo_code = ? AND operator_id = ? AND (
-    //          ( ? >=start_date AND ? <= end_date ) OR
-    //          ( ? <= start_date AND ? >= start_date)) AND
-    //          end_date >= NOW()
+      var promotionArr = [];
 
-    //      UNION
+      // if (phone_no && (phone_no.length != 10 ||
+      //   isNaN(parseInt(phoneNo.slice(-10))))) {
+      //   return res.send("Invalid phone number");
+      // }
 
-    //      SELECT COUNT(*) as num, 'referral' as type
-    //         FROM
-    //      ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.CUSTOMERS}
-    //         WHERE referral_code = ? AND operator_id = ?`;
+      if (loginType == rideConstants.LOGIN_TYPE.DRIVER) {
 
-    //     var promoExistenceArray = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmnt, [
-    //       promoCode, operatorId, startDate, startDate, startDate, endDate, promoCode, operatorId
-    //     ]);
+        /*
+        PENDING
+        */
+        // if (count) {
+        //     await createPromotionForDriver();
+        // }
+      } else {
+      //   //Means user_type/login_type is either not defined or set to default by sm-panel.
+      //   if (!req.body.promo_code) {
+      //     throw new Error('Invalid promo code');
+      //   }
 
-    //     var promoExists = promoExistenceArray.filter((element) => {
-    //       return element.type == 'promo';
-    //     });
+      //   let promoCode = req.body.promo_code
 
-    //     var referralExists = promoExistenceArray.filter((element) => {
-    //       return element.type == 'referral';
-    //     });
+      //   promoCode = promoCode.trim();
+      //   if (req.body.promo_code === '') {
+      //     throw new Error('Invalid promo code');
+      //   }
 
-    //     if (promoExists[0].num > 0 || referralExists[0].num > 0) {
-    //       response = 'This promotion code already exists';
-    //       return response;
-    //     }
+      //   var stmnt = `SELECT COUNT(*) as num, 'promo' as type
+      //       FROM
+      //    ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.AUTH_PROMO}
+      //       WHERE promo_code = ? AND operator_id = ? AND (
+      //        ( ? >=start_date AND ? <= end_date ) OR
+      //        ( ? <= start_date AND ? >= start_date)) AND
+      //        end_date >= NOW()
 
-    //     if (!masterId) {
-    //       var stmnt = "SELECT COALESCE(MAX(master_id),0)+1 AS new_master_id FROM tb_promotions FOR UPDATE";
+      //    UNION
 
-    //       var promoMasterObj = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmnt, []);
+      //    SELECT COUNT(*) as num, 'referral' as type
+      //       FROM
+      //    ${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.CUSTOMERS}
+      //       WHERE referral_code = ? AND operator_id = ?`;
 
-    //       if (!promoMasterObj || !promoMasterObj.length) {
-    //           throw new Error('Failed to select master id');
-    //       }
-    //       masterId = promoMasterObj[0].new_master_id;
-    //   }
+      //   var promoExistenceArray = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmnt, [
+      //     promoCode, operatorId, req.body.start_date, req.body.start_date, req.body.start_date, req.body.end_date, promoCode, operatorId
+      //   ]);
 
-    //   var promotion = {
-    //     promo_code               : promo_code,
-    //     master_id                : masterId,
-    //     money_to_add             : promoAmount,//to be chaned
-    //     validity_window          : validityWindow,
-    //     start_date               : new Date(startDate),
-    //     end_date                 : new Date(endDate),
-    //     can_use_with_referral    : canUseWithReferral,
-    //     max_number               : maxNumber,
-    //     num_redeemed             : 0,
-    //     notify_user              : 1,
-    //     notify_sales             : emailId === '' ? 0 : 1,
-    //     sales_email              : emailId,
-    //     promo_type               : 3,
-    //     coupon_id_autos          : couponIdAutos,
-    //     num_coupons_autos        : maxNumber,
-    //     promo_owner_client_id    : clientId,
-    //     bonus_type               : bonusType,
-    //     operator_id              : operatorId,
-    //     city_id                  : cityId,
-    //     service_type             : serviceType
-    // };
+      //   var promoExists = promoExistenceArray.filter((element) => {
+      //     return element.type == 'promo';
+      //   });
+
+      //   var referralExists = promoExistenceArray.filter((element) => {
+      //     return element.type == 'referral';
+      //   });
+
+      //   if (promoExists[0].num > 0 || referralExists[0].num > 0) {
+      //     response = 'This promotion code already exists';
+      //     return response;
+      //   }
+
+      //   if (!body.master_id) {
+      //     var stmnt = "SELECT COALESCE(MAX(master_id),0)+1 AS new_master_id FROM tb_promotions FOR UPDATE";
+
+      //     var promoMasterObj = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmnt, []);
+
+      //     if (!promoMasterObj || !promoMasterObj.length) {
+      //         throw new Error('Failed to select master id');
+      //     }
+      //    var  masterId = promoMasterObj[0].new_master_id;
+      // }
+
+      var promotion = {
+        promo_code               : req.body.promo_code,
+        money_to_add             : req.body.amount,//to be chaned
+        validity_window          : req.body.validity_window || -1,
+        start_date               : startDate || new Date(),
+        end_date                 : endDate || '2017-12-31 23:59:00',
+        can_use_with_referral    : req.body.can_user_with_referral || 0,
+        max_number               : req.body.max_number,
+        num_redeemed             : 0,
+        notify_user              : 1,
+        notify_sales             : 'abc',
+        sales_email              : 'abc',
+        promo_type               : 3,
+        coupon_id_autos          : req.body.coupon_id_autos,
+        num_coupons_autos        : req.body.max_number,
+        promo_owner_client_id    : req.body.client_id || '',
+        bonus_type               : req.body.bonus_type || 0,
+        operator_id              : operatorId,
+        city_id                  : req.body.city_id,
+        service_type             : req.request_ride_type
+    };
+
+    console.log(promotion);
 
     // if (phoneNo)
     //     promotion.sales_phone_no = phoneNo;
@@ -642,13 +654,13 @@ exports.createAuthPromo = async function (req, res) {
     //     promotion.coupons_validity_autos = couponsValidityAutos;
     // }
 
-    //     await db.InsertIntoTable(
-    //       dbConstants.DBS.LIVE_DB,
-    //       `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.AUTH_PROMO}`,
-    //       promotion,
-    //     );
+        await db.InsertIntoTable(
+          dbConstants.DBS.AUTH_DB,
+          `${dbConstants.DBS.AUTH_DB}.${dbConstants.LIVE_DB.AUTH_PROMO}`,
+          promotion,
+        );
 
-    //   }
+      }
 
     // call Auth Server.
 
@@ -999,9 +1011,32 @@ exports.editCoupon = async function (req, res) {
       /* 
       PENDING
       */
-      // yield deactivateCoupon(handlerInfo, {coupon_id: couponId, operator_id: operatorId, updated_by: req.email_from_acl});
-      // yield removeCouponForUserHelper(handlerInfo, reason, couponId);
-      // yield deactivateAuthPromoInternal(handlerInfo, null, couponId, operatorId);
+      var promoQuery =
+      `UPDATE ${dbConstants.DBS.LIVE_DB}.tb_coupons SET is_active = ?, updated_by = ? WHERE coupon_id = ? AND is_active = 1 AND operator_id = ? `;
+
+      await db.RunQuery(dbConstants.DBS.LIVE_DB, promoQuery, [
+        isActive, req.email_from_acl,couponId, operatorId
+      ]);
+
+      removeCouponQuery = `UPDATE ${dbConstants.DBS.LIVE_DB}.tb_accounts SET status = ?, reason = ? WHERE coupon_id = ? AND status = ? `;
+
+      await db.RunQuery(dbConstants.DBS.LIVE_DB, removeCouponQuery, [
+        0, reason, couponId, 1
+      ]);
+
+      var deactivateQuery = `UPDATE
+      ${dbConstants.DBS.AUTH_DB}.tb_promotions
+  SET
+      autos_coupon_expiry_date = DATE(DATE_ADD(NOW(), INTERVAL -1 SECOND)),
+      end_date = DATE_ADD(NOW(), INTERVAL -1 SECOND)
+  WHERE
+      operator_id = ?
+      AND end_date > NOW()
+      AND coupon_id_autos = ?`;
+
+      await db.RunQuery(dbConstants.DBS.LIVE_DB, deactivateQuery, [
+        operatorId,couponId
+      ]);
     } else {
       var fareCriteria = [];
       if (couponDetails.fare_id) {

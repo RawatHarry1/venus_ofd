@@ -13,7 +13,7 @@ const responseHandler = {
     const secretKey =
       req.query.secret_key || req.body.secret_key || req.headers.secret_key;
 
-    if (secretKey == 1) {
+    if (secretKey == 1 || !secretKey) {
       return res.status(statusCode).json({
         status: 'success',
         message,

@@ -668,6 +668,7 @@ FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} WHERE driver_id 
 
 exports.uploadDocument_v2 = async function (req, res) {
   try {
+    
     return responseHandler.success(req, res, 'Data fetched successfully.', '');
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
