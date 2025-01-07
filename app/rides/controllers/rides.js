@@ -73,6 +73,7 @@ exports.getRides = async function (req, res) {
         : rideStatus[status],
       operatorId,
       operatorId,
+      requestRideType,
     ];
 
     if (status == rideConstant.DASHBOARD_RIDE_STATUS.ONGOING) {
@@ -407,6 +408,7 @@ d.current_longitude,
       e.status IN (?) AND 
       d.operator_id = ? AND 
       u.operator_id = ? AND
+      s.service_type = ? AND
       e.request_made_on >= NOW() - INTERVAL 24 HOUR`;
 
       //       if (corporateId) {
