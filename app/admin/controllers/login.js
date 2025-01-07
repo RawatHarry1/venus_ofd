@@ -361,3 +361,27 @@ exports.editAdmin = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+exports.update_permission = async function (req, res) {
+  try {
+    var adminId = req.body.admin_id;
+    var accessMenu = req.body.access_menu;
+    var note = req.body.note;
+    if (!adminId || !accessMenu || !note) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+    accessMenu = JSON.stringify(accessMenu);
+    const query = `UPDATE ${dbConstants.DBS.ADMIN_AUTH}.${dbConstants.ADMIN_AUTH.ACL_USER} SET access_menu = ?, note = ? WHERE id = ?`;
+    const values = [accessMenu, note, adminId];
+    await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, query, values);
+
+    return responseHandler.success(
+      req,
+      res,
+      'Permission Updated successfully',
+      {},
+    );
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};

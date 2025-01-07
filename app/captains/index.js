@@ -62,6 +62,13 @@ module.exports = function (app) {
     CaptainDetail.updateDocumentStatus_v2,
   );
 
+  app.get(
+    '/get_all_suspended_drivers',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.get_all_suspended_drivers,
+  );
+
   /**
    * Global Search Driver
    **/

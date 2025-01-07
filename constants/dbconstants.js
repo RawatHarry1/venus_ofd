@@ -54,6 +54,7 @@ exports.LIVE_DB = {
   AUTH_PROMO: 'tb_promotions',
   PARAMETER: 'tb_parameters',
   OPERATOR_PARAMS: 'tb_operator_params',
+  PACKAGE_SESSION: 'tb_requested_pkg_session',
 };
 
 exports.LIVE_LOGS = {

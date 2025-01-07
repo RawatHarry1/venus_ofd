@@ -146,4 +146,11 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     createRideController.removePickupSchedule,
   );
+
+  app.post(
+    '/customer/reassign_driver',
+    AdminMiddlewares.admin.isLoggedIn,
+    AdminMiddlewares.admin.domainToken,
+    createRideController.reAssignDriver,
+  );
 };

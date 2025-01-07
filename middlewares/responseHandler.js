@@ -58,7 +58,6 @@ const responseHandler = {
   parameterMissingResponse: (res, missingParameter) => {
     const response = {
       error: 'some parameter missing',
-      flag: ResponseConstants.RESPONSE_STATUS.PARAMETER_MISSING,
       missing_paramter: missingParameter || [],
     };
     res.send(JSON.stringify(response));
