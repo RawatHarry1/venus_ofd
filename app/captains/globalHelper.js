@@ -975,27 +975,27 @@ FROM
     else app_id.push('');
   }
 
-  if (data[0].can_request == 0) {
-    var get_blocking_reason = `Select 
-  reasons.reason_code, 
-  reasons.reason 
-From 
-  ${dbConstants.DBS.AUTH_DB}.tb_can_request_reason reasons 
-  Inner Join ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} users on reasons.user_id = users.user_id 
-Where 
-  users.${userString} = ? 
-order by 
-  reasons.request_id desc
-`;
+//   if (data[0].can_request == 0) {
+//     var get_blocking_reason = `Select 
+//   reasons.reason_code, 
+//   reasons.reason 
+// From 
+//   ${dbConstants.DBS.AUTH_DB}.tb_can_request_reason reasons 
+//   Inner Join ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} users on reasons.user_id = users.user_id 
+// Where 
+//   users.${userString} = ? 
+// order by 
+//   reasons.request_id desc
+// `;
 
-    const reason = await db.RunQuery(
-      dbConstants.DBS.AUTH_DB,
-      get_blocking_reason,
-      [userValue],
-    );
-    block_reason.push(reason[0].reason_code);
-    block_reason_text.push(reason[0].reason);
-  }
+//     const reason = await db.RunQuery(
+//       dbConstants.DBS.AUTH_DB,
+//       get_blocking_reason,
+//       [userValue],
+//     );
+//     block_reason.push(reason[0].reason_code);
+//     block_reason_text.push(reason[0].reason);
+//   }
 }
 
 async function get_user_ref_code_used(

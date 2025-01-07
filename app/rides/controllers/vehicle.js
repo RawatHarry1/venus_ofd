@@ -303,7 +303,7 @@ exports.fetchVehicleMake = async function (req, res) {
             FROM
                 tb_vehicle_make vm
             JOIN
-                 tb_city_sub_regions cr ON cr.vehicle_type = vm.vehicle_type AND cr.ride_type = ? AND cr.city_id = ? AND cr.is_active = 1
+                 tb_city_sub_regions cr ON cr.vehicle_type = vm.vehicle_type AND cr.operator_id = vm.operator_id AND cr.ride_type = ? AND cr.city_id = ? AND cr.is_active = 1
             WHERE 
                 vm.city_id = ? AND 
                 vm.operator_id = ?`;
