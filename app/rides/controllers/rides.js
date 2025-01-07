@@ -64,6 +64,7 @@ exports.getRides = async function (req, res) {
       ],
       5: rideConstant.ENGAGEMENT_STATUS.CANCELLED_BY_CUSTOMER,
     };
+
     var ridesQuery = Helper.ridesQueryHelper(null, null, null, status);
     ridesQuery += ` WHERE e.city = ? AND e.status IN (?) AND d.operator_id = ? AND u.operator_id = ? AND e.request_made_on >= NOW() - INTERVAL 24 HOUR`;
     var values = [
@@ -72,126 +73,40 @@ exports.getRides = async function (req, res) {
         ? rideStatus[status].join(',')
         : rideStatus[status],
       operatorId,
-      operatorId,
-      requestRideType,
+      operatorId
     ];
 
-    if (status == rideConstant.DASHBOARD_RIDE_STATUS.ONGOING) {
-      var get_data = `
-                        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.RIDES} e 
-                    JOIN 
-                        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u ON e.user_id = u.user_id 
-                    JOIN 
-                        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} d ON e.driver_id = d.driver_id 
-                    JOIN 
-                        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.IN_THE_AIR} s ON e.session_id = s.session_id  
-                    NEW_CONDITION e.city = ? AND 
-                        e.status IN (?) AND 
-                        d.operator_id = ? AND 
-                        u.operator_id = ?  
-                `;
-      if (req.query.start_date && req.query.end_date) {
-        get_data += `  AND e.request_made_on BETWEEN '${req.query.start_date}' AND '${req.query.end_date}'  `;
-      }
-      if (requestRideType) {
-        get_data += `  AND s.service_type = '${requestRideType}' `;
-      }
-      if (vehicleType) {
-        get_data += `  AND e.vehicle_type = '${vehicleType}'  `;
-      }
+    if (fleetId) {
+			ridesQuery += ` AND d.fleet_id IN (?) `
+			values.push(fleetId)
+		}
 
-      if (sSearch) {
-        get_data += ` AND e.engagement_id LIKE '%${sSearch}%'`;
-      }
+    if(requestRideType){
+			ridesQuery += ` AND s.service_type IN (?) `
+			values.push(requestRideType)
+		}
 
-      let tableDefinition = {
-        sSelectSql: `e.pickup_location_address, 
-                    e.pickup_latitude, 
-                    e.pickup_longitude, 
-                    e.drop_location_address, 
-                    e.pickup_time, 
-                    e.drop_time,
-                    0 AS is_vip, 
-                    e.request_made_on, 
-                    e.accept_time, 
-                    e.engagement_id, 
-                    e.addn_info, 
-                    e.status, 
-                    u.user_name, 
-                    u.phone_no, 
-                    u.user_id, 
-                    d.name as driver_name, 
-                    d.driver_id, 
-                    d.vehicle_no,
-                    s.service_type,
-                    s.op_drop_longitude AS drop_longitude,
-                    e.city,
-                    e.vehicle_type,
-                    s.op_drop_latitude AS drop_latitude`,
-        sFromSql: get_data,
-        sCountColumnName: `e.engagement_id`,
-        aoColumnDefs: [
-          { mData: 'e.engagement_id', bSearchable: true },
-          { mData: 'd.name', bSearchable: true },
-          { mData: 'u.user_name', bSearchable: true },
-          { mData: 'e.pickup_location_address', bSearchable: true },
-          { mData: 'e.drop_location_address', bSearchable: true },
-        ],
-      };
+    if(vehicleType){
+			ridesQuery += ` AND e.vehicle_type IN (?) `
+			values.push(vehicleType)
+		}
 
-      let queryBuilder = new QueryBuilder(tableDefinition);
-      let requestQuery = req.query;
-      let queries = queryBuilder.buildQuery({
-        ...requestQuery,
-        order: [{ column: 0, dir: orderDirection }],
-        columns: [{ name: 'e.engagement_id', orderable: 'true' }],
-        start: offset,
-        length: limit,
-      });
+		if (sSearch) {
+			ridesQuery += ` AND e.engagement_id LIKE '%${sSearch}%'`;
+	  }
 
-      if (queries.length > 2) {
-        queries = queries.splice(1);
-      }
+    const ongoingRideQuery = ridesQuery
+    let ongoingQueryValues = values
 
-      queries.select = queries.select.replace('WHERE', ' AND ');
-      queries.recordsTotal = queries.recordsTotal.replace('WHERE', ' AND ');
-      queries.select = queries.select.replace(/NEW_CONDITION/g, ' WHERE ');
-      queries.recordsTotal = queries.recordsTotal.replace(
-        /NEW_CONDITION/g,
-        ' WHERE ',
-      );
+    ridesQuery += `
+    ORDER BY 
+    e.engagement_id ${orderDirection}
+    LIMIT ? OFFSET ?
+    `;
+    values.push(limit,offset)
 
-      let all_data = await db.RunQuery(
-        dbConstants.DBS.LIVE_DB,
-        queries.select,
-        values,
-      );
-      let user_count = await db.RunQuery(
-        dbConstants.DBS.LIVE_DB,
-        queries.recordsTotal,
-        values,
-      );
 
-      for (let i = 0; i < all_data.length; i++) {
-        let tempAddnInfo = all_data[i].addn_info;
-
-        if (tempAddnInfo) {
-          try {
-            tempAddnInfo = JSON.parse(tempAddnInfo);
-          } catch (e) {}
-          tempAddnInfo.driver_name
-            ? (all_data[i].driver_name = tempAddnInfo.driver_name)
-            : 0;
-        }
-      }
-
-      var response = {
-        aaData: all_data,
-        iTotalDisplayRecords: all_data.length,
-        iTotalRecords: user_count[0]['COUNT(*)'],
-      };
-      return responseHandler.success(req, res, '', response);
-    } else if (status == rideConstant.DASHBOARD_RIDE_STATUS.MISSED) {
+    if (status == rideConstant.DASHBOARD_RIDE_STATUS.MISSED) {
       ridesQuery = `SELECT
 			   a.session_id,
 			   a.date,
@@ -292,8 +207,8 @@ exports.getRides = async function (req, res) {
         ...requestQuery,
         order: [{ column: 0, dir: orderDirection }],
         columns: [{ name: 'e.engagement_id', orderable: 'true' }],
-        start: offset,
-        length: limit,
+        start: parseInt(offset),
+        length: parseInt(limit),
       });
 
       if (queries.length > 2) {
@@ -311,12 +226,16 @@ exports.getRides = async function (req, res) {
       let all_data = await db.RunQuery(
         dbConstants.DBS.LIVE_DB,
         queries.select,
-        values,
+        [cityId, Array.isArray(rideStatus[status])
+          ? rideStatus[status].join(',')
+          : rideStatus[status], operatorId, operatorId],
       );
       let user_count = await db.RunQuery(
         dbConstants.DBS.LIVE_DB,
         queries.recordsTotal,
-        values,
+        [cityId, Array.isArray(rideStatus[status])
+          ? rideStatus[status].join(',')
+          : rideStatus[status], operatorId, operatorId],
       );
 
       for (let i = 0; i < all_data.length; i++) {
@@ -356,129 +275,22 @@ exports.getRides = async function (req, res) {
       };
       return responseHandler.success(req, res, '', response);
     } else {
-      var valueToBePicked = ` 
-      e.pickup_location_address,
-      e.pickup_latitude,
-      e.pickup_longitude,
-      e.drop_location_address,
-      e.pickup_time,
-      e.drop_time,
-      0 AS is_vip,
-      e.request_made_on,
-      e.accept_time,
-      e.engagement_id,
-      e.addn_info,
-      e.status,
-      u.user_name,
-      u.phone_no,
-      u.user_id,
-      d.name as driver_name,
-      d.driver_id,
-      s.service_type,
-      s.op_drop_longitude AS drop_longitude,
-      s.op_drop_latitude AS drop_latitude,
-      e.vehicle_type,
-      e.city,
-      e.ride_time,
-e.distance_travelled,
-d.current_latitude,
-d.current_longitude,
-      s.cancellation_reasons`;
-
-      var valueToBePickedFrom = `
-  ${dbConstants.DBS.LIVE_DB}.tb_engagements e
-  
-  JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u ON e.user_id = u.user_id
-  
-  JOIN ${dbConstants.DBS.LIVE_DB}.tb_drivers d ON e.driver_id = d.driver_id
-
-  JOIN ${dbConstants.DBS.LIVE_DB}.tb_session s ON e.session_id = s.session_id
-  `;
-
-      if (
-        status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_REQUESTS ||
-        status == rideConstants.DASHBOARD_RIDE_STATUS.CANCELLED_RIDES
-      ) {
-        valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM ${dbConstants.DBS.LIVE_DB}.tb_nts_booking_info GROUP BY engagement_id) nts ON e.session_id = nts.session_id `;
-      } else {
-        valueToBePickedFrom += ` LEFT JOIN (SELECT * FROM ${dbConstants.DBS.LIVE_DB}.tb_nts_booking_info WHERE is_vehicle_assigned = 1 ) nts ON e.session_id = nts.session_id `;
-      }
-
-      valueToBePickedFrom += `  NEW_CONDITION e.city = ? AND 
-      e.status IN (?) AND 
-      d.operator_id = ? AND 
-      u.operator_id = ? AND
-      s.service_type = ? AND
-      e.request_made_on >= NOW() - INTERVAL 24 HOUR`;
-
-      //       if (corporateId) {
-
-      //         valueToBePickedFrom += `
-      // JOIN ${dbConstants.DBS.LIVE_DB}.tb_business_users bu ON bu.business_id = s.is_manual
-      // `;
-
-      //         valueToBePicked += ', bu.external_id AS corporate_id ';
-
-      //       }
-
-      // if (driverId) {
-
-      //   valueToBePicked += ', d.driver_id, (e.actual_fare - e.venus_commission) AS driver_earnings,s.preferred_payment_mode ';
-      // }
-
-      if (fleetId) {
-        valueToBePicked +=
-          ', d.driver_id, d.external_id AS fleet_id, (e.actual_fare - e.venus_commission) AS driver_earnings, s.preferred_payment_mode  ';
-      }
-      let tableDefinition = {
-        sSelectSql: valueToBePicked,
-        sFromSql: valueToBePickedFrom,
-        sCountColumnName: `e.engagement_id`,
-        aoColumnDefs: [
-          { mData: 'e.engagement_id', bSearchable: true },
-          { mData: 'd.name', bSearchable: true },
-          { mData: 'u.user_name', bSearchable: true },
-          { mData: 'e.pickup_location_address', bSearchable: true },
-          { mData: 'e.drop_location_address', bSearchable: true },
-        ],
-      };
-
-      let queryBuilder = new QueryBuilder(tableDefinition);
-      let requestQuery = req.query;
-      let queries = queryBuilder.buildQuery({
-        ...requestQuery,
-        order: [{ column: 0, dir: orderDirection }],
-        columns: [{ name: 'e.engagement_id', orderable: 'true' }],
-        start: offset,
-        length: limit,
-      });
-
-      if (queries.length > 2) {
-        queries = queries.splice(1);
-      }
-
-      queries.select = queries.select.replace('WHERE', ' AND ');
-      queries.recordsTotal = queries.recordsTotal.replace('WHERE', ' AND ');
-      queries.select = queries.select.replace(/NEW_CONDITION/g, ' WHERE ');
-      queries.recordsTotal = queries.recordsTotal.replace(
-        /NEW_CONDITION/g,
-        ' WHERE ',
-      );
 
       let all_data = await db.RunQuery(
         dbConstants.DBS.LIVE_DB,
-        queries.select,
+        ridesQuery,
         values,
       );
+      ongoingQueryValues.splice(-2);
       let user_count = await db.RunQuery(
         dbConstants.DBS.LIVE_DB,
-        queries.recordsTotal,
-        values,
+        ongoingRideQuery,
+        ongoingQueryValues,
       );
       replaceDriverName(all_data);
       return responseHandler.success(req, res, '', {
         result: all_data,
-        iTotalRecords: user_count[0]['COUNT(*)'],
+        iTotalRecords: user_count.length
       });
     }
   } catch (error) {
@@ -610,102 +422,11 @@ exports.getScheduledRideDetails = async function (req, res) {
 
     let cancelWindowTime = paramsWrapper.schedule_cancel_window || 0;
 
-    var valueToBePicked = ` 
-    sc.pickup_id, 
-				sc.latitude, 
-				sc.longitude, 
-				sc.op_drop_latitude,
-				sc.op_drop_longitude, 
-				sc.preferred_payment_mode, 
-				sc.pickup_location_address, 
-				sc.drop_location_address,
-				sc.pickup_time, 
-				sc.status, 
-				sc.region_id, 
-				sc.customer_note, 
-				sc.driver_to_engage,
-				sc.user_id,
-				CASE WHEN (sc.pickup_time > NOW() + INTERVAL ? MINUTE AND sc.status = 0) THEN 1
-				ELSE 0 END AS modifiable, 
-				u.user_name, 
-				u.phone_no,
-				cr.vehicle_type,
-				cr.city_id,
-				0 AS is_vip`;
-
-    var valueToBePickedFrom = `
-			  ${dbConstants.DBS.LIVE_DB}.tb_schedules sc 
-			JOIN 
-				${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u ON u.user_id = sc.user_id
-			JOIN 
-				${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SUB_REGIONS} cr ON cr.region_id = sc.region_id
-`;
-
-    valueToBePickedFrom += `  NEW_CONDITION sc.region_id in (?) AND 
-				sc.pickup_time > NOW() - INTERVAL 4 HOUR`;
-
-    if (sSearch) {
-      valueToBePickedFrom += ` AND sc.user_id LIKE '%${sSearch}%'`;
-    }
-    if (status) {
-      valueToBePickedFrom += ` AND sc.status = ${status}`;
-    }
-    regionId = regionId.join(',');
-
-    let values = [cancelWindowTime, regionId];
-
-    let tableDefinition = {
-      sSelectSql: valueToBePicked,
-      sFromSql: valueToBePickedFrom,
-      sCountColumnName: `e.engagement_id`,
-      aoColumnDefs: [
-        { mData: 'e.engagement_id', bSearchable: true },
-        { mData: 'd.name', bSearchable: true },
-        { mData: 'u.user_name', bSearchable: true },
-        { mData: 'e.pickup_location_address', bSearchable: true },
-        { mData: 'e.drop_location_address', bSearchable: true },
-      ],
-    };
-
-    let queryBuilder = new QueryBuilder(tableDefinition);
-    let requestQuery = req.query;
-    let queries = queryBuilder.buildQuery({
-      ...requestQuery,
-      order: [{ column: 0, dir: orderDirection }],
-      columns: [{ name: 'sc.pickup_time', orderable: 'true' }],
-      start: offset,
-      length: limit,
-    });
-
-    if (queries.length > 2) {
-      queries = queries.splice(1);
-    }
-
-    queries.select = queries.select.replace('WHERE', ' AND ');
-    queries.recordsTotal = queries.recordsTotal.replace('WHERE', ' AND ');
-    queries.select = queries.select.replace(/NEW_CONDITION/g, ' WHERE ');
-    queries.recordsTotal = queries.recordsTotal.replace(
-      /NEW_CONDITION/g,
-      ' WHERE ',
-    );
-
-    let all_data = await db.RunQuery(
-      dbConstants.DBS.LIVE_DB,
-      queries.select,
-      values,
-    );
-    let user_count = await db.RunQuery(
-      dbConstants.DBS.LIVE_DB,
-      queries.recordsTotal,
-      [regionId],
-    );
-    console.log('all_data', all_data);
-
-    console.log('user_count', user_count);
+		let resultt = await Helper.getScheduledRideDetailsHelper(regionId, cancelWindowTime, vehicleType,orderDirection,limit,offset,sSearch,status)
 
     return responseHandler.success(req, res, '', {
-      result: all_data,
-      iTotalRecords: user_count[0]['COUNT(*)'],
+      result: resultt.scheduleRides,
+      iTotalRecords: resultt.scheduleRidesCount.length,
     });
   } catch (error) {
     errorHandler.errorHandler(error, req, res);

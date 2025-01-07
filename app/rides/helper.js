@@ -1097,3 +1097,76 @@ exports.getTaskDetailsQueryHelper = function (
 
   return queryRides;
 };
+
+exports.getScheduledRideDetailsHelper = async function (regionId, cancelWindowTime, vehicleType,orderDirection,limit,offset,sSearch,status
+) {
+  try {
+
+    let countQuery
+    let countQueryValues
+
+    let getSchedules = `
+    SELECT 
+      sc.pickup_id, 
+      sc.latitude, 
+      sc.longitude, 
+      sc.op_drop_latitude,
+      sc.op_drop_longitude, 
+      sc.preferred_payment_mode, 
+      sc.pickup_location_address, 
+      sc.drop_location_address,
+      sc.pickup_time, 
+      sc.status, 
+      sc.region_id, 
+      sc.customer_note, 
+      sc.driver_to_engage,
+      sc.user_id,
+      CASE WHEN (sc.pickup_time > NOW() + INTERVAL ? MINUTE AND sc.status = 0) THEN 1
+      ELSE 0 END AS modifiable, 
+      u.user_name, 
+      u.phone_no,
+      cr.vehicle_type,
+      cr.city_id,
+      0 AS is_vip
+    FROM 
+      ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SCHEDULE_RIDE} sc 
+    JOIN 
+     ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u ON u.user_id = sc.user_id
+    JOIN 
+      ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} cr ON cr.region_id = sc.region_id
+    WHERE 
+      sc.region_id in (?) AND 
+      sc.pickup_time > NOW() - INTERVAL 4 HOUR`
+
+  countQuery = getSchedules
+  countQueryValues = [cancelWindowTime, regionId]
+
+
+
+  if (sSearch) {
+    getSchedules += ` AND u.user_name LIKE '%${sSearch}%'`;
+  }
+  if(status){
+    getSchedules += ` AND sc.status = ${status}`
+  }
+
+         getSchedules += `
+              ORDER BY sc.pickup_time ${orderDirection}
+              LIMIT ? OFFSET ?
+              `;
+
+  let values = [cancelWindowTime, regionId,limit,offset];
+
+  let scheduleRideDetails = await db.RunQuery(dbConstants.DBS.LIVE_DB, getSchedules, values)
+
+  let scheduleRideDetailsCount = await db.RunQuery(dbConstants.DBS.LIVE_DB, countQuery, countQueryValues)
+
+  return {
+    scheduleRides: scheduleRideDetails,
+    scheduleRidesCount: scheduleRideDetailsCount
+  } 
+
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
