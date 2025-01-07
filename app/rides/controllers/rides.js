@@ -422,6 +422,8 @@ exports.getScheduledRideDetails = async function (req, res) {
 
     let cancelWindowTime = paramsWrapper.schedule_cancel_window || 0;
 
+    regionId = regionId.join(',');
+
 		let resultt = await Helper.getScheduledRideDetailsHelper(regionId, cancelWindowTime, vehicleType,orderDirection,limit,offset,sSearch,status)
 
     return responseHandler.success(req, res, '', {
