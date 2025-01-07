@@ -467,7 +467,7 @@ async function insertRequiredDocument(requiredFields) {
   var insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REQ_DOC} SET ${setClause}`;
 
   var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, insertQuery, values);
-  return result;
+  return result.insertId;
 }
 
 async function insertCityDocument(cityDocFields) {
@@ -490,7 +490,7 @@ async function insertCityDocument(cityDocFields) {
 
   var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, insertQuery, values);
 
-  return result;
+  return result.insertId;
 }
 
 async function insertCitySubRegion(body) {
@@ -527,7 +527,46 @@ async function insertCitySubRegion(body) {
 
   var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, insertQuery, values);
 
-  return result;
+  return result.insertId;
+}
+
+async function insertDefaultFares(body, type) {
+
+  var tableRow = {
+    city: parseInt(body.city_id),
+    operator_id: body.operatorId,
+    fare_fixed: 10,
+    vehicle_type: parseInt(body.vehicle_type),
+    fare_per_km: 5,
+    ride_type: parseInt(body.ride_type),
+    fare_threshold_distance: 1,
+    fare_per_min: 1,
+    fare_per_km_threshold_distance: 0,
+    fare_per_km_after_threshold: 5,
+    fare_per_km_before_threshold: 0,
+    fare_threshold_time: 0,
+    fare_threshold_waiting_time: 0,
+    per_ride_driver_subsidy: 0,
+    accept_subsidy_per_km: 0,
+    type: type,
+    business_id: 1,
+    region_id: body.region_id || 0,
+    start_time: '00:00:00',
+    end_time: '24:00:00'
+  };
+
+  // Extract keys and values from insertObj
+  const keys = Object.keys(tableRow);
+  const values = Object.values(tableRow);
+
+  // Build the SET part dynamically
+  const setClause = keys.map((key) => `\`${key}\` = ?`).join(', ');
+
+  var insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_FARE} SET ${setClause}`;
+
+  var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, insertQuery, values);
+
+  return result
 }
 
 module.exports = {
@@ -540,4 +579,5 @@ module.exports = {
   formatOperatorCityFields,
   readImageFile,
   uploadFileToS3,
+  insertDefaultFares
 };

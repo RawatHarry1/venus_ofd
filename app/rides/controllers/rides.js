@@ -21,7 +21,6 @@ exports.getRides = async function (req, res) {
       status,
       vehicle_type: vehicleType,
       fleet_id: fleetId,
-      request_ride_type: requestRideType,
       sSortDir_0: orderDirection = 'DESC',
       iDisplayLength: limit = 50,
       iDisplayStart: offset = 0,
@@ -37,6 +36,8 @@ exports.getRides = async function (req, res) {
       city_id: Joi.number().required(),
       status: Joi.number().min(1).max(50).required(),
     }).unknown(true);
+
+    var requestRideType = req.request_ride_type
 
     if (status !== rideConstant.DASHBOARD_RIDE_STATUS.COMPLETED) {
       const validation = schema.validate(req.query);
@@ -72,6 +73,7 @@ exports.getRides = async function (req, res) {
         : rideStatus[status],
       operatorId,
       operatorId,
+      requestRideType,
     ];
 
     if (status == rideConstant.DASHBOARD_RIDE_STATUS.ONGOING) {
@@ -406,6 +408,7 @@ d.current_longitude,
       e.status IN (?) AND 
       d.operator_id = ? AND 
       u.operator_id = ? AND
+      s.service_type = ? AND
       e.request_made_on >= NOW() - INTERVAL 24 HOUR`;
 
       //       if (corporateId) {
