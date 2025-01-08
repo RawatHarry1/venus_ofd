@@ -1102,81 +1102,96 @@ exports.getScheduledRideDetailsHelper = async function (
   regionId,
   cancelWindowTime,
   vehicleType,
-  orderDirection,
-  limit,
-  offset,
-  sSearch,
-  status,
+  orderDirection = 'ASC',
+  limit = 50,
+  offset = 0,
+  sSearch = '',
+  status = null
 ) {
   try {
-    let countQuery;
-    let countQueryValues;
+    let queryConditions = [];
+    let values = [cancelWindowTime];
+    let countValues = [cancelWindowTime];
 
-    let getSchedules = `
-    SELECT 
-      sc.pickup_id, 
-      sc.latitude, 
-      sc.longitude, 
-      sc.op_drop_latitude,
-      sc.op_drop_longitude, 
-      sc.preferred_payment_mode, 
-      sc.pickup_location_address, 
-      sc.drop_location_address,
-      sc.pickup_time, 
-      sc.status, 
-      sc.region_id, 
-      sc.customer_note, 
-      sc.driver_to_engage,
-      sc.user_id,
-      CASE WHEN (sc.pickup_time > NOW() + INTERVAL ? MINUTE AND sc.status = 0) THEN 1
-      ELSE 0 END AS modifiable, 
-      u.user_name, 
-      u.phone_no,
-      cr.vehicle_type,
-      cr.city_id,
-      0 AS is_vip
-    FROM 
-      ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SCHEDULE_RIDE} sc 
-    JOIN 
-     ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u ON u.user_id = sc.user_id
-    JOIN 
-      ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} cr ON cr.region_id = sc.region_id
-    WHERE 
-      sc.region_id in (?) AND 
-      sc.pickup_time > NOW() - INTERVAL 4 HOUR`;
+    let baseQuery = `
+      SELECT 
+        sc.pickup_id, 
+        sc.latitude, 
+        sc.longitude, 
+        sc.op_drop_latitude,
+        sc.op_drop_longitude, 
+        sc.preferred_payment_mode, 
+        sc.pickup_location_address, 
+        sc.drop_location_address,
+        sc.pickup_time, 
+        sc.status, 
+        sc.region_id, 
+        sc.customer_note, 
+        sc.driver_to_engage,
+        sc.user_id,
+        CASE WHEN (sc.pickup_time > NOW() + INTERVAL ? MINUTE AND sc.status = 0) THEN 1
+        ELSE 0 END AS modifiable, 
+        u.user_name, 
+        u.phone_no,
+        cr.vehicle_type,
+        cr.city_id,
+        0 AS is_vip
+      FROM 
+        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SCHEDULE_RIDE} sc 
+      JOIN 
+        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u 
+        ON u.user_id = sc.user_id
+      JOIN 
+        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} cr 
+        ON cr.region_id = sc.region_id
+    `;
 
-    countQuery = getSchedules;
-    countQueryValues = [cancelWindowTime, regionId];
+    queryConditions.push(`sc.region_id IN (${regionId})`);
+
+    queryConditions.push('sc.pickup_time > NOW() - INTERVAL 4 HOUR');
 
     if (sSearch) {
-      getSchedules += ` AND u.user_name LIKE '%${sSearch}%'`;
+      queryConditions.push('u.user_name LIKE ?');
+      values.push(`%${sSearch}%`);
+      countValues.push(`%${sSearch}%`);
     }
+
     if (status) {
-      getSchedules += ` AND sc.status = ${status}`;
+      queryConditions.push('sc.status = ?');
+      values.push(status);
+      countValues.push(status);
     }
 
-    getSchedules += `
-              ORDER BY sc.pickup_time ${orderDirection}
-              LIMIT ? OFFSET ?
-              `;
+    let whereClause = queryConditions.length ? `WHERE ${queryConditions.join(' AND ')}` : '';
+    let getSchedules = `
+      ${baseQuery}
+      ${whereClause}
+      ORDER BY sc.pickup_time ${orderDirection}
+      LIMIT ? OFFSET ?
+    `;
+     values.push(limit, offset);
 
-    let values = [cancelWindowTime, regionId, limit, offset];
+    let countQuery = `
+      SELECT COUNT(*) AS total
+      FROM 
+        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SCHEDULE_RIDE} sc 
+      JOIN 
+        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} u 
+        ON u.user_id = sc.user_id
+      JOIN 
+        ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} cr 
+        ON cr.region_id = sc.region_id
+      ${whereClause}
+    `;
 
-    let scheduleRideDetails = await db.RunQuery(
-      dbConstants.DBS.LIVE_DB,
-      getSchedules,
-      values,
-    );
-
-    let scheduleRideDetailsCount = await db.RunQuery(
-      dbConstants.DBS.LIVE_DB,
-      countQuery,
-      countQueryValues,
-    );
+    let [scheduleRideDetails, scheduleRideDetailsCount] = await Promise.all([
+      db.RunQuery(dbConstants.DBS.LIVE_DB, getSchedules, values),
+      db.RunQuery(dbConstants.DBS.LIVE_DB, countQuery, countValues),
+    ]);
 
     return {
       scheduleRides: scheduleRideDetails,
-      scheduleRidesCount: scheduleRideDetailsCount,
+      scheduleRidesCount: scheduleRideDetailsCount[0]?.total || 0,
     };
   } catch (error) {
     throw new Error(error.message);

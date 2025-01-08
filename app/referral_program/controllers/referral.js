@@ -20,10 +20,11 @@ exports.updatedOperatorCityReferral = async function (req, res) {
     } = req.body;
 
     const updateFields = {
-      ...(user_referral_bonus && { user_referral_bonus }),
-      ...(user_referral_bonus_type && { user_referral_bonus_type }),
-      ...(user_referee_bonus && { user_referee_bonus }),
-      ...(user_referee_bonus_type && { user_referee_bonus_type }),
+      ...(user_referral_bonus !== undefined && { user_referral_bonus }),
+      ...(user_referral_bonus_type !== undefined && { user_referral_bonus_type }),
+      ...(user_referee_bonus !== undefined && { user_referee_bonus }),
+      ...(user_referee_bonus_type !== undefined && { user_referee_bonus_type }),
+      ...(city_id !== undefined && { city_id }),  // Include city_id even if it's 0
     };
 
     if (Object.keys(updateFields).length === 0) {
