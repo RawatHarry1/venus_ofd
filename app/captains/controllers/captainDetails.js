@@ -6,6 +6,7 @@ const {
   ResponseConstants,
   rideConstants,
   generalConstants,
+  authConstants,
 } = require('../../../bootstart/header');
 
 const rideConstant = require('../../../constants/rideConstants');
@@ -827,6 +828,76 @@ exports.giveCreditsToUser = async function (req, res) {
     /* 
     PENDING
     */
+
+    delete req.body.token;
+
+    var schema = Joi.object({
+      user_id: Joi.number().integer().positive().required(),
+      type: Joi.number().integer().positive().min(1).max(2).required(),
+      reason: Joi.string().required(),
+      amount: Joi.number().positive().required(),
+      user_type: Joi.number().integer().min(0).max(1).required(),
+      engagement_id: Joi.number().integer().positive().optional()
+    });
+
+    var result = schema.validate(req.body);
+
+    var response = {};
+    if (result.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    let userId = req.body.user_id;
+    let operatorId = req.operator_id;
+    let transactionType = +req.body.type;
+    let refEngagementId = req.body.engagement_id;
+    let reason = req.body.reason;
+    let amount = req.body.amount;
+    let email = req.email_from_acl || '';
+    let userType = req.body.user_type;
+
+    if (userType == 0 && transactionType == authConstants.TRANSACTION_TYPE.DEBIT && checkBlank([refEngagementId])) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    let tableToValidateFrom = 'tb_drivers';
+    let fieldToValidate = 'driver_id';
+
+    if (userType == 0) {
+      tableToValidateFrom = 'tb_users';
+      fieldToValidate = 'user_id';
+    }
+
+    if (refEngagementId) {
+
+      let engagementQuery = `SELECT (1) FROM ${dbConstants.DBS.LIVE_DB}.tb_engagements  WHERE ${fieldToValidate} = ? AND engagement_id = ? `;
+
+      let isEngagementValid =  await db.RunQuery(dbConstants.DBS.LIVE_DB,engagementQuery,[userId, refEngagementId]);
+
+      if (!isEngagementValid || !isEngagementValid.length) {
+        throw new Error("Engagement not valid.");
+      }
+    }
+
+    let userQuery = `SELECT  ${fieldToValidate} FROM ${tableToValidateFrom}  WHERE ${fieldToValidate} = ? AND operator_id = ? `;
+
+    let isUserValid =  await db.RunQuery(dbConstants.DBS.LIVE_DB,userQuery,[userId, operatorId]);
+    if (!isUserValid || !isUserValid.length) {
+      throw new Error("User not valid.");
+    }
+
+    await Helper.creditDebitHelper(userId, userType, operatorId, transactionType, reason, refEngagementId, amount, email);
+
+    // //Send notification whenever there is credit/debit
+    // if (userType) {
+    //   const NotiUrl = config.get('servers.autos') + '/send_wallet_notification';
+    //   const body = {
+    //     user_id: userId,
+    //     client_id: constants.clientId.AUTOS_CLIENT_ID
+    //   }
+    //   yield sendRequestPromisified(handlerInfo, NotiUrl, body);
+    // }
+
     return responseHandler.success(req, res, '', {});
   } catch (error) {
     errorHandler.errorHandler(error, req, res);

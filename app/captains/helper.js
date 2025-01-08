@@ -6,6 +6,7 @@ const {
   ResponseConstants,
   rideConstants,
   generalConstants,
+  authConstants,
 } = require('../.././bootstart/header');
 const { getOperatorParameters } = require('../admin/helper');
 const {
@@ -257,3 +258,71 @@ exports.postRequsestFormData = async function (requestBody, endpoint) {
     throw new Error(error.response?.data?.message || error.message);
   }
 };
+
+exports.creditDebitHelper = async function (userId, userType, operatorId, transactionType, reason, refEngagementId, amount, source) {
+  try {
+    let insertObj = {
+      user_id: userId,
+      type: transactionType,
+      operator_id: operatorId,
+      reason: reason,
+      created_by: source,
+      amount: amount,
+      ref_engagement_id:  '123',
+      user_type: userType
+    };
+
+      // Extract keys and values from insertObj
+  const keys = Object.keys(insertObj);
+  const vaalues = Object.values(insertObj);
+
+  // Build the SET part dynamically
+  const setClause = keys.map((key) => `\`${key}\` = ?`).join(', ');
+
+  var driverRechargeQuery = `INSERT INTO ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.CREDIT_LOGS} SET ${setClause}`;
+    let clientId = authConstants.CLIENTS_ID.AUTOS_CLIENT_ID
+
+    let insertResult = await db.RunQuery(dbConstants.DBS.LIVE_LOGS, driverRechargeQuery, vaalues);
+
+    var getUserId =
+      `SELECT user_id, money_in_wallet_f as money_in_wallet, real_money_ratio, city_reg FROM ${dbConstants.DBS.AUTH_DB}.tb_users WHERE venus_autos_user_id = ?`;
+
+
+    let authUser = await db.RunQuery(dbConstants.DBS.AUTH_DB, getUserId, [userId]);
+    if (!authUser) {
+      throw new Error("no user found");
+
+    }
+    authUser = authUser[0]
+    var newRatio = -2000000;
+
+    let insertId = insertResult.insertId;
+    switch (transactionType) {
+      case authConstants.TRANSACTION_TYPE.CREDIT:
+        var addCreditTransaction =
+          `INSERT INTO  ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.TNX}(user_id, client_id, txn_type, reference_id, amount, real_money_ratio, city_reg, event, expiry_date, creditedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        var values = [authUser.user_id, clientId, transactionType, insertId, amount, newRatio, authUser.city_reg, 'abc', '2030-12-31', "admin"];
+
+        console.log(values);
+        
+
+        await db.RunQuery(dbConstants.DBS.AUTH_DB, addCreditTransaction, values);
+
+        var updateBalance = `UPDATE ${dbConstants.DBS.AUTH_DB}.tb_users SET money_in_wallet_f = money_in_wallet_f = ? WHERE user_id = ? `;
+
+        await db.RunQuery(dbConstants.DBS.AUTH_DB, updateBalance, [amount, userId]);
+
+        break;
+      case authConstants.TRANSACTION_TYPE.DEBIT:
+
+        break;
+    }
+
+    let failedStatusUpdate = `UPDATE ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.CREDIT_LOGS} SET STATUS = 1 WHERE id = ? `;
+    await db.RunQuery(dbConstants.DBS.LIVE_LOGS, failedStatusUpdate, [insertId]);
+    return
+  } catch (error) {
+    throw new Error(error.message);
+
+  }
+}
