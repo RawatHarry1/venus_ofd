@@ -430,7 +430,7 @@ exports.getScheduledRideDetails = async function (req, res) {
 
     let cancelWindowTime = paramsWrapper.schedule_cancel_window || 0;
 
-    regionId = regionId.join(',');
+    // regionId = regionId.join(',');
 
     let resultt = await Helper.getScheduledRideDetailsHelper(
       regionId,
@@ -445,7 +445,7 @@ exports.getScheduledRideDetails = async function (req, res) {
 
     return responseHandler.success(req, res, '', {
       result: resultt.scheduleRides,
-      iTotalRecords: resultt.scheduleRidesCount.length,
+      iTotalRecords: resultt.scheduleRidesCount,
     });
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
