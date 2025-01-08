@@ -39,6 +39,20 @@ module.exports = function (app) {
     PromotionsController.createAuthPromo,
   );
 
+  app.post(
+    '/deactivate_promo',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    PromotionsController.deactivateAuthPromo,
+  );
+
+  app.post(
+    '/edit_auth_promotion',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    PromotionsController.editAuthPromotion,
+  );
+
   // edit APi pending
 
   /* 

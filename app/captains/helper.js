@@ -12,6 +12,9 @@ const {
   fetchFromRideServer,
   pushFromRideServer,
 } = require('../push_notification/helper');
+const FormData = require('form-data');
+var fs = require('fs');
+var axios = require('axios');
 
 exports.getLimitedDriverDetailsQueryHelper = function (
   deliveryEnabled,
@@ -217,5 +220,40 @@ exports.updateDocumentStatusBackChannelHelper_v2 = async function (
     return responseWrapper;
   } catch (error) {
     throw new Error(error.message);
+  }
+};
+
+exports.postRequsestFormData = async function (requestBody, endpoint) {
+  try {
+    let resultWrapper = {};
+    const url = rideConstants.SERVERS.AUTOS_SERVER + endpoint;
+
+    const formData = new FormData();
+    Object.entries(requestBody).forEach(([key, value]) => {
+      if (value instanceof Object && typeof value.pipe === 'function') {
+        formData.append(key, value, { filename: key });
+      } else {
+        formData.append(key, value);
+      }
+    });
+
+    const headers = {
+      ...formData.getHeaders(),
+      operatortoken: requestBody.operator_token,
+      accesstoken: requestBody.access_token,
+      domain_token: requestBody.domain_token,
+    };
+
+    const response = await axios.post(url, formData, { headers });
+
+    if (response.data && response.data.data) {
+      resultWrapper = response.data.data;
+    } else {
+      resultWrapper = response.data;
+    }
+    return resultWrapper;
+  } catch (error) {
+    console.error('Error pushing to ride server:', error.message);
+    throw new Error(error.response?.data?.message || error.message);
   }
 };

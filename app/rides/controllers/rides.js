@@ -73,38 +73,37 @@ exports.getRides = async function (req, res) {
         ? rideStatus[status].join(',')
         : rideStatus[status],
       operatorId,
-      operatorId
+      operatorId,
     ];
 
     if (fleetId) {
-			ridesQuery += ` AND d.fleet_id IN (?) `
-			values.push(fleetId)
-		}
+      ridesQuery += ` AND d.fleet_id IN (?) `;
+      values.push(fleetId);
+    }
 
-    if(requestRideType){
-			ridesQuery += ` AND s.service_type IN (?) `
-			values.push(requestRideType)
-		}
+    if (requestRideType) {
+      ridesQuery += ` AND s.service_type IN (?) `;
+      values.push(requestRideType);
+    }
 
-    if(vehicleType){
-			ridesQuery += ` AND e.vehicle_type IN (?) `
-			values.push(vehicleType)
-		}
+    if (vehicleType) {
+      ridesQuery += ` AND e.vehicle_type IN (?) `;
+      values.push(vehicleType);
+    }
 
-		if (sSearch) {
-			ridesQuery += ` AND e.engagement_id LIKE '%${sSearch}%'`;
-	  }
+    if (sSearch) {
+      ridesQuery += ` AND e.engagement_id LIKE '%${sSearch}%'`;
+    }
 
-    const ongoingRideQuery = ridesQuery
-    let ongoingQueryValues = values
+    const ongoingRideQuery = ridesQuery;
+    let ongoingQueryValues = values;
 
     ridesQuery += `
     ORDER BY 
     e.engagement_id ${orderDirection}
     LIMIT ? OFFSET ?
     `;
-    values.push(limit,offset)
-
+    values.push(limit, offset);
 
     if (status == rideConstant.DASHBOARD_RIDE_STATUS.MISSED) {
       ridesQuery = `SELECT
@@ -226,16 +225,26 @@ exports.getRides = async function (req, res) {
       let all_data = await db.RunQuery(
         dbConstants.DBS.LIVE_DB,
         queries.select,
-        [cityId, Array.isArray(rideStatus[status])
-          ? rideStatus[status].join(',')
-          : rideStatus[status], operatorId, operatorId],
+        [
+          cityId,
+          Array.isArray(rideStatus[status])
+            ? rideStatus[status].join(',')
+            : rideStatus[status],
+          operatorId,
+          operatorId,
+        ],
       );
       let user_count = await db.RunQuery(
         dbConstants.DBS.LIVE_DB,
         queries.recordsTotal,
-        [cityId, Array.isArray(rideStatus[status])
-          ? rideStatus[status].join(',')
-          : rideStatus[status], operatorId, operatorId],
+        [
+          cityId,
+          Array.isArray(rideStatus[status])
+            ? rideStatus[status].join(',')
+            : rideStatus[status],
+          operatorId,
+          operatorId,
+        ],
       );
 
       for (let i = 0; i < all_data.length; i++) {
@@ -275,7 +284,6 @@ exports.getRides = async function (req, res) {
       };
       return responseHandler.success(req, res, '', response);
     } else {
-
       let all_data = await db.RunQuery(
         dbConstants.DBS.LIVE_DB,
         ridesQuery,
@@ -290,7 +298,7 @@ exports.getRides = async function (req, res) {
       replaceDriverName(all_data);
       return responseHandler.success(req, res, '', {
         result: all_data,
-        iTotalRecords: user_count.length
+        iTotalRecords: user_count.length,
       });
     }
   } catch (error) {
@@ -424,7 +432,16 @@ exports.getScheduledRideDetails = async function (req, res) {
 
     regionId = regionId.join(',');
 
-		let resultt = await Helper.getScheduledRideDetailsHelper(regionId, cancelWindowTime, vehicleType,orderDirection,limit,offset,sSearch,status)
+    let resultt = await Helper.getScheduledRideDetailsHelper(
+      regionId,
+      cancelWindowTime,
+      vehicleType,
+      orderDirection,
+      limit,
+      offset,
+      sSearch,
+      status,
+    );
 
     return responseHandler.success(req, res, '', {
       result: resultt.scheduleRides,

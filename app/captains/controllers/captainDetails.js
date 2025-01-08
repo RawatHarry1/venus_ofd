@@ -5,6 +5,7 @@ const {
   responseHandler,
   ResponseConstants,
   rideConstants,
+  generalConstants,
 } = require('../../../bootstart/header');
 
 const rideConstant = require('../../../constants/rideConstants');
@@ -15,6 +16,7 @@ var Joi = require('joi');
 var QueryBuilder = require('datatable');
 const { checkBlank } = require('../../rides/helper');
 const { getOperatorParameters } = require('../../admin/helper');
+var fs = require('fs');
 
 exports.getCaptains = async function (req, res) {
   try {
@@ -668,8 +670,23 @@ FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} WHERE driver_id 
 
 exports.uploadDocument_v2 = async function (req, res) {
   try {
-    
-    return responseHandler.success(req, res, 'Data fetched successfully.', '');
+    req.body.docTypeNum = req.body.doc_type_num;
+    req.body.imgPosition = req.body.img_position;
+
+    if (req.file && req.file.path) {
+      req.body.image = fs.createReadStream(req.file.path);
+    }
+    req.body.password = generalConstants.PASSWORDS.SUPER_ADMIN_PASSWORD;
+    let response = await Helper.postRequsestFormData(
+      req.body,
+      '/uploadDocument',
+    );
+    return responseHandler.success(
+      req,
+      res,
+      'uploaded successfully.',
+      response,
+    );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

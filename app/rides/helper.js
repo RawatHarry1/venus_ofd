@@ -1098,12 +1098,19 @@ exports.getTaskDetailsQueryHelper = function (
   return queryRides;
 };
 
-exports.getScheduledRideDetailsHelper = async function (regionId, cancelWindowTime, vehicleType,orderDirection,limit,offset,sSearch,status
+exports.getScheduledRideDetailsHelper = async function (
+  regionId,
+  cancelWindowTime,
+  vehicleType,
+  orderDirection,
+  limit,
+  offset,
+  sSearch,
+  status,
 ) {
   try {
-
-    let countQuery
-    let countQueryValues
+    let countQuery;
+    let countQueryValues;
 
     let getSchedules = `
     SELECT 
@@ -1136,36 +1143,41 @@ exports.getScheduledRideDetailsHelper = async function (regionId, cancelWindowTi
       ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} cr ON cr.region_id = sc.region_id
     WHERE 
       sc.region_id in (?) AND 
-      sc.pickup_time > NOW() - INTERVAL 4 HOUR`
+      sc.pickup_time > NOW() - INTERVAL 4 HOUR`;
 
-  countQuery = getSchedules
-  countQueryValues = [cancelWindowTime, regionId]
+    countQuery = getSchedules;
+    countQueryValues = [cancelWindowTime, regionId];
 
+    if (sSearch) {
+      getSchedules += ` AND u.user_name LIKE '%${sSearch}%'`;
+    }
+    if (status) {
+      getSchedules += ` AND sc.status = ${status}`;
+    }
 
-
-  if (sSearch) {
-    getSchedules += ` AND u.user_name LIKE '%${sSearch}%'`;
-  }
-  if(status){
-    getSchedules += ` AND sc.status = ${status}`
-  }
-
-         getSchedules += `
+    getSchedules += `
               ORDER BY sc.pickup_time ${orderDirection}
               LIMIT ? OFFSET ?
               `;
 
-  let values = [cancelWindowTime, regionId,limit,offset];
+    let values = [cancelWindowTime, regionId, limit, offset];
 
-  let scheduleRideDetails = await db.RunQuery(dbConstants.DBS.LIVE_DB, getSchedules, values)
+    let scheduleRideDetails = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      getSchedules,
+      values,
+    );
 
-  let scheduleRideDetailsCount = await db.RunQuery(dbConstants.DBS.LIVE_DB, countQuery, countQueryValues)
+    let scheduleRideDetailsCount = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      countQuery,
+      countQueryValues,
+    );
 
-  return {
-    scheduleRides: scheduleRideDetails,
-    scheduleRidesCount: scheduleRideDetailsCount
-  } 
-
+    return {
+      scheduleRides: scheduleRideDetails,
+      scheduleRidesCount: scheduleRideDetailsCount,
+    };
   } catch (error) {
     throw new Error(error.message);
   }
