@@ -294,7 +294,7 @@ exports.creditDebitHelper = async function (userId, userType, operatorId, transa
 
     }
     authUser = authUser[0]
-    var newRatio = -2000000;
+    var newRatio = 1;
 
     let insertId = insertResult.insertId;
     switch (transactionType) {
@@ -302,18 +302,30 @@ exports.creditDebitHelper = async function (userId, userType, operatorId, transa
         var addCreditTransaction =
           `INSERT INTO  ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.TNX}(user_id, client_id, txn_type, reference_id, amount, real_money_ratio, city_reg, event, expiry_date, creditedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         var values = [authUser.user_id, clientId, transactionType, insertId, amount, newRatio, authUser.city_reg, 'abc', '2030-12-31', "admin"];
-
-        console.log(values);
         
 
         await db.RunQuery(dbConstants.DBS.AUTH_DB, addCreditTransaction, values);
 
-        var updateBalance = `UPDATE ${dbConstants.DBS.AUTH_DB}.tb_users SET money_in_wallet_f = money_in_wallet_f = ? WHERE user_id = ? `;
+        var updateBalance = `UPDATE ${dbConstants.DBS.AUTH_DB}.tb_users SET money_in_wallet_f = money_in_wallet_f + ? WHERE user_id = ? `;
 
-        await db.RunQuery(dbConstants.DBS.AUTH_DB, updateBalance, [amount, userId]);
+        await db.RunQuery(dbConstants.DBS.AUTH_DB, updateBalance, [amount, authUser.user_id]);
 
         break;
       case authConstants.TRANSACTION_TYPE.DEBIT:
+
+        var addCreditTransaction =
+          `INSERT INTO  ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.TNX}(user_id, client_id, txn_type, reference_id, amount, real_money_ratio, city_reg, event, expiry_date, creditedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+
+        var values = [authUser.user_id, clientId, transactionType, insertId, amount, newRatio, authUser.city_reg, 'abc', '2030-12-31', "admin"];
+
+        await db.RunQuery(dbConstants.DBS.AUTH_DB, addCreditTransaction, values);
+
+
+        var updateBalance = `UPDATE ${dbConstants.DBS.AUTH_DB}.tb_users SET money_in_wallet_f = money_in_wallet_f - ? WHERE user_id = ? `;
+
+        await db.RunQuery(dbConstants.DBS.AUTH_DB, updateBalance, [amount, authUser.user_id]);
+
 
         break;
     }
