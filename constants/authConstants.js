@@ -61,3 +61,8 @@ exports.driverWalletCardsInOneGo = {
   MAX: 50,
   MIN: 1,
 };
+
+exports.TRANSACTION_TYPE = {
+  CREDIT : 1,
+  DEBIT : 2
+};

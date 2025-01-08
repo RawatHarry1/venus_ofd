@@ -2039,6 +2039,7 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
               tb_engagements.money_transacted, 
               tb_engagements.net_customer_tax, 
               tb_engagements.discount, 
+              tb_engagements.venus_commission,
               actual_fare, 
               tb_engagements.engagement_date, 
               (tb_engagements.calculated_driver_fare - tb_engagements.venus_commission) AS driver_payout, 
@@ -2109,7 +2110,7 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
         'Distance Travelled': driverInfo[i].distance_travelled,
         'Google Distance': driverInfo[i].ride_distance_from_google,
         Duration: driverInfo[i].ride_time,
-        Fare: driverInfo[i].actual_fare,
+        Fare: driverInfo[i].money_transacted,
         'Customer Fare Factor': driverInfo[i].customer_fare_factor,
         'Driver Fare Factor': driverInfo[i].driver_fare_factor,
         'Ride Source': driverInfo[i].ride_source,
@@ -2129,6 +2130,7 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
         'Tax by driver': driverInfo[i].net_customer_tax,
         Discount: driverInfo[i].discount,
         'Money Transacted': driverInfo[i].money_transacted,
+        'Driver Earning': driverInfo[i].money_transacted - driverInfo[i].venus_commission -driverInfo[i].net_customer_tax
       });
       var rideDate = new Date(driverInfo[i].engagement_date);
       var curDate = new Date();
