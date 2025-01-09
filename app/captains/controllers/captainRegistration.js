@@ -321,6 +321,8 @@ async function fetchTotalDriversCount(
   return db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
 }
 
+
+// TODO:
 async function fetchMandatoryDocsCount(vehicleType, operatorId, cityId) {
   var query = `SELECT COUNT(*) as count FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REQ_DOC} rd 
                 JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_DOC} cd 

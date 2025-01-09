@@ -441,7 +441,7 @@ exports.getDriverInfo = async function (req, res) {
     await globalHelper.getTodaysFirstLogin(driverId, firstLogin);
     // await globalHelper.getFaultyRidesForDriver(driverId, responseData);
 
-    // await globalHelper.getWalletBalance(driverId, responseData);
+    await globalHelper.getWalletBalance(driverId, responseData);
     // await globalHelper.getDriverNotes(driverId, responseData);
     await globalHelper.getDriverCityInfo(driverId, responseData);
 

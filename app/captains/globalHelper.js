@@ -31,6 +31,7 @@ exports.getDriverPerformance = getDriverPerformance;
 exports.getOngoingRideForDriver = getOngoingRideForDriver;
 exports.getTodaysFirstLogin = getTodaysFirstLogin;
 exports.getDriverCityInfo = getDriverCityInfo;
+exports.getWalletBalance   = getWalletBalance
 
 var detailsUserCount = {};
 exports.driverInfoCount = {};
@@ -1795,8 +1796,8 @@ async function get_promotions(
     SELECT
       tb_ride_promotions.promo_id,
       title,
-      start_time,
-      end_time,
+      tb_ride_promotions.start_time,
+      tb_ride_promotions.end_time,
       discount_percentage,
       cashback_percentage,
       DATE_FORMAT(MAX(tb_engagements.current_time), '%m/%d/%Y %h:%i %p') AS last_used,
@@ -2437,4 +2438,13 @@ function getPlainDateFormat(curDate) {
   var monthStr = month < 10 ? '0' + month.toString() : month.toString();
   var dateStr = dayStr + '-' + monthStr + '-' + year.toString();
   return dateStr;
+}
+
+async function getWalletBalance(driver_id, resultData) {
+  var getUserId =
+  `SELECT money_in_wallet_f as money_in_wallet FROM ${dbConstants.DBS.AUTH_DB}.tb_users WHERE venus_autos_user_id = ?`;
+
+let authUser = await db.RunQuery(dbConstants.DBS.AUTH_DB, getUserId, [driver_id]);
+
+resultData.money_in_wallet = authUser[0].money_in_wallet
 }
