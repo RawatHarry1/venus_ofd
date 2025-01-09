@@ -1795,8 +1795,8 @@ async function get_promotions(
     SELECT
       tb_ride_promotions.promo_id,
       title,
-      start_time,
-      end_time,
+      tb_ride_promotions.start_time,
+      tb_ride_promotions.end_time,
       discount_percentage,
       cashback_percentage,
       DATE_FORMAT(MAX(tb_engagements.current_time), '%m/%d/%Y %h:%i %p') AS last_used,

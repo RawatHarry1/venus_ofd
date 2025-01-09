@@ -60,6 +60,7 @@ exports.fetchCityDocuments = async function (req, res) {
       WHERE 
         rd.operator_id = ?
         and cd.city_id IN(0, ?)
+        and cd.is_active = 1
       ORDER BY 
         added_in_city DESC`;
 
