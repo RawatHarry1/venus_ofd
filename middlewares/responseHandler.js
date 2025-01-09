@@ -41,6 +41,16 @@ const responseHandler = {
     });
   },
 
+  returnErrorMessage: (
+    res,
+    message = 'Something went wrong',
+    statusCode = 422
+  ) => {
+    res.status(statusCode).json({
+      message
+    });
+  },
+
   notFound: (res, message = 'Resource not found') => {
     res.status(404).json({
       status: 'error',
