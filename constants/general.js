@@ -42,3 +42,9 @@ exports.ACTIVE_STATUS = {
   INACTIVE: 0,
   ACTIVE: 1,
 };
+
+exports.VERIFICATION_STATUS = {
+  NOT_VERIFIED: 0,
+  NOT_ACTIVATED: -1,
+  VERIFIED: 1
+};
