@@ -169,7 +169,7 @@ exports.insertDocument = async function (req, res) {
 
     var document = await Helper.insertRequiredDocument(body);
 
-    body.document_id = document.insertId;
+    body.document_id = document;
 
     await Helper.insertCityDocument(body);
 
