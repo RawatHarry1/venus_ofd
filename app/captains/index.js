@@ -108,6 +108,13 @@ module.exports = function (app) {
     CaptainDetail.updateCanRequest,
   );
 
+  app.post(
+    '/remove_wrong_driver',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.removeWrongDriver,
+  );
+
   /*
   Credit/Debit User
   */

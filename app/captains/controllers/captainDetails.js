@@ -8,6 +8,7 @@ const {
   generalConstants,
   authConstants,
 } = require('../../../bootstart/header');
+var crypto          = require('crypto');
 
 const rideConstant = require('../../../constants/rideConstants');
 const documentsConstant = require('../../../constants/document');
@@ -18,6 +19,7 @@ var QueryBuilder = require('datatable');
 const { checkBlank } = require('../../rides/helper');
 const { getOperatorParameters } = require('../../admin/helper');
 var fs = require('fs');
+const { response } = require('express');
 
 exports.getCaptains = async function (req, res) {
   try {
@@ -818,6 +820,72 @@ exports.updateCanRequest = async function (req, res) {
       }
     }
     return responseHandler.success(req, res, '', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.removeWrongDriver = async function (req, res) {
+  try {
+    var userId = req.body.driver_id;
+
+    /* Fetch driver data. */
+    var driverReqdKeys = ['verification_status', 'phone_no'];
+    var driverCriteria = [{ key: 'driver_id', value: userId }];
+
+
+    var userWrapper = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS}`,
+      driverReqdKeys,
+      driverCriteria,
+    );
+
+    if (!userWrapper.length) {
+      throw new Error("Invalid User Id");
+    }
+    if (userWrapper[0].verification_status == generalConstants.VERIFICATION_STATUS.VERIFIED) {
+      return responseHandler.returnErrorMessage(req, 'Driver has already been activated.')
+    }
+
+
+    await db.updateTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS}`,
+      {
+        reg_as: 0,
+        verification_status: 0
+      },
+      [{ key: 'user_id', value: userId }]
+    );
+
+
+    /*
+* update driver suspended, autos_enabled.
+*/
+
+    await db.updateTable(
+      dbConstants.DBS.LIVE_DB,
+      dbConstants.LIVE_DB.CAPTAINS,
+      {
+        driver_suspended: 1,
+        autos_enabled: 0,
+        delivery_enabled: 0,
+        verification_status: 0,
+        unique_device_id: 'abxcd'
+      },
+      [{ key: 'driver_id', value: userId }]
+    );
+
+    await db.updateTable(
+      dbConstants.DBS.AUTH_DB,
+      `${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}`,
+      {
+        verification_status: 0,
+      },
+      [{ key: 'venus_autos_user_id', value: userId }]
+    );
+    return responseHandler.success(req, res, 'Successfully converted to customer.', {});
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
