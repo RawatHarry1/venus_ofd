@@ -31,7 +31,7 @@ exports.getDriverPerformance = getDriverPerformance;
 exports.getOngoingRideForDriver = getOngoingRideForDriver;
 exports.getTodaysFirstLogin = getTodaysFirstLogin;
 exports.getDriverCityInfo = getDriverCityInfo;
-exports.getWalletBalance   = getWalletBalance
+exports.getWalletBalance = getWalletBalance;
 
 var detailsUserCount = {};
 exports.driverInfoCount = {};
@@ -2131,7 +2131,10 @@ async function getDriverRideInfo(driverId, paginationDetails, responseData) {
         'Tax by driver': driverInfo[i].net_customer_tax,
         Discount: driverInfo[i].discount,
         'Money Transacted': driverInfo[i].money_transacted,
-        'Driver Earning': driverInfo[i].money_transacted - driverInfo[i].venus_commission -driverInfo[i].net_customer_tax
+        'Driver Earning':
+          driverInfo[i].money_transacted -
+          driverInfo[i].venus_commission -
+          driverInfo[i].net_customer_tax,
       });
       var rideDate = new Date(driverInfo[i].engagement_date);
       var curDate = new Date();
@@ -2441,10 +2444,11 @@ function getPlainDateFormat(curDate) {
 }
 
 async function getWalletBalance(driver_id, resultData) {
-  var getUserId =
-  `SELECT money_in_wallet_f as money_in_wallet FROM ${dbConstants.DBS.AUTH_DB}.tb_users WHERE venus_autos_user_id = ?`;
+  var getUserId = `SELECT money_in_wallet_f as money_in_wallet FROM ${dbConstants.DBS.AUTH_DB}.tb_users WHERE venus_autos_user_id = ?`;
 
-let authUser = await db.RunQuery(dbConstants.DBS.AUTH_DB, getUserId, [driver_id]);
+  let authUser = await db.RunQuery(dbConstants.DBS.AUTH_DB, getUserId, [
+    driver_id,
+  ]);
 
-resultData.money_in_wallet = authUser[0].money_in_wallet
+  resultData.money_in_wallet = authUser[0].money_in_wallet;
 }

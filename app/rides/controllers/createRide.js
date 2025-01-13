@@ -186,7 +186,10 @@ exports.scheduleRideThroughBusinessUser = async function (req, res) {
       cityWrapper,
     );
     if (!cityWrapper.city) {
-      return responseHandler.returnErrorMessage(res, 'service_not_avail_in_area');
+      return responseHandler.returnErrorMessage(
+        res,
+        'service_not_avail_in_area',
+      );
     }
 
     var paramsWrapper = {},
@@ -226,13 +229,19 @@ exports.scheduleRideThroughBusinessUser = async function (req, res) {
       Helper.isAValidScheduleTime(pickupTime, currentTimeDiff, daysLimit) ===
       false
     ) {
-      return responseHandler.returnErrorMessage(res, `A pickup can only be scheduled after ${currentTimeDiff} minutes from now till midnight the next day.`);
+      return responseHandler.returnErrorMessage(
+        res,
+        `A pickup can only be scheduled after ${currentTimeDiff} minutes from now till midnight the next day.`,
+      );
     }
 
     var existing = await Helper.hasAlreadyScheduled(userId);
 
     if (existing) {
-      return responseHandler.returnErrorMessage(res, `You can only schedule one ride at a time.`);
+      return responseHandler.returnErrorMessage(
+        res,
+        `You can only schedule one ride at a time.`,
+      );
     }
 
     var scheduleRide = {
@@ -414,7 +423,7 @@ exports.removePickupSchedule = async function (req, res) {
       pickupCriteria,
     );
     if (!pickup.length) {
-      return responseHandler.returnErrorMessage(req,'No pickup found' )
+      return responseHandler.returnErrorMessage(req, 'No pickup found');
     }
     pickup = pickup[0];
 
@@ -429,7 +438,10 @@ exports.removePickupSchedule = async function (req, res) {
     let cancelWindowTime = paramsWrapper.schedule_cancel_window || 0;
 
     if (!canBeRemovedNow(pickup.pickup_time, cancelWindowTime)) {
-      return responseHandler.returnErrorMessage(req,'Sorry, pickup cannot be cancelled at this moment' )
+      return responseHandler.returnErrorMessage(
+        req,
+        'Sorry, pickup cannot be cancelled at this moment',
+      );
     }
 
     updateKeys = { status: rideConstants.SCHEDULE_STATUS.CANCELLED };

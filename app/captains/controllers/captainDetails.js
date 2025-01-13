@@ -8,7 +8,7 @@ const {
   generalConstants,
   authConstants,
 } = require('../../../bootstart/header');
-var crypto          = require('crypto');
+var crypto = require('crypto');
 
 const rideConstant = require('../../../constants/rideConstants');
 const documentsConstant = require('../../../constants/document');
@@ -833,7 +833,6 @@ exports.removeWrongDriver = async function (req, res) {
     var driverReqdKeys = ['verification_status', 'phone_no'];
     var driverCriteria = [{ key: 'driver_id', value: userId }];
 
-
     var userWrapper = await db.SelectFromTable(
       dbConstants.DBS.LIVE_DB,
       `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS}`,
@@ -842,27 +841,31 @@ exports.removeWrongDriver = async function (req, res) {
     );
 
     if (!userWrapper.length) {
-      throw new Error("Invalid User Id");
+      throw new Error('Invalid User Id');
     }
-    if (userWrapper[0].verification_status == generalConstants.VERIFICATION_STATUS.VERIFIED) {
-      return responseHandler.returnErrorMessage(req, 'Driver has already been activated.')
+    if (
+      userWrapper[0].verification_status ==
+      generalConstants.VERIFICATION_STATUS.VERIFIED
+    ) {
+      return responseHandler.returnErrorMessage(
+        req,
+        'Driver has already been activated.',
+      );
     }
-
 
     await db.updateTable(
       dbConstants.DBS.LIVE_DB,
       `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS}`,
       {
         reg_as: 0,
-        verification_status: 0
+        verification_status: 0,
       },
-      [{ key: 'user_id', value: userId }]
+      [{ key: 'user_id', value: userId }],
     );
 
-
     /*
-* update driver suspended, autos_enabled.
-*/
+     * update driver suspended, autos_enabled.
+     */
 
     await db.updateTable(
       dbConstants.DBS.LIVE_DB,
@@ -872,9 +875,9 @@ exports.removeWrongDriver = async function (req, res) {
         autos_enabled: 0,
         delivery_enabled: 0,
         verification_status: 0,
-        unique_device_id: 'abxcd'
+        unique_device_id: 'abxcd',
       },
-      [{ key: 'driver_id', value: userId }]
+      [{ key: 'driver_id', value: userId }],
     );
 
     await db.updateTable(
@@ -883,9 +886,14 @@ exports.removeWrongDriver = async function (req, res) {
       {
         verification_status: 0,
       },
-      [{ key: 'venus_autos_user_id', value: userId }]
+      [{ key: 'venus_autos_user_id', value: userId }],
     );
-    return responseHandler.success(req, res, 'Successfully converted to customer.', {});
+    return responseHandler.success(
+      req,
+      res,
+      'Successfully converted to customer.',
+      {},
+    );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
@@ -905,7 +913,7 @@ exports.giveCreditsToUser = async function (req, res) {
       reason: Joi.string().required(),
       amount: Joi.number().positive().required(),
       user_type: Joi.number().integer().min(0).max(1).required(),
-      engagement_id: Joi.number().integer().positive().optional()
+      engagement_id: Joi.number().integer().positive().optional(),
     });
 
     var result = schema.validate(req.body);
@@ -924,7 +932,11 @@ exports.giveCreditsToUser = async function (req, res) {
     let email = req.email_from_acl || '';
     let userType = req.body.user_type;
 
-    if (userType == 0 && transactionType == authConstants.TRANSACTION_TYPE.DEBIT && checkBlank([refEngagementId])) {
+    if (
+      userType == 0 &&
+      transactionType == authConstants.TRANSACTION_TYPE.DEBIT &&
+      checkBlank([refEngagementId])
+    ) {
       return responseHandler.parameterMissingResponse(res, '');
     }
 
@@ -937,24 +949,39 @@ exports.giveCreditsToUser = async function (req, res) {
     }
 
     if (refEngagementId) {
-
       let engagementQuery = `SELECT (1) FROM ${dbConstants.DBS.LIVE_DB}.tb_engagements  WHERE ${fieldToValidate} = ? AND engagement_id = ? `;
 
-      let isEngagementValid =  await db.RunQuery(dbConstants.DBS.LIVE_DB,engagementQuery,[userId, refEngagementId]);
+      let isEngagementValid = await db.RunQuery(
+        dbConstants.DBS.LIVE_DB,
+        engagementQuery,
+        [userId, refEngagementId],
+      );
 
       if (!isEngagementValid || !isEngagementValid.length) {
-        throw new Error("Engagement not valid.");
+        throw new Error('Engagement not valid.');
       }
     }
 
     let userQuery = `SELECT  ${fieldToValidate} FROM ${tableToValidateFrom}  WHERE ${fieldToValidate} = ? AND operator_id = ? `;
 
-    let isUserValid =  await db.RunQuery(dbConstants.DBS.LIVE_DB,userQuery,[userId, operatorId]);
+    let isUserValid = await db.RunQuery(dbConstants.DBS.LIVE_DB, userQuery, [
+      userId,
+      operatorId,
+    ]);
     if (!isUserValid || !isUserValid.length) {
-      throw new Error("User not valid.");
+      throw new Error('User not valid.');
     }
 
-    await Helper.creditDebitHelper(userId, userType, operatorId, transactionType, reason, refEngagementId, amount, email);
+    await Helper.creditDebitHelper(
+      userId,
+      userType,
+      operatorId,
+      transactionType,
+      reason,
+      refEngagementId,
+      amount,
+      email,
+    );
 
     // //Send notification whenever there is credit/debit
     // if (userType) {

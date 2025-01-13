@@ -63,6 +63,6 @@ exports.driverWalletCardsInOneGo = {
 };
 
 exports.TRANSACTION_TYPE = {
-  CREDIT : 1,
-  DEBIT : 2
+  CREDIT: 1,
+  DEBIT: 2,
 };

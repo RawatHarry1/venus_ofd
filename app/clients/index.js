@@ -1,6 +1,13 @@
 const ClientsDetails = require('./controllers/clientsDetails');
 const Payment = require('./controllers/payment.js');
 const AdminMiddlewares = require('../admin/middelware');
+var multer = require('multer');
+const { generalConstants } = require('../../bootstart/header.js');
+
+var upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: generalConstants.MAX_ALLOWED_FILE_SIZE },
+});
 
 module.exports = function (app) {
   app.get(
@@ -28,5 +35,28 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     Payment.getUserCreditLogs,
+  );
+
+  /* 
+  Customer Create API's
+  */
+
+  app.post(
+    '/customer/sendLoginOtp',
+    AdminMiddlewares.admin.isLoggedIn,
+    ClientsDetails.sendLoginOtp,
+  );
+
+  app.post(
+    '/customer/verifyOtp',
+    AdminMiddlewares.admin.isLoggedIn,
+    ClientsDetails.verifyOtp,
+  );
+
+  app.put(
+    '/customer/profile',
+    upload.single('updatedUserImage'),
+    AdminMiddlewares.admin.isLoggedIn,
+    ClientsDetails.createCustomerProfile,
   );
 };
