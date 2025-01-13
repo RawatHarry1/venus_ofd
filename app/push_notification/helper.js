@@ -93,11 +93,11 @@ async function pushFromRideServer(requestBody, endpoint, req) {
       operatortoken: requestBody.operator_token,
       accesstoken: requestBody.access_token,
       domain_token: requestBody.domain_token,
-      logintype: req.headers.logintype,
-      devicetype: req.headers.devicetype,
-      device_name: req.headers.devicename,
-      appversion: req.headers.appversion,
-      devicetoken: req.headers.devicetoken,
+      logintype: req?.headers?.logintype,
+      devicetype: req?.headers?.devicetype,
+      device_name: req?.headers?.devicename,
+      appversion: req?.headers?.appversion,
+      devicetoken: req?.headers?.devicetoken,
     };
 
     if (endpoint == rideConstants.AUTOS_SERVERS_ENDPOINT.FIND_DRIVERS) {
