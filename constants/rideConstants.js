@@ -147,6 +147,9 @@ exports.AUTOS_SERVERS_ENDPOINT = {
   CANCEL_RIDE: '/cancelTheTrip',
   FETCH_REQUIRED_DOCS: '/fetchRequiredDocs',
   UPDATE_DOCS: '/driver/panel/v2/update_document_status',
+  SEND_LOGIN_OTP: '/customer/sendLoginOtp',
+  VERIFY_OTP: '/customer/verifyOtp',
+  CUSTOMER_PROFILE: '/customer/profile',
 };
 
 exports.VEHILCE_TYPE = {

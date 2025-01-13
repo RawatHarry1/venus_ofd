@@ -83,7 +83,7 @@ function splitArrayIntoChunksOfLen(arr, len) {
   return chunks;
 }
 
-async function pushFromRideServer(requestBody, endpoint) {
+async function pushFromRideServer(requestBody, endpoint, req) {
   try {
     let resultWrapper = {};
     const url = rideConstants.SERVERS.AUTOS_SERVER + endpoint;
@@ -93,6 +93,11 @@ async function pushFromRideServer(requestBody, endpoint) {
       operatortoken: requestBody.operator_token,
       accesstoken: requestBody.access_token,
       domain_token: requestBody.domain_token,
+      logintype: req.headers.logintype,
+      devicetype: req.headers.devicetype,
+      device_name: req.headers.devicename,
+      appversion: req.headers.appversion,
+      devicetoken: req.headers.devicetoken,
     };
 
     if (endpoint == rideConstants.AUTOS_SERVERS_ENDPOINT.FIND_DRIVERS) {

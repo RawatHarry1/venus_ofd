@@ -35,6 +35,9 @@ exports.ridesQueryHelper = function (corporateId, driverId, fleetId, status) {
                           s.op_drop_longitude AS drop_longitude,
                           s.op_drop_latitude AS drop_latitude,
                           e.vehicle_type,
+                          s.is_for_rental,
+                          s.start_time,
+                          s.end_time,
                           e.city,
                           e.ride_time,
                   e.distance_travelled,
@@ -1106,7 +1109,7 @@ exports.getScheduledRideDetailsHelper = async function (
   limit = 50,
   offset = 0,
   sSearch = '',
-  status = null
+  status = null,
 ) {
   try {
     let queryConditions = [];
@@ -1162,14 +1165,16 @@ exports.getScheduledRideDetailsHelper = async function (
       countValues.push(status);
     }
 
-    let whereClause = queryConditions.length ? `WHERE ${queryConditions.join(' AND ')}` : '';
+    let whereClause = queryConditions.length
+      ? `WHERE ${queryConditions.join(' AND ')}`
+      : '';
     let getSchedules = `
       ${baseQuery}
       ${whereClause}
       ORDER BY sc.pickup_time ${orderDirection}
       LIMIT ? OFFSET ?
     `;
-     values.push(limit, offset);
+    values.push(limit, offset);
 
     let countQuery = `
       SELECT COUNT(*) AS total

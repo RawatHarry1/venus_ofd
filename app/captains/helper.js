@@ -259,7 +259,16 @@ exports.postRequsestFormData = async function (requestBody, endpoint) {
   }
 };
 
-exports.creditDebitHelper = async function (userId, userType, operatorId, transactionType, reason, refEngagementId, amount, source) {
+exports.creditDebitHelper = async function (
+  userId,
+  userType,
+  operatorId,
+  transactionType,
+  reason,
+  refEngagementId,
+  amount,
+  source,
+) {
   try {
     let insertObj = {
       user_id: userId,
@@ -268,73 +277,141 @@ exports.creditDebitHelper = async function (userId, userType, operatorId, transa
       reason: reason,
       created_by: source,
       amount: amount,
-      ref_engagement_id:  '123',
-      user_type: userType
+      ref_engagement_id: '123',
+      user_type: userType,
     };
 
-      // Extract keys and values from insertObj
-  const keys = Object.keys(insertObj);
-  const vaalues = Object.values(insertObj);
+    // Extract keys and values from insertObj
+    const keys = Object.keys(insertObj);
+    const vaalues = Object.values(insertObj);
 
-  // Build the SET part dynamically
-  const setClause = keys.map((key) => `\`${key}\` = ?`).join(', ');
+    // Build the SET part dynamically
+    const setClause = keys.map((key) => `\`${key}\` = ?`).join(', ');
 
-  var driverRechargeQuery = `INSERT INTO ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.CREDIT_LOGS} SET ${setClause}`;
-    let clientId = authConstants.CLIENTS_ID.AUTOS_CLIENT_ID
+    var driverRechargeQuery = `INSERT INTO ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.CREDIT_LOGS} SET ${setClause}`;
+    let clientId = authConstants.CLIENTS_ID.AUTOS_CLIENT_ID;
 
-    let insertResult = await db.RunQuery(dbConstants.DBS.LIVE_LOGS, driverRechargeQuery, vaalues);
+    let insertResult = await db.RunQuery(
+      dbConstants.DBS.LIVE_LOGS,
+      driverRechargeQuery,
+      vaalues,
+    );
 
-    var getUserId =
-      `SELECT user_id, money_in_wallet_f as money_in_wallet, real_money_ratio, city_reg FROM ${dbConstants.DBS.AUTH_DB}.tb_users WHERE venus_autos_user_id = ?`;
+    var getUserId = `SELECT user_id, money_in_wallet_f as money_in_wallet, real_money_ratio, city_reg FROM ${dbConstants.DBS.AUTH_DB}.tb_users WHERE venus_autos_user_id = ?`;
 
-
-    let authUser = await db.RunQuery(dbConstants.DBS.AUTH_DB, getUserId, [userId]);
+    let authUser = await db.RunQuery(dbConstants.DBS.AUTH_DB, getUserId, [
+      userId,
+    ]);
     if (!authUser) {
-      throw new Error("no user found");
-
+      throw new Error('no user found');
     }
-    authUser = authUser[0]
+    authUser = authUser[0];
     var newRatio = 1;
 
     let insertId = insertResult.insertId;
     switch (transactionType) {
       case authConstants.TRANSACTION_TYPE.CREDIT:
-        var addCreditTransaction =
-          `INSERT INTO  ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.TNX}(user_id, client_id, txn_type, reference_id, amount, real_money_ratio, city_reg, event, expiry_date, creditedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        var values = [authUser.user_id, clientId, transactionType, insertId, amount, newRatio, authUser.city_reg, 'abc', '2030-12-31', "admin"];
-        
+        var addCreditTransaction = `INSERT INTO  ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.TNX}(user_id, client_id, txn_type, reference_id, amount, real_money_ratio, city_reg, event, expiry_date, creditedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        var values = [
+          authUser.user_id,
+          clientId,
+          transactionType,
+          insertId,
+          amount,
+          newRatio,
+          authUser.city_reg,
+          'abc',
+          '2030-12-31',
+          'admin',
+        ];
 
-        await db.RunQuery(dbConstants.DBS.AUTH_DB, addCreditTransaction, values);
+        await db.RunQuery(
+          dbConstants.DBS.AUTH_DB,
+          addCreditTransaction,
+          values,
+        );
 
         var updateBalance = `UPDATE ${dbConstants.DBS.AUTH_DB}.tb_users SET money_in_wallet_f = money_in_wallet_f + ? WHERE user_id = ? `;
 
-        await db.RunQuery(dbConstants.DBS.AUTH_DB, updateBalance, [amount, authUser.user_id]);
+        await db.RunQuery(dbConstants.DBS.AUTH_DB, updateBalance, [
+          amount,
+          authUser.user_id,
+        ]);
 
         break;
       case authConstants.TRANSACTION_TYPE.DEBIT:
+        var addCreditTransaction = `INSERT INTO  ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.TNX}(user_id, client_id, txn_type, reference_id, amount, real_money_ratio, city_reg, event, expiry_date, creditedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-        var addCreditTransaction =
-          `INSERT INTO  ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.TNX}(user_id, client_id, txn_type, reference_id, amount, real_money_ratio, city_reg, event, expiry_date, creditedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        var values = [
+          authUser.user_id,
+          clientId,
+          transactionType,
+          insertId,
+          amount,
+          newRatio,
+          authUser.city_reg,
+          'abc',
+          '2030-12-31',
+          'admin',
+        ];
 
-
-        var values = [authUser.user_id, clientId, transactionType, insertId, amount, newRatio, authUser.city_reg, 'abc', '2030-12-31', "admin"];
-
-        await db.RunQuery(dbConstants.DBS.AUTH_DB, addCreditTransaction, values);
-
+        await db.RunQuery(
+          dbConstants.DBS.AUTH_DB,
+          addCreditTransaction,
+          values,
+        );
 
         var updateBalance = `UPDATE ${dbConstants.DBS.AUTH_DB}.tb_users SET money_in_wallet_f = money_in_wallet_f - ? WHERE user_id = ? `;
 
-        await db.RunQuery(dbConstants.DBS.AUTH_DB, updateBalance, [amount, authUser.user_id]);
-
+        await db.RunQuery(dbConstants.DBS.AUTH_DB, updateBalance, [
+          amount,
+          authUser.user_id,
+        ]);
 
         break;
     }
 
     let failedStatusUpdate = `UPDATE ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.CREDIT_LOGS} SET STATUS = 1 WHERE id = ? `;
-    await db.RunQuery(dbConstants.DBS.LIVE_LOGS, failedStatusUpdate, [insertId]);
-    return
+    await db.RunQuery(dbConstants.DBS.LIVE_LOGS, failedStatusUpdate, [
+      insertId,
+    ]);
+    return;
   } catch (error) {
     throw new Error(error.message);
-
   }
-}
+};
+
+exports.putRequestFormData = async function (requestBody, endpoint, req) {
+  try {
+    let resultWrapper = {};
+    const url = rideConstants.SERVERS.AUTOS_SERVER + endpoint;
+
+    const formData = new FormData();
+    Object.entries(requestBody).forEach(([key, value]) => {
+      if (value instanceof Object && typeof value.pipe === 'function') {
+        formData.append(key, value, { filename: key });
+      } else {
+        formData.append(key, value);
+      }
+    });
+
+    const headers = {
+      ...formData.getHeaders(),
+      operatortoken: req.headers.operatortoken,
+      accesstoken: req.headers.accesstoken,
+      domain_token: requestBody.domain_token,
+    };
+
+    const response = await axios.put(url, formData, { headers });
+
+    if (response.data && response.data.data) {
+      resultWrapper = response.data.data;
+    } else {
+      resultWrapper = response.data;
+    }
+    return resultWrapper;
+  } catch (error) {
+    console.error('Error updating on ride server:', error.message);
+    throw new Error(error.response?.data?.message || error.message);
+  }
+};

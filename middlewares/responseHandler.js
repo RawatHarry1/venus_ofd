@@ -44,10 +44,10 @@ const responseHandler = {
   returnErrorMessage: (
     res,
     message = 'Something went wrong',
-    statusCode = 422
+    statusCode = 422,
   ) => {
     res.status(statusCode).json({
-      message
+      message,
     });
   },
 

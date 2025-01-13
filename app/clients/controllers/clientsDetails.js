@@ -5,10 +5,17 @@ const {
   responseHandler,
   ResponseConstants,
   generalConstants,
+  rideConstants,
 } = require('../../../bootstart/header');
 
 const Helper = require('../helper');
 var Joi = require('joi');
+const pushNotificationHelper = require('../../push_notification/helper');
+const {
+  postRequsestFormData,
+  putRequestFormData,
+} = require('../../captains/helper');
+var fs = require('fs');
 
 exports.getClients = async function (req, res) {
   var response = {};
@@ -188,6 +195,63 @@ exports.getCustomers = async function (req, res) {
     );
 
     return responseHandler.success(req, res, 'User Details Sent', users);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.sendLoginOtp = async function (req, res) {
+  try {
+    req.body.operator_token = req.headers.operatortoken;
+
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.SEND_LOGIN_OTP;
+
+    delete req.body.token;
+
+    let response = await pushNotificationHelper.pushFromRideServer(
+      req.body,
+      endpoint,
+      req,
+    );
+
+    return responseHandler.success(req, res, '', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.verifyOtp = async function (req, res) {
+  try {
+    req.body.operator_token = req.headers.operatortoken;
+
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.VERIFY_OTP;
+
+    delete req.body.token;
+
+    let response = await pushNotificationHelper.pushFromRideServer(
+      req.body,
+      endpoint,
+      req,
+    );
+
+    return responseHandler.success(req, res, 'User Details Sent', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.createCustomerProfile = async function (req, res) {
+  try {
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.CUSTOMER_PROFILE;
+
+    delete req.body.token;
+    if (req.file && req.file.path) {
+      req.body.updatedUserImage = fs.createReadStream(req.file.path);
+    }
+
+    let response = await putRequestFormData(req.body, endpoint, req);
+
+    return responseHandler.success(req, res, 'User Details Sent', response);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
