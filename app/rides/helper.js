@@ -1134,7 +1134,10 @@ exports.getScheduledRideDetailsHelper = async function (
         sc.user_id,
         CASE WHEN (sc.pickup_time > NOW() + INTERVAL ? MINUTE AND sc.status = 0) THEN 1
         ELSE 0 END AS modifiable, 
-        u.user_name, 
+        u.user_name,
+        sc.is_for_rental,
+        sc.start_date,
+        sc.drop_date,
         u.phone_no,
         cr.vehicle_type,
         cr.city_id,

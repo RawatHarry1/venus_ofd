@@ -294,7 +294,7 @@ exports.fetchVehicleMake = async function (req, res) {
 
     var cityId = req.query.city_id;
     var operatorId = req.operator_id;
-    var requestRideType = req.query.service_type;
+    var requestRideType = req.request_ride_type;
 
     var vehicleMakeQuery = `
             SELECT 
