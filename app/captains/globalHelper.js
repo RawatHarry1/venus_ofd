@@ -899,9 +899,11 @@ WHERE
   deviceName.push(data[0].device_name);
   osVersion.push(data[0].os_version);
   date_registered.push(data[0].date_registered);
-  appVersionCode.push(
-    data[0].venus_autos_app_version.toString().split('').join('.'),
-  );
+  if(data[0].venus_autos_app_version){
+    appVersionCode.push(
+      data[0].venus_autos_app_version.toString().split('').join('.'),
+    );
+  }
   isDeactivated.push(data[0].is_deactivated);
   deactivationReason.push(data[0].deactivation_reason);
   dateOfBirth.push(data[0].date_of_birth);
