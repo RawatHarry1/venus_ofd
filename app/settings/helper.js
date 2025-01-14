@@ -568,6 +568,165 @@ async function insertDefaultFares(body, type) {
   return result;
 }
 
+async function getTolldata(body, operatorId) {
+  // Base query
+  let query = `
+    SELECT 
+      t.*, 
+      gt.name AS toll_type, 
+      csr.region_name 
+    FROM 
+      tb_toll t 
+    LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.GEOFENCE_TOLL_TYPES} gt 
+      ON t.geofenc_typ_ref = gt.id AND gt.status = ? 
+    LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} csr 
+      ON t.vehicle_type = csr.vehicle_type 
+      AND csr.city_id = t.city_id 
+      AND csr.is_active = ? 
+      AND csr.operator_id = ? 
+      AND csr.ride_type IN (0, 2, 10) 
+    WHERE 
+      t.is_active = ?`;
+
+  // Where conditions and values
+  let whereConditions = [];
+  let whereValues = [1, 1, operatorId, 1]; // Initial values for query placeholders
+
+  // Add dynamic filters
+  if (body.city_id) {
+    whereConditions.push(`t.city_id = ?`);
+    whereValues.push(body.city_id);
+  }
+
+  if (body.vehicle_type) {
+    whereConditions.push(`t.vehicle_type = ?`);
+    whereValues.push(body.vehicle_type);
+  }
+
+  if (body.toll_id) {
+    whereConditions.push(`t.id = ?`);
+    whereValues.push(body.toll_id);
+  }
+
+  // Append dynamic conditions to query
+  if (whereConditions.length > 0) {
+    query += ` AND ` + whereConditions.join(' AND ');
+  }
+
+  // Execute the query
+  const result = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, whereValues);
+
+  return result;
+}
+
+async function insertGeofenceData(body) {
+  var query = '',
+    where = '',
+    whereValues = [],
+    newQuery = '';
+
+  if (body.insertData) {
+    query = `INSERT INTO tb_toll (city_id, name, rate, is_active, vehicle_type, geofenc_typ_ref, operator_id) VALUES (?,?,?,?,?,?,?)`;
+    whereValues.push(
+      body.city_id,
+      body.name,
+      body.amount,
+      1,
+      body.vehicle_type,
+      body.geofence_type,
+      body.operator_id,
+    );
+  } else {
+    if (body.pre_toll_polygon || body.post_toll_polygon) {
+      var codeArray = body.pre_toll_polygon || body.post_toll_polygon;
+      codeArray = JSON.parse(JSON.stringify(codeArray));
+      var coordinates = [];
+      for (var i in codeArray) {
+        var tempObj = [];
+        tempObj.push(codeArray[i].x);
+        tempObj.push(codeArray[i].y);
+        coordinates.push(tempObj);
+      }
+
+      coordinates = JSON.stringify(coordinates);
+
+      coordinates = JSON.parse(coordinates);
+
+      if (coordinates[0] != coordinates[coordinates.length - 1]) {
+        coordinates.push(coordinates[0]);
+      }
+      var coordinatesString = coordinates[0][0] + ' ' + coordinates[0][1];
+      for (var j = 1; j < coordinates.length; j++) {
+        coordinatesString += ',' + coordinates[j][0] + ' ' + coordinates[j][1];
+      }
+    }
+
+    query = ` UPDATE tb_toll SET `;
+    if (body.city_id) {
+      query += ` city_id =? ,`;
+      whereValues.push(body.city_id);
+    }
+    if (body.name) {
+      query += ` name =? , `;
+      whereValues.push(body.name);
+    }
+    if (body.amount) {
+      query += `  rate =? , `;
+      whereValues.push(body.amount);
+    }
+    if (body.vehicleType) {
+      query += ` vehicle_type =? ,`;
+      whereValues.push(body.vehicleType);
+    }
+    if (body.geofenceType) {
+      query += ` geofenc_typ_ref =? `;
+      whereValues.push(body.geofenceType);
+    }
+    if (body.is_active) {
+      query += ` is_active =?`;
+      whereValues.push(body.is_active);
+    }
+
+    if (body.pre_toll_polygon) {
+      query +=
+        `pre_toll_polygon = GeomFromText('POLYGON((` +
+        coordinatesString +
+        `))')`;
+    }
+    if (body.post_toll_polygon) {
+      query +=
+        ` post_toll_polygon = GeomFromText(\'POLYGON((` +
+        coordinatesString +
+        `))\')`;
+    }
+
+    if (body.toll_id) {
+      query += `  where id =? `;
+      whereValues.push(body.toll_id);
+    }
+  }
+
+  // Execute the query
+  var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, whereValues);
+
+  newQuery = `SELECT * from tb_toll where id = ?`;
+  whereValues = [];
+
+  if (body.insertData) {
+    whereValues.push(result.insertId);
+  } else {
+    whereValues.push(body.toll_id);
+  }
+
+  // Execute the query
+  var result = await db.RunQuery(
+    dbConstants.DBS.LIVE_DB,
+    newQuery,
+    whereValues,
+  );
+  return result;
+}
+
 module.exports = {
   fetchFareData,
   fetchVehiclesImagesFaresData,
@@ -579,4 +738,6 @@ module.exports = {
   readImageFile,
   uploadFileToS3,
   insertDefaultFares,
+  getTolldata,
+  insertGeofenceData,
 };

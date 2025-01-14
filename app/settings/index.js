@@ -5,6 +5,8 @@ const fareSettingsController = require('./controllers/fareSettings');
 const documentSettingsController = require('./controllers/document');
 const polygonController = require('./controllers/polygon');
 const bannersController = require('./controllers/banners');
+const tollsController = require('./controllers/toll');
+
 var multer = require('multer');
 const { generalConstants } = require('../../bootstart/header');
 
@@ -237,5 +239,22 @@ module.exports = function (app) {
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
     bannersController.deleteBanner,
+  );
+
+  /* 
+  Toll API's
+ */
+  app.post(
+    '/getTolls',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    tollsController.getTolls,
+  );
+
+  app.post(
+    '/insertToll',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    tollsController.insertToll,
   );
 };
