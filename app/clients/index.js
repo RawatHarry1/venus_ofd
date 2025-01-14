@@ -38,7 +38,7 @@ module.exports = function (app) {
   );
 
   /* 
-  Customer Create API's
+  Customer Create API's Using otp
   */
 
   app.post(
@@ -58,5 +58,15 @@ module.exports = function (app) {
     upload.single('updatedUserImage'),
     AdminMiddlewares.admin.isLoggedIn,
     ClientsDetails.createCustomerProfile,
+  );
+
+  /* 
+  Customer Create API's
+  */
+  app.post(
+    '/create_customer',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    ClientsDetails.createCustomer,
   );
 };

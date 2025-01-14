@@ -256,3 +256,108 @@ exports.createCustomerProfile = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+exports.createCustomer = async function (req, res) {
+  try {
+    let requestBody = req.body;
+    let operatorId = req.operator_id;
+    var requestRideType = req.request_ride_type;
+    let cityId = requestBody.city_id;
+    let firstName = requestBody.first_name;
+    let lastName = requestBody.last_name;
+    let userName = requestBody.user_name;
+    let phoneNumber = requestBody.phone_no;
+    let email = requestBody.email;
+    let countryCode = requestBody.country_code;
+    let isExist;
+
+    delete requestBody.token;
+
+    let schema = Joi.object({
+      phone_no: Joi.string().required(),
+      city_id: Joi.string().required(),
+      first_name: Joi.string().required(),
+      last_name: Joi.string().required(),
+      user_name: Joi.string().required(),
+      email: Joi.string().required(),
+      country_code: Joi.string().required(),
+      secret_key: Joi.number().optional(),
+    });
+
+    let schemaResult = schema.validate(requestBody);
+    if (schemaResult.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var fetchQuery = `SELECT user_email FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE phone_no = ? AND operator_id = ?`;
+
+    isExist = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
+      phoneNumber,
+      operatorId,
+    ]);
+
+    if (isExist.length) {
+      return responseHandler.returnErrorMessage(
+        res,
+        `User with this phone Already exists Please try with different one.`,
+      );
+    }
+
+    var fetchQuery = `SELECT user_email FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE user_email = ? AND operator_id = ?`;
+
+    isExist = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
+      email,
+      operatorId,
+    ]);
+
+    if (isExist.length) {
+      return responseHandler.returnErrorMessage(
+        res,
+        `User with this email Already exists Please try with different one.`,
+      );
+    }
+
+    let insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} (
+      user_name, first_name, last_name, 
+      country_code, phone_no, operator_id, 
+      user_email, city
+    ) 
+    VALUES 
+      (?, ?, ?, ?, ?, ?, ?, ?)`;
+    let values = [
+      userName,
+      firstName,
+      lastName,
+      countryCode,
+      phoneNumber,
+      operatorId,
+      email,
+      cityId,
+    ];
+    let result = await db.RunQuery(
+      dbConstants.DBS.LIVE_DB,
+      insertQuery,
+      values,
+    );
+
+    if (result) {
+      insertQuery = `INSERT INTO ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} (user_name, first_name, last_name, country_code, phone_no, operator_id ,user_email,city_reg,venus_autos_user_id,venus_user_name) VALUES (?,?,?,?,?,?,?,?,?,?)`;
+      values = [
+        userName,
+        firstName,
+        lastName,
+        countryCode,
+        phoneNumber,
+        operatorId,
+        email,
+        cityId,
+        result.insertId,
+        userName,
+      ];
+      await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, insertQuery, values);
+      return responseHandler.success(req, res, 'Customer Created', {});
+    }
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
