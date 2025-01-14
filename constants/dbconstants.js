@@ -55,6 +55,8 @@ exports.LIVE_DB = {
   PARAMETER: 'tb_parameters',
   OPERATOR_PARAMS: 'tb_operator_params',
   PACKAGE_SESSION: 'tb_requested_pkg_session',
+  GEOFENCE_TOLL_TYPES: 'tb_geofenc_type',
+  TOLL_TABLE: 'tb_toll',
 };
 
 exports.LIVE_LOGS = {
