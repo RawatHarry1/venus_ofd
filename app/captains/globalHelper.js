@@ -899,7 +899,7 @@ WHERE
   deviceName.push(data[0].device_name);
   osVersion.push(data[0].os_version);
   date_registered.push(data[0].date_registered);
-  if(data[0].venus_autos_app_version){
+  if (data[0].venus_autos_app_version) {
     appVersionCode.push(
       data[0].venus_autos_app_version.toString().split('').join('.'),
     );

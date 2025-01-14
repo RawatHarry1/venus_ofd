@@ -10,7 +10,7 @@ const {
 
 const Helper = require('../helper');
 var Joi = require('joi');
-var crypto      = require('crypto');
+var crypto = require('crypto');
 const pushNotificationHelper = require('../../push_notification/helper');
 const {
   postRequsestFormData,
@@ -318,7 +318,7 @@ exports.createCustomer = async function (req, res) {
       );
     }
 
-    var accessToken = await generateKeyAndAccessTokens()
+    var accessToken = await generateKeyAndAccessTokens();
 
     let insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} (
       user_name, first_name, last_name, 
@@ -336,7 +336,7 @@ exports.createCustomer = async function (req, res) {
       operatorId,
       email,
       cityId,
-      accessToken
+      accessToken,
     ];
     let result = await db.RunQuery(
       dbConstants.DBS.LIVE_DB,
@@ -357,7 +357,7 @@ exports.createCustomer = async function (req, res) {
         cityId,
         result.insertId,
         userName,
-        accessToken
+        accessToken,
       ];
       await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, insertQuery, values);
       return responseHandler.success(req, res, 'Customer Created', {});
@@ -366,7 +366,6 @@ exports.createCustomer = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
-
 
 async function generateKeyAndAccessTokens() {
   try {
