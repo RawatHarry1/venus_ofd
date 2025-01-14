@@ -10,6 +10,7 @@ const {
 
 const Helper = require('../helper');
 var Joi = require('joi');
+var crypto      = require('crypto');
 const pushNotificationHelper = require('../../push_notification/helper');
 const {
   postRequsestFormData,
@@ -317,13 +318,15 @@ exports.createCustomer = async function (req, res) {
       );
     }
 
+    var accessToken = await generateKeyAndAccessTokens()
+
     let insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} (
       user_name, first_name, last_name, 
       country_code, phone_no, operator_id, 
-      user_email, city
+      user_email, city, access_token
     ) 
     VALUES 
-      (?, ?, ?, ?, ?, ?, ?, ?)`;
+      (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     let values = [
       userName,
       firstName,
@@ -333,6 +336,7 @@ exports.createCustomer = async function (req, res) {
       operatorId,
       email,
       cityId,
+      accessToken
     ];
     let result = await db.RunQuery(
       dbConstants.DBS.LIVE_DB,
@@ -341,7 +345,7 @@ exports.createCustomer = async function (req, res) {
     );
 
     if (result) {
-      insertQuery = `INSERT INTO ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} (user_name, first_name, last_name, country_code, phone_no, operator_id ,user_email,city_reg,venus_autos_user_id,venus_user_name) VALUES (?,?,?,?,?,?,?,?,?,?)`;
+      insertQuery = `INSERT INTO ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} (user_name, first_name, last_name, country_code, phone_no, operator_id ,user_email,city_reg,venus_autos_user_id,venus_user_name,venus_autos_access_token) VALUES (?,?,?,?,?,?,?,?,?,?,?)`;
       values = [
         userName,
         firstName,
@@ -353,6 +357,7 @@ exports.createCustomer = async function (req, res) {
         cityId,
         result.insertId,
         userName,
+        accessToken
       ];
       await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, insertQuery, values);
       return responseHandler.success(req, res, 'Customer Created', {});
@@ -361,3 +366,25 @@ exports.createCustomer = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+
+async function generateKeyAndAccessTokens() {
+  try {
+    // Generate a random key
+    const buf = await new Promise((resolve, reject) => {
+      crypto.randomBytes(32, (err, buffer) => {
+        if (err) return reject(err);
+        resolve(buffer);
+      });
+    });
+
+    const authKey = buf.toString('hex');
+    const sha256 = crypto.createHash('sha256');
+    sha256.update(authKey + generalConstants.PASSWORDS.SUPER_ADMIN_PASSWORD);
+    const accessToken = sha256.digest('hex');
+
+    return accessToken;
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+}
