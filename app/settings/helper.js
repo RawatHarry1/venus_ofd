@@ -626,7 +626,7 @@ async function insertGeofenceData(body) {
     newQuery = '';
 
   if (body.insertData) {
-    query = `INSERT INTO tb_toll (city_id, name, rate, is_active, vehicle_type, geofenc_typ_ref, operator_id) VALUES (?,?,?,?,?,?,?)`;
+    query = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.TOLL_TABLE} (city_id, name, rate, is_active, vehicle_type, geofenc_typ_ref, operator_id) VALUES (?,?,?,?,?,?,?)`;
     whereValues.push(
       body.city_id,
       body.name,
@@ -661,7 +661,7 @@ async function insertGeofenceData(body) {
       }
     }
 
-    query = ` UPDATE tb_toll SET `;
+    query = ` UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.TOLL_TABLE} SET `;
     if (body.city_id) {
       query += ` city_id =? ,`;
       whereValues.push(body.city_id);
@@ -709,7 +709,7 @@ async function insertGeofenceData(body) {
   // Execute the query
   var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, whereValues);
 
-  newQuery = `SELECT * from tb_toll where id = ?`;
+  newQuery = `SELECT * from ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.TOLL_TABLE} where id = ?`;
   whereValues = [];
 
   if (body.insertData) {
