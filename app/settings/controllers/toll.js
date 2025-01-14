@@ -45,8 +45,6 @@ exports.insertToll = async function (req, res) {
     let vehicleType = rBody.vehicle_type;
     let isInsertData = rBody.is_insert;
     let tollId = rBody.toll_id;
-    let preTollPolygon = rBody.pre_toll_polygon;
-    let postTollPolygon = rBody.post_toll_polygon;
     if (isInsertData) {
       var checkValues = checkBlank([
         cityId,
@@ -57,15 +55,7 @@ exports.insertToll = async function (req, res) {
         isInsertData,
       ]);
     } else {
-      var checkValues = checkBlank([
-        cityId,
-        operatorId,
-        amount,
-        name,
-        vehicleType,
-        isInsertData,
-        tollId,
-      ]);
+      var checkValues = checkBlank([cityId, operatorId, isInsertData, tollId]);
     }
     if (checkValues == 1) {
       return responseHandler.parameterMissingResponse(res, '');
