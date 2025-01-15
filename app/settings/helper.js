@@ -620,14 +620,17 @@ async function getTolldata(body, operatorId) {
 }
 
 async function insertGeofenceData(body) {
-  let query = '',
-    whereValues = [],
-    newQuery = '',
-    coordinatesString = '';
+  let query = '';
+  let whereValues = [];
+  let result;
 
+  // Handle INSERT operation
   if (body.insertData) {
-    // Insert new toll record
-    query = `INSERT INTO tb_toll (city_id, name, rate, is_active, vehicle_type, geofenc_typ_ref, operator_id) VALUES (?,?,?,?,?,?,?)`;
+    query = `
+      INSERT INTO tb_toll 
+      (city_id, name, rate, is_active, vehicle_type, geofenc_typ_ref, operator_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
     whereValues.push(
       body.city_id,
       body.name,
@@ -638,29 +641,32 @@ async function insertGeofenceData(body) {
       body.operator_id,
     );
   } else {
-    // Prepare polygon coordinates for pre_toll_polygon or post_toll_polygon
-    if (body.pre_toll_polygon || body.post_toll_polygon) {
-      const codeArray = body.pre_toll_polygon || body.post_toll_polygon;
-      const coordinates = codeArray.map((coord) => [coord.x, coord.y]);
+    // Handle UPDATE operation
+    const setClauses = [];
+    let preTollPolygonCoordinates = '';
+    let postTollPolygonCoordinates = '';
 
-      // Ensure the polygon is closed
-      if (
-        coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
-        coordinates[0][1] !== coordinates[coordinates.length - 1][1]
-      ) {
-        coordinates.push(coordinates[0]);
-      }
-
-      // Convert coordinates to a string for POLYGON format
-      coordinatesString = coordinates
-        .map((coord) => `${coord[0]} ${coord[1]}`)
-        .join(',');
+    // Generate polygon coordinates for pre_toll_polygon
+    if (body.pre_toll_polygon) {
+      preTollPolygonCoordinates = generatePolygonCoordinates(
+        body.pre_toll_polygon,
+      );
+      setClauses.push(
+        `pre_toll_polygon = GeomFromText('POLYGON((${preTollPolygonCoordinates}))')`,
+      );
     }
 
-    // Update existing toll record
-    query = `UPDATE tb_toll SET `;
-    const setClauses = [];
+    // Generate polygon coordinates for post_toll_polygon
+    if (body.post_toll_polygon) {
+      postTollPolygonCoordinates = generatePolygonCoordinates(
+        body.post_toll_polygon,
+      );
+      setClauses.push(
+        `post_toll_polygon = GeomFromText('POLYGON((${postTollPolygonCoordinates}))')`,
+      );
+    }
 
+    // Add standard update fields
     if (body.city_id) {
       setClauses.push(`city_id = ?`);
       whereValues.push(body.city_id);
@@ -685,32 +691,36 @@ async function insertGeofenceData(body) {
       setClauses.push(`is_active = ?`);
       whereValues.push(body.is_active);
     }
-    if (body.pre_toll_polygon) {
-      setClauses.push(
-        `pre_toll_polygon = GeomFromText('POLYGON((${coordinatesString}))')`,
-      );
-    }
-    if (body.post_toll_polygon) {
-      setClauses.push(
-        `post_toll_polygon = GeomFromText('POLYGON((${coordinatesString}))')`,
-      );
-    }
-
-    // Combine SET clauses and append WHERE condition
-    query += setClauses.join(', ');
-    query += ` WHERE id = ?`;
+    // Build the final UPDATE query
+    query = `UPDATE tb_toll SET ${setClauses.join(', ')} WHERE id = ?`;
     whereValues.push(body.toll_id);
   }
 
   // Execute the query
-  let result = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, whereValues);
+  result = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, whereValues);
 
   // Fetch the updated or inserted record
-  newQuery = `SELECT * FROM tb_toll WHERE id = ?`;
-  whereValues = [body.insertData ? result.insertId : body.toll_id];
+  const newQuery = `SELECT * FROM tb_toll WHERE id = ?`;
+  const idToFetch = body.insertData ? result.insertId : body.toll_id;
 
-  result = await db.RunQuery(dbConstants.DBS.LIVE_DB, newQuery, whereValues);
-  return result;
+  const fetchedResult = await db.RunQuery(dbConstants.DBS.LIVE_DB, newQuery, [
+    idToFetch,
+  ]);
+  return fetchedResult;
+}
+
+// Helper function to generate polygon coordinates string
+function generatePolygonCoordinates(polygonArray) {
+  const coordinates = polygonArray.map((coord) => [coord.x, coord.y]);
+
+  if (
+    coordinates[0][0] !== coordinates[coordinates.length - 1][0] ||
+    coordinates[0][1] !== coordinates[coordinates.length - 1][1]
+  ) {
+    coordinates.push(coordinates[0]);
+  }
+
+  return coordinates.map((coord) => `${coord[0]} ${coord[1]}`).join(',');
 }
 
 module.exports = {
