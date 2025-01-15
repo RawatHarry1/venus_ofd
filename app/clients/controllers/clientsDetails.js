@@ -323,10 +323,10 @@ exports.createCustomer = async function (req, res) {
     let insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} (
       user_name, first_name, last_name, 
       country_code, phone_no, operator_id, 
-      user_email, city, access_token
+      user_email, city, access_token, verification_status
     ) 
     VALUES 
-      (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     let values = [
       userName,
       firstName,
@@ -337,6 +337,7 @@ exports.createCustomer = async function (req, res) {
       email,
       cityId,
       accessToken,
+      1
     ];
     let result = await db.RunQuery(
       dbConstants.DBS.LIVE_DB,

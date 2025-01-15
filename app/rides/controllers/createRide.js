@@ -162,8 +162,8 @@ exports.scheduleRideThroughBusinessUser = async function (req, res) {
     var recipientName = req.body.recipient_name || '';
     var recipientPhoneNo = req.body.recipient_phone_no || '';
     var packageDetails = req.body.package_details || '';
-    var estimatedFare = req.body.fare || '0.0';
-    var estimatedTripDistance = req.body.ride_distance || '0';
+    var estimatedFare = req.body.estimated_fare || '0.0';
+    var estimatedTripDistance = req.body.estimated_trip_distance || '0';
     var paystackReferenceId = req.body.paystack_reference_id || '';
 
     var userReqKeys = ['user_id', 'operator_id'];
