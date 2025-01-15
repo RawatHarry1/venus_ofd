@@ -576,7 +576,7 @@ async function getTolldata(body, operatorId) {
       gt.name AS toll_type, 
       csr.region_name 
     FROM 
-      tb_toll t 
+      ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.TOLL_TABLE} t 
     LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.GEOFENCE_TOLL_TYPES} gt 
       ON t.geofenc_typ_ref = gt.id AND gt.status = ? 
     LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} csr 
@@ -627,7 +627,7 @@ async function insertGeofenceData(body) {
   // Handle INSERT operation
   if (body.insertData) {
     query = `
-      INSERT INTO tb_toll 
+      INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.TOLL_TABLE} 
       (city_id, name, rate, is_active, vehicle_type, geofenc_typ_ref, operator_id) 
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
@@ -692,7 +692,7 @@ async function insertGeofenceData(body) {
       whereValues.push(body.is_active);
     }
     // Build the final UPDATE query
-    query = `UPDATE tb_toll SET ${setClauses.join(', ')} WHERE id = ?`;
+    query = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.TOLL_TABLE}  SET ${setClauses.join(', ')} WHERE id = ?`;
     whereValues.push(body.toll_id);
   }
 
@@ -700,7 +700,7 @@ async function insertGeofenceData(body) {
   result = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, whereValues);
 
   // Fetch the updated or inserted record
-  const newQuery = `SELECT * FROM tb_toll WHERE id = ?`;
+  const newQuery = `SELECT * FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.TOLL_TABLE} WHERE id = ?`;
   const idToFetch = body.insertData ? result.insertId : body.toll_id;
 
   const fetchedResult = await db.RunQuery(dbConstants.DBS.LIVE_DB, newQuery, [

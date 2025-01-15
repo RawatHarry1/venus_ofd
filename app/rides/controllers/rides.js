@@ -186,6 +186,7 @@ exports.getRides = async function (req, res) {
 				d.vehicle_no,
 				s.service_type,
         s.is_for_rental,
+        e.toll_charge,
         s.start_time,
         s.end_time,
 				s.op_drop_longitude AS drop_longitude,
