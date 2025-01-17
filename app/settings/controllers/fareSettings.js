@@ -165,27 +165,40 @@ exports.insertOperatorVehicleType = async function (req, res) {
         operatorId,
       );
       if (cityList.length < 2) {
-        throw new Error('Sorry! You are not active in these cities.');
+        return responseHandler.returnErrorMessage(
+          res,
+          `Sorry! You are not active in these cities.`,
+        );
       }
     }
 
     if (subRegionsWrapper.length) {
-      throw new Error('Sorry! Provided information already exists.');
+      return responseHandler.returnErrorMessage(
+        res,
+        `Sorry! Provided information already exists.`,
+      );
     }
 
     if (
       subRegionsWrapper.length &&
       subRegionsWrapper[0].applicable_gender != applicableGender
     ) {
-      throw new Error(
-        'Please take care of gender associated with the vehicle.',
+      return responseHandler.returnErrorMessage(
+        res,
+        `Please take care of gender associated with the vehicle.`,
       );
     }
     if (!cityOperatorWrapper.length) {
-      throw new Error('Sorry! You are not active in this city.');
+      return responseHandler.returnErrorMessage(
+        res,
+        `Sorry! You are not active in this city..`,
+      )
     }
     if (!vehicleTypeWrapper.length) {
-      throw new Error('This vehicle type is no more active.');
+      return responseHandler.returnErrorMessage(
+        res,
+        `This vehicle type is no more active.`,
+      );
     }
 
     cityImageTypeDocument = await fetchImageTypeDocument(
@@ -414,7 +427,10 @@ exports.fetchVehicleSet = async function (req, res) {
     );
 
     if (!cityDetails.length || !cityDetails[0].enable_vehicle_sets) {
-      throw new Error('Unable to fetch vehicle set details');
+      return responseHandler.returnErrorMessage(
+        res,
+        `Unable to fetch vehicle set details`,
+      );
     }
 
     var criteriaKeys = [
@@ -681,7 +697,10 @@ exports.insertUpdatedFareLogs = async function (req, res) {
         operatorId,
       );
       if (cityList.length < 2) {
-        throw new Error('Sorry! You are not active in these cities.');
+        return responseHandler.returnErrorMessage(
+          res,
+          `Sorry! You are not active in these cities.`,
+        );
       }
 
       package = {

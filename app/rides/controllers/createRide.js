@@ -106,7 +106,10 @@ exports.cancelRideFromPanelV2 = async function (req, res) {
     ]);
 
     if (!result.length) {
-      throw new Error('No such driver found.');
+      return responseHandler.returnErrorMessage(
+        res,
+        `No such driver found.'`,
+      );
     }
 
     var driverAccessToken = result[0].access_token;
@@ -322,7 +325,10 @@ exports.assignDriverToScheduleRide = async function (req, res) {
     );
 
     if (!pickupData) {
-      throw new Error('No pickups to assign right now');
+      return responseHandler.returnErrorMessage(
+        res,
+        `No pickups to assign right now`,
+      );
     }
     var driverCriteria = [{ key: 'driver_id', value: driverId }];
     let driverWrapper = await db.SelectFromTable(

@@ -141,7 +141,10 @@ exports.isUserPresent = async function (req, res) {
         userDetails.user_id,
       );
       if (!userCorporateDetails.length) {
-        throw new Error('The user does not exist for this corporate');
+        return responseHandler.returnErrorMessage(
+          res,
+          `The user does not exist for this corporate'`,
+        );
       }
     }
     return responseHandler.success(req, res, 'User Details Sent', userDetails);

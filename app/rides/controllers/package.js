@@ -40,7 +40,10 @@ exports.fetchPackages = async function (req, res) {
 exports.uploadFileController = async function (req, res) {
   try {
     if (!req.file) {
-      throw new Error('No file provided');
+      return responseHandler.returnErrorMessage(
+        res,
+        `No file provided`,
+      );
     }
     const timestamp = Date.now();
 

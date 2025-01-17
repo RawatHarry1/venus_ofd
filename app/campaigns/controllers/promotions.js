@@ -527,7 +527,10 @@ exports.createAuthPromo = async function (req, res) {
       loginType == generalConstants.loginType.DRIVER &&
       driverWalletCardEnabled == generalConstants.ACTIVE_STATUS.INACTIVE
     ) {
-      throw new Error('Driver Wallet Card not enabled.');
+      return responseHandler.returnErrorMessage(
+        res,
+        `Driver Wallet Card not enabled.`,
+      );
     }
     req.body.login_type = req.body.user_type;
 
@@ -552,7 +555,10 @@ exports.createAuthPromo = async function (req, res) {
       let couponCheck = filterPromotionsList(coupons);
 
       if (!couponCheck.length) {
-        throw new Error('No such coupon exists.');
+        return responseHandler.returnErrorMessage(
+          res,
+          `No such coupon exists.`,
+        );
       }
       req.body.amount = 50; //random value in case of coupons
     }
@@ -1083,7 +1089,10 @@ exports.editCoupon = async function (req, res) {
     couponDetails = couponDetails[0];
 
     if (!couponDetails) {
-      throw new Error('No coupon found for this operator.');
+      return responseHandler.returnErrorMessage(
+        res,
+        `No coupon found for this operator.'`,
+      );
     }
 
     /**

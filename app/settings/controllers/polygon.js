@@ -67,7 +67,10 @@ exports.updatePolygon = async function (req, res) {
     var cord = req.body.coordinates;
     var finalCord = JSON.parse(JSON.stringify(cord));
     if (finalCord.length < 5) {
-      throw new Error('Polygon should have a minimum of four sides.');
+      return responseHandler.returnErrorMessage(
+        res,
+        `Polygon should have a minimum of four sides.`,
+      );
     }
     var finalArr = [];
     for (var i in finalCord) {
@@ -87,7 +90,10 @@ exports.updatePolygon = async function (req, res) {
     var isNew = req.body.is_new;
 
     if (password !== generalConstants.PASSWORDS.SUPER_ADMIN_PASSWORD) {
-      throw new Error('You are not authorized to perform this function');
+      return responseHandler.returnErrorMessage(
+        res,
+        `You are not authorized to perform this function`,
+      );
     }
 
     if (coordinates[0] != coordinates[coordinates.length - 1]) {

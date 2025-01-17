@@ -43,7 +43,10 @@ exports.sendSmsPushToDriver = async function (req, res) {
     ]);
 
     if (!dataToSend || !dataToSend.length) {
-      throw new Error('No drivers found');
+      return responseHandler.returnErrorMessage(
+        res,
+        `No drivers found'`,
+      );
     }
 
     if (params.type == 1) {
@@ -115,7 +118,10 @@ exports.contactCustomers = async function (req, res) {
     ]);
 
     if (!dataToSend || !dataToSend.length) {
-      throw new Error('No user found');
+      return responseHandler.returnErrorMessage(
+        res,
+        `No user found'`,
+      );
     }
 
     if (params.type == 1) {
