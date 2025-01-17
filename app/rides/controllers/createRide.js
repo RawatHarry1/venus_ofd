@@ -340,19 +340,31 @@ exports.assignDriverToScheduleRide = async function (req, res) {
     var pickupStatus = pickupData.status;
 
     if (driverData.status == rideConstants.USER_STATUS.BUSY) {
-      throw new Error('Driver is busy on another ride');
+      return responseHandler.returnErrorMessage(
+        res,
+        'Driver is busy on another ride',
+      );
     }
 
     if (pickupStatus == rideConstants.SCHEDULE_STATUS.IN_PROCESS) {
-      throw new Error('Sorry! This Schedule is already in progress');
+      return responseHandler.returnErrorMessage(
+        res,
+        'Sorry! This Schedule is already in progress',
+      );
     }
 
     if (pickupStatus == rideConstants.SCHEDULE_STATUS.CANCELLED) {
-      throw new Error('Sorry! This Schedule is cancelled');
+      return responseHandler.returnErrorMessage(
+        res,
+        'Sorry! This Schedule is cancelled',
+      );
     }
 
     if (pickupStatus == rideConstants.SCHEDULE_STATUS.PROCESSED) {
-      throw new Error('Sorry! This Schedule is already completed');
+      return responseHandler.returnErrorMessage(
+        res,
+        'Sorry! This Schedule is already completed',
+      );
     }
 
     if (pickupData.session_id != -1) {
@@ -365,7 +377,10 @@ exports.assignDriverToScheduleRide = async function (req, res) {
 
       sessionWrapper = sessionWrapper[0];
       if (sessionWrapper.is_active == rideConstants.SESSION_STATUS.ACTIVE) {
-        throw new Error('Sorry! The ride is already in progress');
+        return responseHandler.returnErrorMessage(
+          res,
+          'Sorry! The ride is already in progress',
+        );
       }
     }
 
@@ -586,17 +601,26 @@ WHERE
     );
 
     if (!engagementWrapper.length) {
-      throw new Error('Ride not exist');
+      return responseHandler.returnErrorMessage(
+        res,
+        `Ride not exist`,
+      );
     }
 
     engagementWrapper = engagementWrapper[0];
 
     if (engagementWrapper.status == rideConstants.ENGAGEMENT_STATUS.STARTED) {
-      throw new Error('Ride already accepted by other driver');
+      return responseHandler.returnErrorMessage(
+        res,
+        `Ride already started.`,
+      );
     }
 
     if (engagementWrapper.status == rideConstants.ENGAGEMENT_STATUS.ACCEPTED) {
-      throw new Error('This request has been accepted by other driver');
+      return responseHandler.returnErrorMessage(
+        res,
+        `Ride already accepted by other driver`,
+      );
     }
 
     await db.updateTable(
@@ -639,7 +663,10 @@ WHERE
       rideConstants.ENGAGEMENT_STATUS.REQUESTED
     ) {
       if (driverWrapper.status == rideConstants.USER_STATUS.BUSY) {
-        throw new Error('Driver is busy on another ride');
+        return responseHandler.returnErrorMessage(
+          res,
+          `Driver is busy on another ride`,
+        );
       }
 
       var requestBody = {
