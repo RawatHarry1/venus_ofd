@@ -444,7 +444,7 @@ exports.removePickupSchedule = async function (req, res) {
       pickupCriteria,
     );
     if (!pickup.length) {
-      return responseHandler.returnErrorMessage(req, 'No pickup found');
+      return responseHandler.returnErrorMessage(res, 'No pickup found');
     }
     pickup = pickup[0];
 
@@ -460,7 +460,7 @@ exports.removePickupSchedule = async function (req, res) {
 
     if (!canBeRemovedNow(pickup.pickup_time, cancelWindowTime)) {
       return responseHandler.returnErrorMessage(
-        req,
+        res,
         'Sorry, pickup cannot be cancelled at this moment',
       );
     }
