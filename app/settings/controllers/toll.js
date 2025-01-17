@@ -25,7 +25,10 @@ exports.getTolls = async function (req, res) {
     let data = await Helper.getTolldata(req.body, operatorId);
 
     if (!data) {
-      throw new Error('Someting Went wrong');
+      return responseHandler.returnErrorMessage(
+        res,
+        `Someting Went wrong`,
+      );
     }
 
     return responseHandler.success(req, res, 'Toll data fetched', data);
