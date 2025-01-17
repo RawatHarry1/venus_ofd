@@ -239,7 +239,10 @@ exports.updateBanner = async function (req, res) {
     }
 
     if (fields.length === 0) {
-      throw new Error('No fields to update');
+      return responseHandler.returnErrorMessage(
+        res,
+        `No fields to update`,
+      );
     }
 
     params.push(opts.id);
