@@ -673,6 +673,8 @@ exports.insertUpdatedFareLogs = async function (req, res) {
           fare_per_baggage: params.fare_per_baggage,
           fare_per_xmin: params.fare_per_xmin,
           no_of_xmin: params.no_of_xmin,
+          rental_fare_factor: params.rental_fare_factor,
+          rental_fixed_fare:  params.rental_fixed_fare
         };
         // Replace `undefined` with `null`
         Object.keys(updateObj).forEach((key) => {
