@@ -584,13 +584,14 @@ async function getTolldata(body, operatorId) {
       AND csr.city_id = t.city_id 
       AND csr.is_active = ? 
       AND csr.operator_id = ? 
-      AND csr.ride_type IN (0, 2, 10) 
+      AND csr.ride_type IN (0, 2, 10)
+      AND t.service_type = ? 
     WHERE 
       t.is_active = ?`;
 
   // Where conditions and values
   let whereConditions = [];
-  let whereValues = [1, 1, operatorId, 1]; // Initial values for query placeholders
+  let whereValues = [1, 1, operatorId, body.request_ride_type, 1]; // Initial values for query placeholders
 
   // Add dynamic filters
   if (body.city_id) {
@@ -628,8 +629,8 @@ async function insertGeofenceData(body) {
   if (body.insertData) {
     query = `
       INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.TOLL_TABLE} 
-      (city_id, name, rate, is_active, vehicle_type, geofenc_typ_ref, operator_id) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (city_id, name, rate, is_active, vehicle_type, geofenc_typ_ref, operator_id,service_type) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     whereValues.push(
       body.city_id,
@@ -639,6 +640,7 @@ async function insertGeofenceData(body) {
       body.vehicle_type,
       body.geofence_type,
       body.operator_id,
+      body.request_ride_type
     );
   } else {
     // Handle UPDATE operation
