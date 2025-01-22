@@ -585,13 +585,12 @@ async function getTolldata(body, operatorId) {
       AND csr.is_active = ? 
       AND csr.operator_id = ? 
       AND csr.ride_type IN (0, 2, 10)
-      AND t.service_type = ? 
     WHERE 
       t.is_active = ?`;
 
   // Where conditions and values
   let whereConditions = [];
-  let whereValues = [1, 1, operatorId, body.request_ride_type, 1]; // Initial values for query placeholders
+  let whereValues = [1, 1, operatorId, 1]; // Initial values for query placeholders
 
   // Add dynamic filters
   if (body.city_id) {
@@ -607,6 +606,11 @@ async function getTolldata(body, operatorId) {
   if (body.toll_id) {
     whereConditions.push(`t.id = ?`);
     whereValues.push(body.toll_id);
+  }
+
+  if(body.request_ride_type){
+    whereConditions.push(`t.service_type = ?`);
+    whereValues.push(body.request_ride_type);
   }
 
   // Append dynamic conditions to query
