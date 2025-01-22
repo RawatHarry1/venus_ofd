@@ -166,6 +166,7 @@ exports.AUTOS_SERVERS_ENDPOINT = {
   SEND_LOGIN_OTP: '/customer/sendLoginOtp',
   VERIFY_OTP: '/customer/verifyOtp',
   CUSTOMER_PROFILE: '/customer/profile',
+  SEND_WALLET_NOTIFICATIONS: '/send_wallet_notification'
 };
 
 exports.VEHILCE_TYPE = {

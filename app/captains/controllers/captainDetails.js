@@ -20,6 +20,7 @@ const { checkBlank } = require('../../rides/helper');
 const { getOperatorParameters } = require('../../admin/helper');
 var fs = require('fs');
 const { response } = require('express');
+const { pushFromRideServer } = require('../../push_notification/helper');
 
 exports.getCaptains = async function (req, res) {
   try {
@@ -932,13 +933,13 @@ exports.giveCreditsToUser = async function (req, res) {
     let email = req.email_from_acl || '';
     let userType = req.body.user_type;
 
-    if (
-      userType == 0 &&
-      transactionType == authConstants.TRANSACTION_TYPE.DEBIT &&
-      checkBlank([refEngagementId])
-    ) {
-      return responseHandler.parameterMissingResponse(res, '');
-    }
+    // if (
+    //   userType == 0 &&
+    //   transactionType == authConstants.TRANSACTION_TYPE.DEBIT &&
+    //   checkBlank([refEngagementId])
+    // ) {
+    //   return responseHandler.parameterMissingResponse(res, '');
+    // }
 
     let tableToValidateFrom = 'tb_drivers';
     let fieldToValidate = 'driver_id';
@@ -983,15 +984,14 @@ exports.giveCreditsToUser = async function (req, res) {
       email,
     );
 
-    // //Send notification whenever there is credit/debit
-    // if (userType) {
-    //   const NotiUrl = config.get('servers.autos') + '/send_wallet_notification';
-    //   const body = {
-    //     user_id: userId,
-    //     client_id: constants.clientId.AUTOS_CLIENT_ID
-    //   }
-    //   yield sendRequestPromisified(handlerInfo, NotiUrl, body);
-    // }
+    let reqBody = {
+      user_id: userId,
+      client_id: generalConstants.PASSWORDS.AUTOS_PUSH_PASSWORD
+    }
+
+    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.SEND_WALLET_NOTIFICATIONS;
+
+    await pushFromRideServer(reqBody, endpoint);
 
     return responseHandler.success(req, res, '', {});
   } catch (error) {
