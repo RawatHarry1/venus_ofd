@@ -19,7 +19,7 @@ exports.fetchOperatorVehicleType = async function (req, res) {
     var requestRideType = req.request_ride_type;
     var city = parseInt(req.body.city_id) || 0;
     var values = [operatorId];
-    var queryToFetchOperatorVehicleType = `SELECT region_name, display_order, convenience_charge, waiting_charges_applicable, max_people,destination_mandatory, fare_mandatory, convenience_charge_waiver, convenience_venus_cut,vehicle_tax, fixed_commission, subscription_charge, images, region_id, ride_type, city_id, min_driver_balance,vehicle_type, is_active, customer_notes_enabled, reverse_bidding_enabled, applicable_gender FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SUB_REGIONS} WHERE operator_id = ?`;
+    var queryToFetchOperatorVehicleType = `SELECT region_name, display_order, convenience_charge, waiting_charges_applicable, max_people,destination_mandatory, fare_mandatory, convenience_charge_waiver, convenience_venus_cut,vehicle_tax, fixed_commission, subscription_charge, images, region_id, ride_type, city_id, min_driver_balance,vehicle_type, is_active, customer_notes_enabled, reverse_bidding_enabled, applicable_gender,	is_rental_vehicle  FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SUB_REGIONS} WHERE operator_id = ?`;
     if (city > 0) {
       queryToFetchOperatorVehicleType += ' AND city_id = ?';
       values.push(city);
