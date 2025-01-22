@@ -105,7 +105,7 @@ exports.checkOperatorToken = async function (req, res) {
       return responseHandler.parameterMissingResponse(res, ['domain']);
     }
     let enabled_service;
-    const query = `SELECT is_delivery_enabled, is_taxi_enabled, token FROM ${dbConstants.LIVE_DB.OPERATPRS} WHERE domain = ?`;
+    const query = `SELECT is_delivery_enabled, is_taxi_enabled, token FROM ${dbConstants.LIVE_DB.OPERATPRS} WHERE domain = ? AND is_active = 1`;
     var values = [req.body.domain];
     var data = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
     if (data.length > 0) {
