@@ -848,7 +848,7 @@ exports.removeWrongDriver = async function (req, res) {
       generalConstants.VERIFICATION_STATUS.VERIFIED
     ) {
       return responseHandler.returnErrorMessage(
-        req,
+        res,
         'Driver has already been activated.',
       );
     }

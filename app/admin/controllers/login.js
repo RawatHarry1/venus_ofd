@@ -57,7 +57,6 @@ exports.adminLogin = async (req, res) => {
     // Check if user is active
     if (userDetails.status !== 'ACTIVE') {
       return responseHandler.error(
-        req,
         res,
         'User is INACTIVE, please verify with Admin',
         403,

@@ -69,4 +69,18 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     ClientsDetails.createCustomer,
   );
+
+  app.post(
+    '/update_customer',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    ClientsDetails.updateCustomer,
+  );
+
+  app.post(
+    '/remove_customer',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    ClientsDetails.removeCustomer,
+  );
 };

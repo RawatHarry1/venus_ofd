@@ -371,6 +371,215 @@ exports.createCustomer = async function (req, res) {
   }
 };
 
+exports.updateCustomer = async function (req, res) {
+  try {
+    let requestBody = req.body;
+    let operatorId = req.operator_id;
+    let cityId = requestBody.city_id;
+    let userId = requestBody.user_id
+    let updatedFirstName = requestBody.updated_first_name;
+    let updatedLastName = requestBody.updated_last_name;
+    let updatedUserName = requestBody.updated_user_name;
+    let updatedEmail = requestBody.updated_user_email;
+    let isExist;
+    let user
+
+    delete requestBody.token;
+
+    let schema = Joi.object({
+      city_id: Joi.string().required(),
+      updated_first_name: Joi.string().optional(),
+      updated_last_name: Joi.string().optional(),
+      userId: Joi.string().required(),
+      updated_user_name: Joi.string().optional(),
+      updated_user_email: Joi.string().optional(),
+      secret_key: Joi.number().optional(),
+    });
+
+    let schemaResult = schema.validate(requestBody);
+    if (schemaResult.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var fetchQuery = `SELECT first_name, last_name, user_name, user_email FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE user_id = ? AND operator_id = ? AND city_id = ?`;
+
+    user = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
+      userId,
+      operatorId,
+      cityId
+    ]);
+
+    if (!user) {
+      return responseHandler.returnErrorMessage(
+        res,
+        `User not exist`,
+      );
+    }
+
+    user = user[0]
+
+    var hasChangedName = typeof updatedUserName === 'undefined' ? false : user.user_name !== updatedUserName;
+    var hasChangedEmail = typeof updatedEmail === 'undefined' ? false : user.user_email !== updatedEmail;
+    var hasChangedFirstName = typeof updatedFirstName === 'undefined' ? false : user.firstName !== updatedFirstName;
+    var hasChangedLastName = typeof updatedLastName === 'undefined' ? false : user.lastName !== updatedLastName;
+
+    if (hasChangedEmail) {
+      var fetchQuery = `SELECT user_email FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE user_email = ? AND operator_id = ? AND city_id = ?`;
+
+      isExist = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
+        updatedEmail,
+        operatorId,
+        cityId
+      ]);
+
+      if (isExist && isExist.length) {
+        return responseHandler.returnErrorMessage(
+          res,
+          `User with this email Already exists Please try with different one.`,
+        );
+      }
+    }
+
+    if (hasChangedName) {
+      var fetchQuery = `SELECT user_email FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE user_name = ? AND operator_id = ? AND city_id = ?`;
+
+      isExist = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
+        updatedUserName,
+        operatorId,
+        cityId
+      ]);
+
+      if (isExist && isExist.length) {
+        return responseHandler.returnErrorMessage(
+          res,
+          `User with this username Already exists Please try with different one.`,
+        );
+      }
+    }
+
+    if (hasChangedEmail || hasChangedName || hasChangedFirstName || hasChangedLastName) {
+
+      /* 
+      update Live table
+      */
+      var params = {};
+      var valuesToUpdate = {
+        first_name: updatedFirstName,
+        last_name: updatedLastName,
+        user_name: updatedUserName,
+        user_email: updatedEmail
+      };
+
+      for (var key in valuesToUpdate) {
+        if (valuesToUpdate[key] || valuesToUpdate[key] === 0) {
+          params[key] = valuesToUpdate[key];
+        }
+      }
+
+      await db.updateTable(
+        dbConstants.DBS.LIVE_DB,
+        `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS}`,
+        params,
+        [
+          { key: 'user_id', value: userId }
+        ]
+      );
+
+      /* 
+      update Auth table
+      */
+
+      var params = {};
+      var valuesToUpdate = {
+        first_name: updatedFirstName,
+        last_name: updatedLastName,
+        venus_user_name: updatedUserName,
+        user_email: updatedEmail
+      };
+
+      for (var key in valuesToUpdate) {
+        if (valuesToUpdate[key] || valuesToUpdate[key] === 0) {
+          params[key] = valuesToUpdate[key];
+        }
+      }
+
+      await db.updateTable(
+        dbConstants.DBS.AUTH_DB,
+        `${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}`,
+        params,
+        [
+          { key: 'venus_autos_user_id', value: userId }
+        ]
+      );
+
+
+    } else {
+      return responseHandler.returnErrorMessage(
+        res,
+        `nothing to update`,
+      );
+    }
+    return responseHandler.success(req, res, 'Customer updated', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.removeCustomer = async function (req, res) {
+  try {
+    let requestBody = req.body;
+    let operatorId = req.operator_id;
+    let cityId = requestBody.city_id;
+    let userId = requestBody.user_id
+    let user
+    let query, params
+
+    delete requestBody.token;
+
+    let schema = Joi.object({
+      city_id: Joi.string().required(),
+      userId: Joi.string().required(),
+      secret_key: Joi.number().optional(),
+    });
+
+    let schemaResult = schema.validate(requestBody);
+    if (schemaResult.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var fetchQuery = `SELECT first_name, last_name, user_name, user_email FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE user_id = ? AND operator_id = ? AND city_id = ?`;
+
+    user = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
+      userId,
+      operatorId,
+      cityId
+    ]);
+
+    if (!user) {
+      return responseHandler.returnErrorMessage(
+        res,
+        `User not exist`,
+      );
+    }
+    user = user[0]
+    /* 
+    update Live table
+    */
+    query = `DELETE FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE user_id = ? AND operator_id = ? AND city_id = ?`;
+    await db.RunQuery(dbConstants.DBS.LIVE_DB, query, [userId, operatorId, cityId]);
+
+    /* 
+    update Auth table
+    */
+    query = `DELETE FROM ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} WHERE venus_autos_user_id = ? AND operator_id = ? AND city_reg = ?`;
+    await db.RunQuery(dbConstants.DBS.AUTH_DB, query, [userId, operatorId, cityId]);
+
+    return responseHandler.success(req, res, 'Customer removed', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
 async function generateKeyAndAccessTokens() {
   try {
     // Generate a random key

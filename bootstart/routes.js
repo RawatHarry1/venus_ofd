@@ -8,4 +8,6 @@ module.exports = {
   settings: require('../app/settings'),
   pushNotifcations: require('../app/push_notification'),
   referral: require('../app/referral_program'),
+  subscription: require('../app/subscription'),
+  franchisee: require('../app/franchisee')
 };

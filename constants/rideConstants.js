@@ -137,6 +137,22 @@ exports.COMMUNICATION_MEDIUM = {
 
 exports.SERVERS = {
   AUTOS_SERVER: 'https://chuki-rides.venustaxi.in',
+  MERCHANT_SERVER: 'https://super-app-franchise.venustaxi.in'
+};
+
+exports.MERCHANT_SERVER_ENDPOINT = {
+  FETCH_ALL_SUBSCRIPTIONS: '/api/subscriptions/get_all_subscriptions',
+  CREATE_SUBSCRIPTION: '/api/subscriptions/create_subscription',
+  UPDATE_SUBSCRIPTION: '/api/subscriptions/update_subscription',
+  DELETE_SUBSCRIPTION: '/api/subscriptions/delete_subscription',
+  CREATE_FRANCHISEE_FROM_PANEL: '/api/franchisee/create_franchisee_from_panel',
+  UPDATE_FRANCHISEE: '/api/franchisee/update',
+  DELETE_FRANCHISEE: '/api/franchisee/delete',
+  LIST_FRANCHISEES: '/api/franchisee/list',
+  SIGNUP_FRANCHISEE: '/api/franchisee/signup',
+  CHANGE_PASSWORD: '/api/franchisee/change_password',
+  RESET_PASSWORD: '/api/franchisee/reset_password',
+  LOGIN_FRANCHISEE: '/api/franchisee/login'
 };
 
 exports.AUTOS_SERVERS_ENDPOINT = {
@@ -232,6 +248,12 @@ exports.DELIVERY_PACKAGE_STATUS = {
   PACKAGE_DELIVERED_SUCCESSFULLY: 4,
   PACKAGE_PICKUP_FAILED: 5,
 };
+
+exports.RENTAL_FARE_FACTOR = {
+  HOURLY: 1,
+  DAILY: 2,
+  MONTHLY: 3,
+}
 
 // exports.DRIVER_DOCUMENT_TYPE = {
 //   MAP_IMAGES: 7,
