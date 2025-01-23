@@ -70,17 +70,24 @@ module.exports = function (app) {
     ClientsDetails.createCustomer,
   );
 
-  app.post(
-    '/update_customer',
-    AdminMiddlewares.admin.domainToken,
-    AdminMiddlewares.admin.isLoggedIn,
-    ClientsDetails.updateCustomer,
-  );
+  // app.post(
+  //   '/update_customer',
+  //   AdminMiddlewares.admin.domainToken,
+  //   AdminMiddlewares.admin.isLoggedIn,
+  //   ClientsDetails.updateCustomer,
+  // );
+
+  // app.post(
+  //   '/remove_customer',
+  //   AdminMiddlewares.admin.domainToken,
+  //   AdminMiddlewares.admin.isLoggedIn,
+  //   ClientsDetails.removeCustomer,
+  // );
 
   app.post(
-    '/remove_customer',
+    '/get_block_customers',
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,
-    ClientsDetails.removeCustomer,
+    ClientsDetails.getBlockCustomers,
   );
 };
