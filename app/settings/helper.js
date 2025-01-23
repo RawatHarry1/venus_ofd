@@ -685,9 +685,9 @@ async function insertGeofenceData(body) {
       setClauses.push(`rate = ?`);
       whereValues.push(body.amount);
     }
-    if (body.vehicleType) {
+    if (body.vehicle_type) {
       setClauses.push(`vehicle_type = ?`);
-      whereValues.push(body.vehicleType);
+      whereValues.push(body.vehicle_type);
     }
     if (body.geofenceType) {
       setClauses.push(`geofenc_typ_ref = ?`);
