@@ -122,6 +122,11 @@ exports.checkOperatorToken = async function (req, res) {
       delete data[0].is_delivery_enabled;
       delete data[0].is_taxi_enabled;
       data[0].enabled_service = enabled_service;
+    }else{
+      return responseHandler.returnErrorMessage(
+        res,
+        `Unauthorised Access`,
+      );
     }
 
     return responseHandler.success(req, res, '', data);
