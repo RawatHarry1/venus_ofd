@@ -600,3 +600,36 @@ async function generateKeyAndAccessTokens() {
     errorHandler.errorHandler(error, req, res);
   }
 }
+
+exports.getBlockCustomers = async function (req, res) {
+  try {
+    let requestBody = req.body;
+    let operatorId = req.operator_id;
+    let cityId = requestBody.city_id;
+    let users = []
+
+    delete requestBody.token;
+
+    let schema = Joi.object({
+      city_id: Joi.string().required(),
+      secret_key: Joi.number().optional(),
+    });
+
+    let schemaResult = schema.validate(requestBody);
+    if (schemaResult.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var fetchQuery = `SELECT * FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE can_request = ? AND operator_id = ? AND city = ?`;
+
+    users = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
+      0,
+      operatorId,
+      cityId
+    ]);
+
+    return responseHandler.success(req, res, 'Blocked Customers fetched', users);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
