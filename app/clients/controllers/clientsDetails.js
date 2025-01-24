@@ -620,7 +620,7 @@ exports.getBlockCustomers = async function (req, res) {
       return responseHandler.parameterMissingResponse(res, '');
     }
 
-    var fetchQuery = `SELECT * FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE can_request = ? AND operator_id = ? AND city_id = ?`;
+    var fetchQuery = `SELECT * FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE can_request = ? AND operator_id = ? AND city = ?`;
 
     users = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
       0,
