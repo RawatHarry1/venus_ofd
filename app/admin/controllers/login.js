@@ -25,6 +25,10 @@ exports.adminLogin = async (req, res) => {
       );
     }
 
+    let stmt = `SELECT operator_id FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATPRS} WHERE token = ? `;
+    let values = [req.headers.domain_token];
+    let operatorId = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, values);
+
     const hashedPassword = crypto
       .createHash('md5')
       .update(password)
@@ -63,6 +67,14 @@ exports.adminLogin = async (req, res) => {
       );
     }
 
+    if(operatorId[0].operator_id != userDetails.operator_id){
+      return responseHandler.error(
+        res,
+        'Unauthorised Access',
+        403,
+      );
+    }
+
     // Generate token
     const tokenData = {
       user_id: userDetails.id,
@@ -70,9 +82,6 @@ exports.adminLogin = async (req, res) => {
       TTL: TTL || null,
     };
     const token = await createToken(tokenData);
-    let stmt = `SELECT operator_id FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATPRS} WHERE token = ? `;
-    let values = [req.headers.domain_token];
-    let operatorId = await db.RunQuery(dbConstants.DBS.LIVE_DB, stmt, values);
 
     var vehicleDetails = await Helper.getVehicle(0, operatorId[0].operator_id);
     var finalVehicleList = Helper.makeDataForVehicles(vehicleDetails);
@@ -104,9 +113,15 @@ exports.checkOperatorToken = async function (req, res) {
     if (!req.body.domain) {
       return responseHandler.parameterMissingResponse(res, ['domain']);
     }
+    var passcode = req.body.passcode;
     let enabled_service;
-    const query = `SELECT is_delivery_enabled, is_taxi_enabled, token FROM ${dbConstants.LIVE_DB.OPERATPRS} WHERE domain = ? AND is_active = 1`;
-    var values = [req.body.domain];
+    if(passcode){
+      var query = `SELECT is_delivery_enabled, is_taxi_enabled, token FROM ${dbConstants.LIVE_DB.OPERATPRS} WHERE passcode = ? AND is_active = 1`;
+      var values = [passcode];
+    }else{
+      var query = `SELECT is_delivery_enabled, is_taxi_enabled, token FROM ${dbConstants.LIVE_DB.OPERATPRS} WHERE domain = ? AND is_active = 1`;
+      var values = [req.body.domain];
+    }
     var data = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
     if (data.length > 0) {
       const { is_taxi_enabled, is_delivery_enabled } = data[0];
