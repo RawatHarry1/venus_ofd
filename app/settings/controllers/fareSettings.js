@@ -368,10 +368,6 @@ exports.updateOperatorVehicleType = async function (req, res) {
     if (body.config) {
       valuesToUpdate.config = JSON.stringify(
         {
-          quick_menu_settings: body.config.quick_menu_settings || 0,
-          recent_rides: body.config.recent_rides || 0,
-          earnings: body.config.earnings || 0,
-          schedule_ride: body.config.schedule_ride || 0,
           ride_on_ride: body.config.ride_on_ride || 0,
           minimum_distance: body.config.minimum_distance || 0,
           customer_package_images: body.config.customer_package_images || 0,
