@@ -986,10 +986,11 @@ exports.giveCreditsToUser = async function (req, res) {
 
     let reqBody = {
       user_id: userId,
-      client_id: generalConstants.PASSWORDS.AUTOS_PUSH_PASSWORD
-    }
+      client_id: generalConstants.PASSWORDS.AUTOS_PUSH_PASSWORD,
+    };
 
-    let endpoint = rideConstants.AUTOS_SERVERS_ENDPOINT.SEND_WALLET_NOTIFICATIONS;
+    let endpoint =
+      rideConstants.AUTOS_SERVERS_ENDPOINT.SEND_WALLET_NOTIFICATIONS;
 
     await pushFromRideServer(reqBody, endpoint);
 

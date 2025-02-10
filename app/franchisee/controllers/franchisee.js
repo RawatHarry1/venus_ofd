@@ -1,17 +1,23 @@
-const { errorHandler,responseHandler,rideConstants,generalConstants } = require('../../../bootstart/header');
+const {
+  errorHandler,
+  responseHandler,
+  rideConstants,
+  generalConstants,
+} = require('../../../bootstart/header');
 const Helper = require('../helper');
 
 exports.createFranchiseeFromPanel = async function (req, res) {
   try {
     req.body.operator_id = req.operator_id;
-    req.body.city_id     = req.city;
-    req.body.user_id  = req.user_id;
+    req.body.city_id = req.city;
+    req.body.user_id = req.user_id;
     req.body.password = generalConstants.PASSWORDS.SUPER_ADMIN_PASSWORD;
-    let endpoint = rideConstants.MERCHANT_SERVER_ENDPOINT.CREATE_FRANCHISEE_FROM_PANEL;
+    let endpoint =
+      rideConstants.MERCHANT_SERVER_ENDPOINT.CREATE_FRANCHISEE_FROM_PANEL;
 
     let response = await Helper.sendPostRequestToMerchantServer(
       req.body,
-      endpoint
+      endpoint,
     );
 
     if (response.flag && (response.flag == 100 || response.flag == 102)) {
@@ -33,11 +39,10 @@ exports.updateFranchisee = async function (req, res) {
 
     let response = await Helper.sendPostRequestToMerchantServer(
       req.body,
-      endpoint
+      endpoint,
     );
 
     if (response.flag && (response.flag == 100 || response.flag == 102)) {
-
       return responseHandler.returnErrorMessage(
         res,
         response.error || response.message,
@@ -56,11 +61,10 @@ exports.deleteFranchisee = async function (req, res) {
 
     let response = await Helper.sendPostRequestToMerchantServer(
       req.body,
-      endpoint
+      endpoint,
     );
 
     if (response.flag && (response.flag == 100 || response.flag == 102)) {
-
       return responseHandler.returnErrorMessage(
         res,
         response.error || response.message,
@@ -75,11 +79,11 @@ exports.deleteFranchisee = async function (req, res) {
 
 exports.fetchAllFranchisees = async function (req, res) {
   try {
-    var page = req.query.page
-    var limit = req.query.limit
-    var sortField = req.query.sortField
-    let sortOrder = req.query.sortOrder
-    let search = req.query.search
+    var page = req.query.page;
+    var limit = req.query.limit;
+    var sortField = req.query.sortField;
+    let sortOrder = req.query.sortOrder;
+    let search = req.query.search;
 
     delete req.query.token;
     let endpoint = rideConstants.MERCHANT_SERVER_ENDPOINT.LIST_FRANCHISEES;
@@ -105,11 +109,10 @@ exports.fetchAllFranchisees = async function (req, res) {
 
     let response = await Helper.sendGetRequestToMerchantServer(
       req.query,
-      endpoint
+      endpoint,
     );
 
     if (response.flag && (response.flag == 100 || response.flag == 102)) {
-
       return responseHandler.returnErrorMessage(
         res,
         response.error || response.message,
@@ -129,15 +132,14 @@ exports.signupFranchisee = async function (req, res) {
       req.body.operator_id = req.operator_id;
       req.body.city_id = req.city;
     }
-    req.body.token = req.headers.jwttoken
+    req.body.token = req.headers.jwttoken;
 
     let response = await Helper.sendPostRequestToMerchantServer(
       req.body,
-      endpoint
+      endpoint,
     );
 
     if (response.flag && (response.flag == 100 || response.flag == 102)) {
-
       return responseHandler.returnErrorMessage(
         res,
         response.error.error || response.message,
@@ -156,11 +158,10 @@ exports.loginFranchisee = async function (req, res) {
 
     let response = await Helper.sendPostRequestToMerchantServer(
       req.body,
-      endpoint
+      endpoint,
     );
 
     if (response.flag && (response.flag == 100 || response.flag == 102)) {
-
       return responseHandler.returnErrorMessage(
         res,
         response.error || response.message,
@@ -173,15 +174,14 @@ exports.loginFranchisee = async function (req, res) {
   }
 };
 
-
 exports.changePassword = async function (req, res) {
   try {
     let endpoint = rideConstants.MERCHANT_SERVER_ENDPOINT.CHANGE_PASSWORD;
-    req.body.token = req.headers.jwttoken
+    req.body.token = req.headers.jwttoken;
 
     let response = await Helper.sendPostRequestToMerchantServer(
       req.body,
-      endpoint
+      endpoint,
     );
 
     if (response.flag && (response.flag == 100 || response.flag == 102)) {
@@ -203,11 +203,10 @@ exports.resetPassword = async function (req, res) {
 
     let response = await Helper.sendPostRequestToMerchantServer(
       req.body,
-      endpoint
+      endpoint,
     );
 
     if (response.flag && (response.flag == 100 || response.flag == 102)) {
-
       return responseHandler.returnErrorMessage(
         res,
         response.error || response.message,

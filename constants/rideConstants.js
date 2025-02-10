@@ -137,7 +137,7 @@ exports.COMMUNICATION_MEDIUM = {
 
 exports.SERVERS = {
   AUTOS_SERVER: 'https://chuki-rides.venustaxi.in',
-  MERCHANT_SERVER: 'https://super-app-franchise.venustaxi.in'
+  MERCHANT_SERVER: 'https://super-app-franchise.venustaxi.in',
 };
 
 exports.MERCHANT_SERVER_ENDPOINT = {
@@ -152,7 +152,7 @@ exports.MERCHANT_SERVER_ENDPOINT = {
   SIGNUP_FRANCHISEE: '/api/franchisee/signup',
   CHANGE_PASSWORD: '/api/franchisee/change_password',
   RESET_PASSWORD: '/api/franchisee/reset_password',
-  LOGIN_FRANCHISEE: '/api/franchisee/login'
+  LOGIN_FRANCHISEE: '/api/franchisee/login',
 };
 
 exports.AUTOS_SERVERS_ENDPOINT = {
@@ -166,7 +166,7 @@ exports.AUTOS_SERVERS_ENDPOINT = {
   SEND_LOGIN_OTP: '/customer/sendLoginOtp',
   VERIFY_OTP: '/customer/verifyOtp',
   CUSTOMER_PROFILE: '/customer/profile',
-  SEND_WALLET_NOTIFICATIONS: '/send_wallet_notification'
+  SEND_WALLET_NOTIFICATIONS: '/send_wallet_notification',
 };
 
 exports.VEHILCE_TYPE = {
@@ -254,7 +254,7 @@ exports.RENTAL_FARE_FACTOR = {
   HOURLY: 1,
   DAILY: 2,
   MONTHLY: 3,
-}
+};
 
 // exports.DRIVER_DOCUMENT_TYPE = {
 //   MAP_IMAGES: 7,

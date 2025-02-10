@@ -2,10 +2,9 @@ const FranchiseeController = require('./controllers/franchisee');
 const AdminMiddlewares = require('../admin/middelware');
 
 module.exports = function (app) {
-
-/**
- * Franchisee APIS
-*/  
+  /**
+   * Franchisee APIS
+   */
   app.post(
     '/create_franchisee_from_panel',
     AdminMiddlewares.admin.domainToken,

@@ -67,12 +67,8 @@ exports.adminLogin = async (req, res) => {
       );
     }
 
-    if(operatorId[0].operator_id != userDetails.operator_id){
-      return responseHandler.error(
-        res,
-        'Unauthorised Access',
-        403,
-      );
+    if (operatorId[0].operator_id != userDetails.operator_id) {
+      return responseHandler.error(res, 'Unauthorised Access', 403);
     }
 
     // Generate token
@@ -115,10 +111,10 @@ exports.checkOperatorToken = async function (req, res) {
     }
     var passcode = req.body.passcode;
     let enabled_service;
-    if(passcode){
+    if (passcode) {
       var query = `SELECT is_delivery_enabled, is_taxi_enabled, token FROM ${dbConstants.LIVE_DB.OPERATPRS} WHERE passcode = ? AND is_active = 1`;
       var values = [passcode];
-    }else{
+    } else {
       var query = `SELECT is_delivery_enabled, is_taxi_enabled, token FROM ${dbConstants.LIVE_DB.OPERATPRS} WHERE domain = ? AND is_active = 1`;
       var values = [req.body.domain];
     }
@@ -137,11 +133,8 @@ exports.checkOperatorToken = async function (req, res) {
       delete data[0].is_delivery_enabled;
       delete data[0].is_taxi_enabled;
       data[0].enabled_service = enabled_service;
-    }else{
-      return responseHandler.returnErrorMessage(
-        res,
-        `Unauthorised Access`,
-      );
+    } else {
+      return responseHandler.returnErrorMessage(res, `Unauthorised Access`);
     }
 
     return responseHandler.success(req, res, '', data);

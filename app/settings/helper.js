@@ -609,7 +609,7 @@ async function getTolldata(body, operatorId) {
     whereValues.push(body.toll_id);
   }
 
-  if(body.request_ride_type){
+  if (body.request_ride_type) {
     whereConditions.push(`t.service_type = ?`);
     whereValues.push(body.request_ride_type);
   }
@@ -645,7 +645,7 @@ async function insertGeofenceData(body) {
       body.vehicle_type,
       body.geofence_type,
       body.operator_id,
-      body.request_ride_type
+      body.request_ride_type,
     );
   } else {
     // Handle UPDATE operation

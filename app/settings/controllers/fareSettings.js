@@ -192,7 +192,7 @@ exports.insertOperatorVehicleType = async function (req, res) {
       return responseHandler.returnErrorMessage(
         res,
         `Sorry! You are not active in this city..`,
-      )
+      );
     }
     if (!vehicleTypeWrapper.length) {
       return responseHandler.returnErrorMessage(
@@ -316,7 +316,7 @@ exports.updateOperatorVehicleType = async function (req, res) {
       'min_driver_balance',
       'customer_notes_enabled',
       'reverse_bidding_enabled',
-      'config'
+      'config',
     );
 
     var result = schema.validate(body);
@@ -366,18 +366,16 @@ exports.updateOperatorVehicleType = async function (req, res) {
     };
 
     if (body.config) {
-      valuesToUpdate.config = JSON.stringify(
-        {
-          ride_on_ride: body.config.ride_on_ride || 0,
-          minimum_distance: body.config.minimum_distance || 0,
-          customer_package_images: body.config.customer_package_images || 0,
-          driver_package_images: body.config.driver_package_images || 0,
-          authentication_with_otp: body.config.authentication_with_otp || 0,
-          enable_luggage_fare: body.config.enable_luggage_fare || 0,
-          luggage_fare: body.config.enable_luggage_fare || 0,
-          tour_vehicle: body.config.tour_vehicle || 0,
-        }
-      );
+      valuesToUpdate.config = JSON.stringify({
+        ride_on_ride: body.config.ride_on_ride || 0,
+        minimum_distance: body.config.minimum_distance || 0,
+        customer_package_images: body.config.customer_package_images || 0,
+        driver_package_images: body.config.driver_package_images || 0,
+        authentication_with_otp: body.config.authentication_with_otp || 0,
+        enable_luggage_fare: body.config.enable_luggage_fare || 0,
+        luggage_fare: body.config.enable_luggage_fare || 0,
+        tour_vehicle: body.config.tour_vehicle || 0,
+      });
     }
 
     for (var key in valuesToUpdate) {
@@ -691,7 +689,7 @@ exports.insertUpdatedFareLogs = async function (req, res) {
           fare_per_xmin: params.fare_per_xmin,
           no_of_xmin: params.no_of_xmin,
           rental_fare_factor: params.rental_fare_factor,
-          rental_fixed_fare:  params.rental_fixed_fare
+          rental_fixed_fare: params.rental_fixed_fare,
         };
         // Replace `undefined` with `null`
         Object.keys(updateObj).forEach((key) => {
