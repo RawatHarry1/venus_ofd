@@ -297,6 +297,7 @@ exports.updateOperatorVehicleType = async function (req, res) {
       min_driver_balance: Joi.number(),
       customer_notes_enabled: Joi.number().integer().min(0).max(1),
       reverse_bidding_enabled: Joi.number().integer().min(0).max(1),
+      config: Joi.object(),
     }).or(
       'region_name',
       'display_order',
@@ -315,6 +316,7 @@ exports.updateOperatorVehicleType = async function (req, res) {
       'min_driver_balance',
       'customer_notes_enabled',
       'reverse_bidding_enabled',
+      'config'
     );
 
     var result = schema.validate(body);
@@ -362,6 +364,23 @@ exports.updateOperatorVehicleType = async function (req, res) {
       customer_notes_enabled: customerNotesEnabled,
       reverse_bidding_enabled: reverseBiddingEnabled,
     };
+
+    if (body.config) {
+      valuesToUpdate.config = JSON.stringify(
+        {
+          quick_menu_settings: body.config.quick_menu_settings || 0,
+          recent_rides: body.config.recent_rides || 0,
+          earnings: body.config.earnings || 0,
+          schedule_ride: body.config.schedule_ride || 0,
+          ride_on_ride: body.config.ride_on_ride || 0,
+          minimum_distance: body.config.minimum_distance || 0,
+          customer_package_images: body.config.customer_package_images || 0,
+          driver_package_images: body.config.driver_package_images || 0,
+          authentication_with_otp: body.config.authentication_with_otp || 0,
+          enable_luggage_fare: body.config.enable_luggage_fare || 0
+        }
+      );
+    }
 
     for (var key in valuesToUpdate) {
       if (valuesToUpdate[key] || valuesToUpdate[key] === 0) {
