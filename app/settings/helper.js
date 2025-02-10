@@ -514,6 +514,7 @@ async function insertCitySubRegion(body) {
       parseInt(body.bid_config) || rideConstants.BID_CONFIG.AUTO_CANCEL,
     images: body.images,
     applicable_gender: body.applicable_gender || null,
+    config: JSON.parse(body.config) || null,
   };
 
   // Extract keys and values from insertObj
