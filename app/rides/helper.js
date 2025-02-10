@@ -482,6 +482,7 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
               COALESCE( tb_coupons.title, tb_ride_promotions.title ) AS coupon_title,
               ${dbConstants.LIVE_DB.IN_THE_AIR}.master_coupon,
               tb_coupons.cashback_percentage,
+              autosCity.distance_unit AS distance_unit,
               tb_coupons.cashback_maximum,
               CASE
                 WHEN ${dbConstants.LIVE_DB.IN_THE_AIR}.ride_type = 3 THEN 'Dodo'
@@ -503,6 +504,10 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
               ${dbConstants.DBS.LIVE_DB}.tb_drivers AS drivers
             ON
               drivers.driver_id = ${dbConstants.LIVE_DB.RIDES}.driver_id
+            LEFT JOIN
+              ${dbConstants.DBS.LIVE_DB}.tb_cities AS autosCity
+            ON
+              autosCity.city_id = ${dbConstants.LIVE_DB.RIDES}.city
             LEFT JOIN
               ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS} AS cities
             ON
