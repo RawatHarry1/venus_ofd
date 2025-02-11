@@ -366,16 +366,7 @@ exports.updateOperatorVehicleType = async function (req, res) {
     };
 
     if (body.config) {
-      valuesToUpdate.config = JSON.stringify({
-        ride_on_ride: body.config.ride_on_ride || 0,
-        minimum_distance: body.config.minimum_distance || 0,
-        customer_package_images: body.config.customer_package_images || 0,
-        driver_package_images: body.config.driver_package_images || 0,
-        authentication_with_otp: body.config.authentication_with_otp || 0,
-        enable_luggage_fare: body.config.enable_luggage_fare || 0,
-        luggage_fare: body.config.enable_luggage_fare || 0,
-        tour_vehicle: body.config.tour_vehicle || 0,
-      });
+      valuesToUpdate.config = JSON.stringify(body.config);
     }
 
     for (var key in valuesToUpdate) {
