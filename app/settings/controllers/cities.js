@@ -163,14 +163,7 @@ exports.updateTbOperatorCities = async function (req, res) {
     }
 
     if (body.config) {
-      body.config = JSON.stringify({
-        quick_menu_settings: body.config.quick_menu_settings,
-        recent_rides: body.config.recent_rides,
-        earnings: body.config.earnings,
-        schedule_ride: body.config.schedule_ride,
-        ride_on_ride: body.config.ride_on_ride,
-        minimum_distance: body.config.minimum_distance,
-      });
+      body.config = JSON.stringify(body.config);
     }
 
     var commonUpdateParams = {};

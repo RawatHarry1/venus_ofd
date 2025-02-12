@@ -16,6 +16,7 @@ const {
   postRequsestFormData,
   putRequestFormData,
 } = require('../../captains/helper');
+const settingsHelper = require('../../settings/helper');
 var fs = require('fs');
 
 exports.getClients = async function (req, res) {
@@ -273,6 +274,7 @@ exports.createCustomer = async function (req, res) {
     let phoneNumber = requestBody.phone_no;
     let email = requestBody.email;
     let countryCode = requestBody.country_code;
+    let userImage   = requestBody.user_image || '';
     let isExist;
 
     delete requestBody.token;
@@ -285,6 +287,7 @@ exports.createCustomer = async function (req, res) {
       user_name: Joi.string().required(),
       email: Joi.string().required(),
       country_code: Joi.string().required(),
+      user_image: Joi.string().optional(),
       secret_key: Joi.number().optional(),
     });
 
@@ -326,10 +329,10 @@ exports.createCustomer = async function (req, res) {
     let insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} (
       user_name, first_name, last_name, 
       country_code, phone_no, operator_id, 
-      user_email, city, access_token, verification_status
+      user_email, city, access_token, verification_status, user_image
     ) 
     VALUES 
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     let values = [
       userName,
       firstName,
@@ -341,6 +344,7 @@ exports.createCustomer = async function (req, res) {
       cityId,
       accessToken,
       1,
+      userImage
     ];
     let result = await db.RunQuery(
       dbConstants.DBS.LIVE_DB,
@@ -349,7 +353,7 @@ exports.createCustomer = async function (req, res) {
     );
 
     if (result) {
-      insertQuery = `INSERT INTO ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} (user_name, first_name, last_name, country_code, phone_no, operator_id ,user_email,city_reg,venus_autos_user_id,venus_user_name,venus_autos_access_token) VALUES (?,?,?,?,?,?,?,?,?,?,?)`;
+      insertQuery = `INSERT INTO ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} (user_name, first_name, last_name, country_code, phone_no, operator_id ,user_email,city_reg,venus_autos_user_id,venus_user_name,user_image, venus_autos_access_token) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`;
       values = [
         userName,
         firstName,
@@ -361,6 +365,7 @@ exports.createCustomer = async function (req, res) {
         cityId,
         result.insertId,
         userName,
+        userImage,
         accessToken,
       ];
       await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, insertQuery, values);
@@ -642,6 +647,49 @@ exports.getBlockCustomers = async function (req, res) {
       res,
       'Blocked Customers fetched',
       users,
+    );
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.uploadCustomerImage = async function (req, res) {
+  try {
+    if (!req.file) {
+      return responseHandler.returnErrorMessage(res, `No file provided`);
+    }
+    const timestamp = Date.now();
+
+    var docImage = req.file;
+    var wrapperObject = {};
+    var awsCredentials = {
+      ridesDataBucket:
+        process.env.AWS_RIDES_DATA_BUCKET + '/profile_images/' + timestamp,
+      driverDocumentsBucket: process.env.AWS_DRIVER_DOCUMENTS_BUCKET,
+      operatorDataBucket: process.env.AWS_OPERATOR_DATA_BUCKET,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      region: process.env.AWS_REGION,
+    };
+    try {
+      var filename = Date.now() + '.' + docImage.originalname.split('.').pop();
+    } catch (e) {
+      var filename = Date.now();
+    }
+
+    await settingsHelper.readImageFile(docImage, wrapperObject);
+
+    await settingsHelper.uploadFileToS3(
+      awsCredentials,
+      filename,
+      wrapperObject,
+    );
+
+    return responseHandler.success(
+      req,
+      res,
+      'Uploaded Successfully',
+      wrapperObject.url,
     );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
