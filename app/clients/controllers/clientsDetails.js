@@ -276,6 +276,8 @@ exports.createCustomer = async function (req, res) {
     let countryCode = requestBody.country_code;
     let userImage   = requestBody.user_image || '';
     let isExist;
+    let servicesConfig = {}
+    let isCustomerImageRequired = false;
 
     delete requestBody.token;
 
@@ -294,6 +296,25 @@ exports.createCustomer = async function (req, res) {
     let schemaResult = schema.validate(requestBody);
     if (schemaResult.error) {
       return responseHandler.parameterMissingResponse(res, '');
+    }
+    
+    var fetchQuery = `SELECT config FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.O_CITY} WHERE operator_id = ? AND city_id = ?`;
+
+    servicesConfig = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
+      operatorId,
+      cityId,
+    ]);
+
+    if (servicesConfig && servicesConfig.length) {
+      servicesConfig = JSON.parse(servicesConfig[0].config);
+      isCustomerImageRequired = servicesConfig.customer_image_required;
+    }
+
+    if (isCustomerImageRequired && !userImage) {
+      return responseHandler.returnErrorMessage(
+        res,
+        `Please provide user image`,
+      );
     }
 
     var fetchQuery = `SELECT user_email FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE phone_no = ? AND operator_id = ?`;
