@@ -865,3 +865,47 @@ exports.fetchAvailableVehicles = async function (req, res) {
     errorHandler.errorHandler(error, req, res);
   }
 };
+
+exports.fetchRadiusOrEta = async function (req, res) {
+  try {
+    var cityId = req.body.city_id,
+      mandatoryFields = [cityId];
+
+    if (checkBlank(mandatoryFields)) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var queryToFetchRadiusOrETA = `SELECT id, city_id, is_active, request_radius FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.REQUEST_RADIUS} WHERE city_id = ${req.body.city_id} `
+
+    var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, queryToFetchRadiusOrETA, []);
+    return responseHandler.success(req, res, 'Radius list fetched.', result);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.updateTbRequestRadius = async function (req, res) {
+  try {
+    var cityId = req.body.city_id,
+      requestRadius = req.body.request_radius,
+      id = req.body.id,
+      mandatoryFields = [cityId, requestRadius, id];
+
+
+    if (checkBlank(mandatoryFields)) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+    var radiusInKm = (requestRadius / 1000);
+    let radiusLat = parseFloat((radiusInKm / 111.32).toFixed(3));
+    let radiusLong = parseFloat((radiusInKm / 111.32).toFixed(3));
+    let latitudeConstraint = radiusLat
+    let longitudeConstraint = radiusLong
+
+    var queryToUpdate = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.REQUEST_RADIUS} SET latitude_constraint = ? , longitude_constraint = ? , request_radius = ? WHERE id = ? `
+
+    await db.RunQuery(dbConstants.DBS.LIVE_DB, queryToUpdate, [latitudeConstraint, longitudeConstraint, requestRadius, id]);
+    return responseHandler.success(req, res, 'Radius Updated SuccussFully.', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
