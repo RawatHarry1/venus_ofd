@@ -67,11 +67,7 @@ exports.getRides = async function (req, res) {
 
     var ridesQuery = Helper.ridesQueryHelper(null, null, null, status);
     ridesQuery += ` WHERE e.city = ? AND e.status IN (${rideStatus[status]}) AND d.operator_id = ? AND u.operator_id = ? AND e.request_made_on >= NOW() - INTERVAL 24 HOUR`;
-    var values = [
-      cityId,
-      operatorId,
-      operatorId,
-    ];
+    var values = [cityId, operatorId, operatorId];
 
     if (fleetId) {
       ridesQuery += ` AND d.fleet_id IN (?) `;

@@ -2,10 +2,9 @@ const SubscriptionController = require('./controllers/subscription');
 const AdminMiddlewares = require('../admin/middelware');
 
 module.exports = function (app) {
-
-/**
- * Subscription APIS
-*/
+  /**
+   * Subscription APIS
+   */
   app.get(
     '/fetch_All_subscriptions',
     AdminMiddlewares.admin.domainToken,

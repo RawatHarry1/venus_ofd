@@ -16,6 +16,7 @@ const {
   postRequsestFormData,
   putRequestFormData,
 } = require('../../captains/helper');
+const settingsHelper = require('../../settings/helper');
 var fs = require('fs');
 
 exports.getClients = async function (req, res) {
@@ -273,7 +274,10 @@ exports.createCustomer = async function (req, res) {
     let phoneNumber = requestBody.phone_no;
     let email = requestBody.email;
     let countryCode = requestBody.country_code;
+    let userImage   = requestBody.user_image || '';
     let isExist;
+    let servicesConfig = {}
+    let isCustomerImageRequired = false;
 
     delete requestBody.token;
 
@@ -285,12 +289,32 @@ exports.createCustomer = async function (req, res) {
       user_name: Joi.string().required(),
       email: Joi.string().required(),
       country_code: Joi.string().required(),
+      user_image: Joi.string().optional(),
       secret_key: Joi.number().optional(),
     });
 
     let schemaResult = schema.validate(requestBody);
     if (schemaResult.error) {
       return responseHandler.parameterMissingResponse(res, '');
+    }
+    
+    var fetchQuery = `SELECT config FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.O_CITY} WHERE operator_id = ? AND city_id = ?`;
+
+    servicesConfig = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
+      operatorId,
+      cityId,
+    ]);
+
+    if (servicesConfig && servicesConfig.length) {
+      servicesConfig = JSON.parse(servicesConfig[0].config);
+      isCustomerImageRequired = servicesConfig.customer_image_required;
+    }
+
+    if (isCustomerImageRequired && !userImage) {
+      return responseHandler.returnErrorMessage(
+        res,
+        `Please provide user image`,
+      );
     }
 
     var fetchQuery = `SELECT user_email FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE phone_no = ? AND operator_id = ?`;
@@ -326,10 +350,10 @@ exports.createCustomer = async function (req, res) {
     let insertQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} (
       user_name, first_name, last_name, 
       country_code, phone_no, operator_id, 
-      user_email, city, access_token, verification_status
+      user_email, city, access_token, verification_status, user_image
     ) 
     VALUES 
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     let values = [
       userName,
       firstName,
@@ -340,7 +364,8 @@ exports.createCustomer = async function (req, res) {
       email,
       cityId,
       accessToken,
-      1
+      1,
+      userImage
     ];
     let result = await db.RunQuery(
       dbConstants.DBS.LIVE_DB,
@@ -349,7 +374,7 @@ exports.createCustomer = async function (req, res) {
     );
 
     if (result) {
-      insertQuery = `INSERT INTO ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} (user_name, first_name, last_name, country_code, phone_no, operator_id ,user_email,city_reg,venus_autos_user_id,venus_user_name,venus_autos_access_token) VALUES (?,?,?,?,?,?,?,?,?,?,?)`;
+      insertQuery = `INSERT INTO ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} (user_name, first_name, last_name, country_code, phone_no, operator_id ,user_email,city_reg,venus_autos_user_id,venus_user_name,user_image, venus_autos_access_token) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`;
       values = [
         userName,
         firstName,
@@ -361,6 +386,7 @@ exports.createCustomer = async function (req, res) {
         cityId,
         result.insertId,
         userName,
+        userImage,
         accessToken,
       ];
       await db.RunQuery(dbConstants.DBS.ADMIN_AUTH, insertQuery, values);
@@ -376,13 +402,13 @@ exports.updateCustomer = async function (req, res) {
     let requestBody = req.body;
     let operatorId = req.operator_id;
     let cityId = requestBody.city_id;
-    let userId = requestBody.user_id
+    let userId = requestBody.user_id;
     let updatedFirstName = requestBody.updated_first_name;
     let updatedLastName = requestBody.updated_last_name;
     let updatedUserName = requestBody.updated_user_name;
     let updatedEmail = requestBody.updated_user_email;
     let isExist;
-    let user
+    let user;
 
     delete requestBody.token;
 
@@ -406,22 +432,31 @@ exports.updateCustomer = async function (req, res) {
     user = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
       userId,
       operatorId,
-      cityId
+      cityId,
     ]);
 
     if (!user) {
-      return responseHandler.returnErrorMessage(
-        res,
-        `User not exist`,
-      );
+      return responseHandler.returnErrorMessage(res, `User not exist`);
     }
 
-    user = user[0]
+    user = user[0];
 
-    var hasChangedName = typeof updatedUserName === 'undefined' ? false : user.user_name !== updatedUserName;
-    var hasChangedEmail = typeof updatedEmail === 'undefined' ? false : user.user_email !== updatedEmail;
-    var hasChangedFirstName = typeof updatedFirstName === 'undefined' ? false : user.firstName !== updatedFirstName;
-    var hasChangedLastName = typeof updatedLastName === 'undefined' ? false : user.lastName !== updatedLastName;
+    var hasChangedName =
+      typeof updatedUserName === 'undefined'
+        ? false
+        : user.user_name !== updatedUserName;
+    var hasChangedEmail =
+      typeof updatedEmail === 'undefined'
+        ? false
+        : user.user_email !== updatedEmail;
+    var hasChangedFirstName =
+      typeof updatedFirstName === 'undefined'
+        ? false
+        : user.firstName !== updatedFirstName;
+    var hasChangedLastName =
+      typeof updatedLastName === 'undefined'
+        ? false
+        : user.lastName !== updatedLastName;
 
     if (hasChangedEmail) {
       var fetchQuery = `SELECT user_email FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE user_email = ? AND operator_id = ? AND city_id = ?`;
@@ -429,7 +464,7 @@ exports.updateCustomer = async function (req, res) {
       isExist = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
         updatedEmail,
         operatorId,
-        cityId
+        cityId,
       ]);
 
       if (isExist && isExist.length) {
@@ -446,7 +481,7 @@ exports.updateCustomer = async function (req, res) {
       isExist = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
         updatedUserName,
         operatorId,
-        cityId
+        cityId,
       ]);
 
       if (isExist && isExist.length) {
@@ -457,8 +492,12 @@ exports.updateCustomer = async function (req, res) {
       }
     }
 
-    if (hasChangedEmail || hasChangedName || hasChangedFirstName || hasChangedLastName) {
-
+    if (
+      hasChangedEmail ||
+      hasChangedName ||
+      hasChangedFirstName ||
+      hasChangedLastName
+    ) {
       /* 
       update Live table
       */
@@ -467,7 +506,7 @@ exports.updateCustomer = async function (req, res) {
         first_name: updatedFirstName,
         last_name: updatedLastName,
         user_name: updatedUserName,
-        user_email: updatedEmail
+        user_email: updatedEmail,
       };
 
       for (var key in valuesToUpdate) {
@@ -480,9 +519,7 @@ exports.updateCustomer = async function (req, res) {
         dbConstants.DBS.LIVE_DB,
         `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS}`,
         params,
-        [
-          { key: 'user_id', value: userId }
-        ]
+        [{ key: 'user_id', value: userId }],
       );
 
       /* 
@@ -494,7 +531,7 @@ exports.updateCustomer = async function (req, res) {
         first_name: updatedFirstName,
         last_name: updatedLastName,
         venus_user_name: updatedUserName,
-        user_email: updatedEmail
+        user_email: updatedEmail,
       };
 
       for (var key in valuesToUpdate) {
@@ -507,17 +544,10 @@ exports.updateCustomer = async function (req, res) {
         dbConstants.DBS.AUTH_DB,
         `${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}`,
         params,
-        [
-          { key: 'venus_autos_user_id', value: userId }
-        ]
+        [{ key: 'venus_autos_user_id', value: userId }],
       );
-
-
     } else {
-      return responseHandler.returnErrorMessage(
-        res,
-        `nothing to update`,
-      );
+      return responseHandler.returnErrorMessage(res, `nothing to update`);
     }
     return responseHandler.success(req, res, 'Customer updated', {});
   } catch (error) {
@@ -530,9 +560,9 @@ exports.removeCustomer = async function (req, res) {
     let requestBody = req.body;
     let operatorId = req.operator_id;
     let cityId = requestBody.city_id;
-    let userId = requestBody.user_id
-    let user
-    let query, params
+    let userId = requestBody.user_id;
+    let user;
+    let query, params;
 
     delete requestBody.token;
 
@@ -552,27 +582,32 @@ exports.removeCustomer = async function (req, res) {
     user = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
       userId,
       operatorId,
-      cityId
+      cityId,
     ]);
 
     if (!user) {
-      return responseHandler.returnErrorMessage(
-        res,
-        `User not exist`,
-      );
+      return responseHandler.returnErrorMessage(res, `User not exist`);
     }
-    user = user[0]
+    user = user[0];
     /* 
     update Live table
     */
     query = `DELETE FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS} WHERE user_id = ? AND operator_id = ? AND city_id = ?`;
-    await db.RunQuery(dbConstants.DBS.LIVE_DB, query, [userId, operatorId, cityId]);
+    await db.RunQuery(dbConstants.DBS.LIVE_DB, query, [
+      userId,
+      operatorId,
+      cityId,
+    ]);
 
     /* 
     update Auth table
     */
     query = `DELETE FROM ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS} WHERE venus_autos_user_id = ? AND operator_id = ? AND city_reg = ?`;
-    await db.RunQuery(dbConstants.DBS.AUTH_DB, query, [userId, operatorId, cityId]);
+    await db.RunQuery(dbConstants.DBS.AUTH_DB, query, [
+      userId,
+      operatorId,
+      cityId,
+    ]);
 
     return responseHandler.success(req, res, 'Customer removed', {});
   } catch (error) {
@@ -606,7 +641,7 @@ exports.getBlockCustomers = async function (req, res) {
     let requestBody = req.body;
     let operatorId = req.operator_id;
     let cityId = requestBody.city_id;
-    let users = []
+    let users = [];
 
     delete requestBody.token;
 
@@ -625,10 +660,58 @@ exports.getBlockCustomers = async function (req, res) {
     users = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [
       0,
       operatorId,
-      cityId
+      cityId,
     ]);
 
-    return responseHandler.success(req, res, 'Blocked Customers fetched', users);
+    return responseHandler.success(
+      req,
+      res,
+      'Blocked Customers fetched',
+      users,
+    );
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.uploadCustomerImage = async function (req, res) {
+  try {
+    if (!req.file) {
+      return responseHandler.returnErrorMessage(res, `No file provided`);
+    }
+    const timestamp = Date.now();
+
+    var docImage = req.file;
+    var wrapperObject = {};
+    var awsCredentials = {
+      ridesDataBucket:
+        process.env.AWS_RIDES_DATA_BUCKET + '/profile_images/' + timestamp,
+      driverDocumentsBucket: process.env.AWS_DRIVER_DOCUMENTS_BUCKET,
+      operatorDataBucket: process.env.AWS_OPERATOR_DATA_BUCKET,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      region: process.env.AWS_REGION,
+    };
+    try {
+      var filename = Date.now() + '.' + docImage.originalname.split('.').pop();
+    } catch (e) {
+      var filename = Date.now();
+    }
+
+    await settingsHelper.readImageFile(docImage, wrapperObject);
+
+    await settingsHelper.uploadFileToS3(
+      awsCredentials,
+      filename,
+      wrapperObject,
+    );
+
+    return responseHandler.success(
+      req,
+      res,
+      'Uploaded Successfully',
+      wrapperObject.url,
+    );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

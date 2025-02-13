@@ -70,6 +70,16 @@ module.exports = function (app) {
     ClientsDetails.createCustomer,
   );
 
+   /* 
+   upload customer image
+  */
+  app.post(
+    '/upload_customer_image',
+    upload.single('image'),
+    ClientsDetails.uploadCustomerImage,
+  );
+
+
   // app.post(
   //   '/update_customer',
   //   AdminMiddlewares.admin.domainToken,

@@ -106,10 +106,7 @@ exports.cancelRideFromPanelV2 = async function (req, res) {
     ]);
 
     if (!result.length) {
-      return responseHandler.returnErrorMessage(
-        res,
-        `No such driver found.'`,
-      );
+      return responseHandler.returnErrorMessage(res, `No such driver found.'`);
     }
 
     var driverAccessToken = result[0].access_token;
@@ -607,19 +604,13 @@ WHERE
     );
 
     if (!engagementWrapper.length) {
-      return responseHandler.returnErrorMessage(
-        res,
-        `Ride not exist`,
-      );
+      return responseHandler.returnErrorMessage(res, `Ride not exist`);
     }
 
     engagementWrapper = engagementWrapper[0];
 
     if (engagementWrapper.status == rideConstants.ENGAGEMENT_STATUS.STARTED) {
-      return responseHandler.returnErrorMessage(
-        res,
-        `Ride already started.`,
-      );
+      return responseHandler.returnErrorMessage(res, `Ride already started.`);
     }
 
     if (engagementWrapper.status == rideConstants.ENGAGEMENT_STATUS.ACCEPTED) {

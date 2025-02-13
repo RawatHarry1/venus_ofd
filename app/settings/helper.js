@@ -514,6 +514,7 @@ async function insertCitySubRegion(body) {
       parseInt(body.bid_config) || rideConstants.BID_CONFIG.AUTO_CANCEL,
     images: body.images,
     applicable_gender: body.applicable_gender || null,
+    config: JSON.stringify(body.config) || null,
   };
 
   // Extract keys and values from insertObj
@@ -608,7 +609,7 @@ async function getTolldata(body, operatorId) {
     whereValues.push(body.toll_id);
   }
 
-  if(body.request_ride_type){
+  if (body.request_ride_type) {
     whereConditions.push(`t.service_type = ?`);
     whereValues.push(body.request_ride_type);
   }
@@ -644,7 +645,7 @@ async function insertGeofenceData(body) {
       body.vehicle_type,
       body.geofence_type,
       body.operator_id,
-      body.request_ride_type
+      body.request_ride_type,
     );
   } else {
     // Handle UPDATE operation
