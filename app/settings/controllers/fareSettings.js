@@ -566,11 +566,26 @@ exports.fetchVehicleImagesNfares = async function (req, res) {
     }
 
     var data = await Helper.fetchVehiclesImagesFaresData(req.body, operatorId);
+    const fetchQuery = `
+    SELECT * FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATOR_PARAMS} 
+    WHERE param_id = ? AND operator_id = ?
+`;
+
+    let is_schedule_fare_enabled = 0
+
+    let existingParam = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [495, operatorId]);
+
+    if (existingParam && existingParam.length > 0) {
+      is_schedule_fare_enabled = existingParam[0].param_value || 0
+    }
+
+    // data.fares.is_schedule_fare_enabled = is_schedule_fare_enabled
 
     response = {
       fares: data.fares,
       images: data.images,
       defaultImages: data.defaultImages,
+      is_schedule_fare_enabled: is_schedule_fare_enabled
     };
 
     return responseHandler.success(req, res, 'success!', response);
