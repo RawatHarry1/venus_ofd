@@ -591,6 +591,7 @@ exports.insertUpdatedFareLogs = async function (req, res) {
     options.created_by = req.user_id;
 
     var fares = req.body.fares;
+    var isScheduleFareEnabled = req.body.is_schedule_fare_enabled || 0
 
     fares = JSON.parse(fares);
 
@@ -681,6 +682,7 @@ exports.insertUpdatedFareLogs = async function (req, res) {
           no_of_xmin: params.no_of_xmin,
           rental_fare_factor: params.rental_fare_factor,
           rental_fixed_fare: params.rental_fixed_fare,
+          scheduled_ride_fare: params.scheduled_ride_fare
         };
         // Replace `undefined` with `null`
         Object.keys(updateObj).forEach((key) => {
@@ -693,6 +695,27 @@ exports.insertUpdatedFareLogs = async function (req, res) {
           .map((key) => `${key} = ?`)
           .join(', ');
 
+        const fetchQuery = `
+          SELECT * FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATOR_PARAMS} 
+          WHERE param_id = ? AND operator_id = ?
+      `;
+
+        let existingParam = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [495, operatorId]);
+
+        if (existingParam && existingParam.length > 0) {
+          const updateQuery = `
+              UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATOR_PARAMS} 
+              SET param_value = ? 
+              WHERE id = ?
+          `;
+          await db.RunQuery(dbConstants.DBS.LIVE_DB, updateQuery, [isScheduleFareEnabled, existingParam[0].id]);
+        } else {
+          const insertQuery = `
+              INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATOR_PARAMS} (param_id, operator_id, param_value)
+              VALUES (?, ?, ?)
+          `;
+          await db.RunQuery(dbConstants.DBS.LIVE_DB, insertQuery, [495, operatorId, isScheduleFareEnabled]);
+        }
         var sqlQuery = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_FARE} SET ${setClause} WHERE id = ? `;
         var values = [...Object.values(updateObj), fareId];
         await db.RunQuery(dbConstants.DBS.LIVE_DB, sqlQuery, values);
