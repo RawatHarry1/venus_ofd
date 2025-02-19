@@ -131,6 +131,20 @@ module.exports = function (app) {
     fareSettingsController.fetchAvailableVehicles,
   );
 
+  app.post(
+    '/internal/fetch_radius_or_eta',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.fetchRadiusOrEta,
+  );
+
+  app.post(
+    '/internal/update_tb_request_radius',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.updateTbRequestRadius,
+  );
+
   /* 
   Document settings API's
   */

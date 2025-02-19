@@ -566,11 +566,26 @@ exports.fetchVehicleImagesNfares = async function (req, res) {
     }
 
     var data = await Helper.fetchVehiclesImagesFaresData(req.body, operatorId);
+    const fetchQuery = `
+    SELECT * FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATOR_PARAMS} 
+    WHERE param_id = ? AND operator_id = ?
+`;
+
+    let is_schedule_fare_enabled = 0
+
+    let existingParam = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [495, operatorId]);
+
+    if (existingParam && existingParam.length > 0) {
+      is_schedule_fare_enabled = existingParam[0].param_value || 0
+    }
+
+    // data.fares.is_schedule_fare_enabled = is_schedule_fare_enabled
 
     response = {
       fares: data.fares,
       images: data.images,
       defaultImages: data.defaultImages,
+      is_schedule_fare_enabled: is_schedule_fare_enabled
     };
 
     return responseHandler.success(req, res, 'success!', response);
@@ -591,6 +606,7 @@ exports.insertUpdatedFareLogs = async function (req, res) {
     options.created_by = req.user_id;
 
     var fares = req.body.fares;
+    var isScheduleFareEnabled = req.body.is_schedule_fare_enabled || 0
 
     fares = JSON.parse(fares);
 
@@ -681,6 +697,7 @@ exports.insertUpdatedFareLogs = async function (req, res) {
           no_of_xmin: params.no_of_xmin,
           rental_fare_factor: params.rental_fare_factor,
           rental_fixed_fare: params.rental_fixed_fare,
+          scheduled_ride_fare: params.scheduled_ride_fare
         };
         // Replace `undefined` with `null`
         Object.keys(updateObj).forEach((key) => {
@@ -693,6 +710,27 @@ exports.insertUpdatedFareLogs = async function (req, res) {
           .map((key) => `${key} = ?`)
           .join(', ');
 
+        const fetchQuery = `
+          SELECT * FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATOR_PARAMS} 
+          WHERE param_id = ? AND operator_id = ?
+      `;
+
+        let existingParam = await db.RunQuery(dbConstants.DBS.LIVE_DB, fetchQuery, [495, operatorId]);
+
+        if (existingParam && existingParam.length > 0) {
+          const updateQuery = `
+              UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATOR_PARAMS} 
+              SET param_value = ? 
+              WHERE id = ?
+          `;
+          await db.RunQuery(dbConstants.DBS.LIVE_DB, updateQuery, [isScheduleFareEnabled, existingParam[0].id]);
+        } else {
+          const insertQuery = `
+              INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.OPERATOR_PARAMS} (param_id, operator_id, param_value)
+              VALUES (?, ?, ?)
+          `;
+          await db.RunQuery(dbConstants.DBS.LIVE_DB, insertQuery, [495, operatorId, isScheduleFareEnabled]);
+        }
         var sqlQuery = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_FARE} SET ${setClause} WHERE id = ? `;
         var values = [...Object.values(updateObj), fareId];
         await db.RunQuery(dbConstants.DBS.LIVE_DB, sqlQuery, values);
@@ -861,6 +899,50 @@ exports.fetchAvailableVehicles = async function (req, res) {
     };
 
     return responseHandler.success(req, res, 'Vehicle list fetched.', response);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.fetchRadiusOrEta = async function (req, res) {
+  try {
+    var cityId = req.body.city_id,
+      mandatoryFields = [cityId];
+
+    if (checkBlank(mandatoryFields)) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var queryToFetchRadiusOrETA = `SELECT id, city_id, is_active, request_radius FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.REQUEST_RADIUS} WHERE city_id = ${req.body.city_id} `
+
+    var result = await db.RunQuery(dbConstants.DBS.LIVE_DB, queryToFetchRadiusOrETA, []);
+    return responseHandler.success(req, res, 'Radius list fetched.', result);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.updateTbRequestRadius = async function (req, res) {
+  try {
+    var cityId = req.body.city_id,
+      requestRadius = req.body.request_radius,
+      id = req.body.id,
+      mandatoryFields = [cityId, requestRadius, id];
+
+
+    if (checkBlank(mandatoryFields)) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+    var radiusInKm = (requestRadius / 1000);
+    let radiusLat = parseFloat((radiusInKm / 111.32).toFixed(3));
+    let radiusLong = parseFloat((radiusInKm / 111.32).toFixed(3));
+    let latitudeConstraint = radiusLat
+    let longitudeConstraint = radiusLong
+
+    var queryToUpdate = `UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.REQUEST_RADIUS} SET latitude_constraint = ? , longitude_constraint = ? , request_radius = ? WHERE id = ? `
+
+    await db.RunQuery(dbConstants.DBS.LIVE_DB, queryToUpdate, [latitudeConstraint, longitudeConstraint, requestRadius, id]);
+    return responseHandler.success(req, res, 'Radius Updated SuccussFully.', {});
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
