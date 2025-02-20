@@ -18,9 +18,9 @@ const validateMandatoryFields = (fields, res) => {
 };
 
 // Utility function to check if a fleet already exists
-const checkFleetExists = async (db, table, conditions) => {
+const checkFleetExists = async (db, table, conditions, values) => {
   const query = `SELECT * FROM ${dbConstants.DBS.LIVE_DB}.${table} WHERE ${conditions.join(' AND ')}`;
-  const result = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, Object.values(conditions));
+  const result = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
   return result.length > 0;
 };
 
@@ -54,10 +54,10 @@ exports.createFleet = async (req, res) => {
     const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
     const query = `
       INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.FLEET_TABLE} 
-      (name, operator_id, city_id, description, password, is_active, service_type) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (name, operator_id, city_id, description, password, is_active, service_type, email) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    const params = [fleet_name, operator_id, city_id, description, hashedPassword, 1, request_ride_type];
+    const params = [fleet_name, operator_id, city_id, description, hashedPassword, 1, request_ride_type, email];
 
     await db.RunQuery(dbConstants.DBS.LIVE_DB, query, params);
     return responseHandler.success(req, res, 'Fleet added successfully.', {});
@@ -71,6 +71,8 @@ exports.fetchFleetList = async (req, res) => {
   try {
     const { city_id, sSortDir_0, is_active, iDisplayLength, iDisplayStart, sSearch } = req.query;
     const { operator_id = 1, request_ride_type } = req;
+
+    delete req.query.token
 
     const schema = Joi.object({
       city_id: Joi.number().integer().optional(),
@@ -89,7 +91,8 @@ exports.fetchFleetList = async (req, res) => {
     const offset = Number(iDisplayStart || 0);
 
     const baseQuery = `
-      SELECT ft.*, COUNT(dr.driver_id) AS total_drivers
+      SELECT ft.id, ft.name, ft.operator_id, ft.city_id, ft.description, ft.is_active, ft.service_type, ft.created_at,
+      ft.email, COUNT(dr.driver_id) AS total_drivers
       FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.FLEET_TABLE} ft
       LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} dr ON dr.fleet_id = ft.id
     `;
@@ -153,6 +156,8 @@ exports.editFleet = async (req, res) => {
       description: Joi.string().optional(),
       email: Joi.string().optional(),
     });
+    
+    delete req.body.token
 
     const { error } = schema.validate(req.body);
     if (error) return responseHandler.parameterMissingResponse(res, '');
@@ -168,14 +173,14 @@ exports.editFleet = async (req, res) => {
       updateFields.push('description = ?');
       values.push(description);
     }
-    if (email !== undefined) {
-      updateFields.push('email = ?');
-      values.push(email);
-    }
-    if (is_active !== undefined) {
-      updateFields.push('is_active = ?');
-      values.push(is_active);
-    }
+    // if (email !== undefined) {
+    //   updateFields.push('email = ?');
+    //   values.push(email);
+    // }
+    // if (is_active !== undefined) {
+    //   updateFields.push('is_active = ?');
+    //   values.push(is_active);
+    // }
 
     if (updateFields.length === 0) {
       return responseHandler.parameterMissingResponse(res, 'No fields to update');
@@ -208,6 +213,7 @@ exports.deleteFleet = async (req, res) => {
       fleet_id: Joi.string().required(),
     });
 
+    delete req.body.token
     const { error } = schema.validate(req.body);
     if (error) return responseHandler.parameterMissingResponse(res, '');
 
@@ -218,7 +224,7 @@ exports.deleteFleet = async (req, res) => {
     `;
     const [driverCountResult] = await db.RunQuery(dbConstants.DBS.LIVE_DB, checkDriversQuery, [fleet_id]);
 
-    if (driverCountResult[0].driver_count > 0) {
+    if (driverCountResult.driver_count > 0) {
       return responseHandler.returnErrorMessage(res, `Cannot delete fleet: Fleet has associated drivers`);
     }
 
