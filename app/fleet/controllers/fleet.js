@@ -177,10 +177,20 @@ exports.editFleet = async (req, res) => {
     //   updateFields.push('email = ?');
     //   values.push(email);
     // }
-    // if (is_active !== undefined) {
-    //   updateFields.push('is_active = ?');
-    //   values.push(is_active);
-    // }
+    if (is_active !== undefined) {
+      const checkDriversQuery = `
+      SELECT COUNT(*) AS driver_count
+      FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS}
+      WHERE fleet_id = ?
+    `;
+      const [driverCountResult] = await db.RunQuery(dbConstants.DBS.LIVE_DB, checkDriversQuery, [fleet_id]);
+      if (driverCountResult.driver_count > 0) {
+        return responseHandler.returnErrorMessage(res, `Fleet has associated drivers, cannot mark it as disable.`);
+      } else {
+        updateFields.push('is_active = ?');
+        values.push(is_active);
+      }
+    }
 
     if (updateFields.length === 0) {
       return responseHandler.parameterMissingResponse(res, 'No fields to update');
