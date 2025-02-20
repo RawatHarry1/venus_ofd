@@ -30,7 +30,7 @@ exports.getCaptains = async function (req, res) {
     var vehicleType = reqParams.vehicle_type;
     var category = reqParams.category;
     var operatorId = req.operator_id;
-    var fleetId = req.fleet_id;
+    var fleetId = req.query.fleet_id;
     let orderDirection = reqParams.sSortDir_0 || 'DESC';
     let limit = Number(req.query.iDisplayLength || 50);
     let offset = Number(req.query.iDisplayStart || 0);
@@ -86,7 +86,7 @@ exports.getCaptains = async function (req, res) {
     }
 
     var getDriver = ` ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS}  AS GLOBAL
-          LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.FLEET}  AS fleet
+          LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.FLEET_TABLE}  AS fleet
           ON
               fleet.id = GLOBAL.fleet_id
           LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS}  AS live_users ON live_users.user_id = GLOBAL.driver_id
@@ -559,10 +559,29 @@ exports.getDriverDocumentDetails_v2 = async function (req, res) {
       return responseHandler.parameterMissingResponse(res, '');
     }
 
-    const query = `SELECT driver_id, name, phone_no, vehicle_no, city_id,
-    vehicle_type, app_versioncode, device_type, vehicle_year,
-    email, date_of_birth, vehicle_make_id,iban_number, access_token,doc_visibility_status,app_versioncode   
-FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} WHERE driver_id = ?`;
+    const query = `SELECT 
+                    driver_id, 
+                    name, 
+                    phone_no, 
+                    vehicle_no, 
+                    city_id, 
+                    vehicle_type, 
+                    app_versioncode, 
+                    device_type, 
+                    vehicle_year, 
+                    email, 
+                    date_of_birth, 
+                    vehicle_make_id, 
+                    iban_number, 
+                    access_token, 
+                    doc_visibility_status, 
+                    app_versioncode,
+                    driver_image 
+                  FROM 
+                    ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS}
+                  WHERE 
+                    driver_id = ?
+                  `;
     const values = [driverId];
 
     var driver = await db.RunQuery(dbConstants.DBS.LIVE_DB, query, values);
@@ -646,6 +665,7 @@ FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} WHERE driver_id 
       vehicle_type: vehicle_type,
       vehicle_year: driver.vehicle_year,
       name: driver.name,
+      image: driver.driver_image,
       iban_number: driver.iban_number,
       vehicle_mapping_id: vehicleMappingId,
       device_type: driver.device_type,
@@ -1084,6 +1104,84 @@ exports.get_all_suspended_drivers = async function (req, res) {
     );
 
     return responseHandler.success(req, res, '', data_drivers);
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+// Edit Driver
+exports.editDriverDetails = async (req, res) => {
+  try {
+    const { name, image, fleet_id, driver_id } = req.body;
+    const { operator_id, request_ride_type } = req;
+
+    const schema = Joi.object({
+      driver_id: Joi.string().required(),
+      name: Joi.string().optional(),
+      image: Joi.string().optional(),
+      fleet_id: Joi.string().optional(),
+    });
+
+    delete req.body.token
+
+    const { error } = schema.validate(req.body);
+    if (error) return responseHandler.parameterMissingResponse(res, '');
+
+    const updateFields = [];
+    const values = [];
+
+    if (name !== undefined) {
+      updateFields.push('name = ?');
+      values.push(name);
+    }
+    if (image !== undefined) {
+      updateFields.push('driver_image = ?');
+      values.push(image);
+    }
+
+    if (fleet_id !== undefined) {
+      updateFields.push('fleet_id = ?');
+      values.push(fleet_id);
+    }
+
+    values.push(driver_id)
+
+    if (updateFields.length === 0) {
+      return responseHandler.parameterMissingResponse(res, 'No fields to update');
+    }
+    const updateQuery = `
+      UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS}
+      SET ${updateFields.join(', ')}
+      WHERE driver_id = ?
+    `;
+
+    const result = await db.RunQuery(dbConstants.DBS.LIVE_DB, updateQuery, values);
+    if (result.affectedRows === 0) {
+      return responseHandler.returnErrorMessage(res, `driver not found`);
+    }
+
+    let autosfieldsToUpdate = []
+    let autosValuesForUpdate = []
+
+    if (name !== undefined) {
+      autosfieldsToUpdate.push('user_name = ?');
+      autosValuesForUpdate.push(name);
+    }
+    autosValuesForUpdate.push(driver_id)
+    let autosQuery = `
+      UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CUSTOMERS}
+      SET ${autosfieldsToUpdate.join(', ')}
+      WHERE user_id = ?
+    `;
+    await db.RunQuery(dbConstants.DBS.LIVE_DB, autosQuery, autosValuesForUpdate);
+    let authQuery = `
+      UPDATE ${dbConstants.DBS.AUTH_DB}.${dbConstants.AUTH_DB.AUTH_USERS}
+      SET ${autosfieldsToUpdate.join(', ')}
+      WHERE venus_autos_user_id = ?
+    `;
+    await db.RunQuery(dbConstants.DBS.LIVE_DB, authQuery, autosValuesForUpdate);
+
+    return responseHandler.success(req, res, 'Driver edited successfully', {});
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
