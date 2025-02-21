@@ -482,6 +482,7 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
               COALESCE( tb_coupons.title, tb_ride_promotions.title ) AS coupon_title,
               ${dbConstants.LIVE_DB.IN_THE_AIR}.master_coupon,
               tb_coupons.cashback_percentage,
+              ft.name AS fleet_name,
               autosCity.distance_unit AS distance_unit,
               tb_coupons.cashback_maximum,
               CASE
@@ -548,6 +549,10 @@ exports.engagementInfofetcher = async function (engagementId, operatorId) {
               ${dbConstants.DBS.LIVE_DB}.tb_coupons
             ON
               tb_coupons.coupon_id = tb_accounts.coupon_id
+            LEFT JOIN
+              ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.FLEET_TABLE} ft
+            ON
+               ${dbConstants.LIVE_DB.RIDES}.fleet_id = ft.id
             WHERE
               ${dbConstants.LIVE_DB.RIDES}.engagement_id = ?`;
 

@@ -124,4 +124,14 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     CaptainDetail.giveCreditsToUser,
   );
+
+  /* 
+   Edit Driver Details
+  */
+   app.post(
+    '/edit_driver_details',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    CaptainDetail.editDriverDetails,
+  );
 };

@@ -1862,7 +1862,9 @@ async function getDriverRides(driverId, startFrom, pageSize, responseData) {
             b.driver_suspended AS is_deactivated,
             reasons.reason_text AS deactivation_reason,
             b.phone_no AS del_phone_no,
-            b.email AS del_email
+            b.email AS del_email,
+            f.name AS fleet_name,
+            f.id AS fleet_id 
         FROM 
             tb_drivers AS b
         JOIN 
@@ -1874,6 +1876,9 @@ async function getDriverRides(driverId, startFrom, pageSize, responseData) {
         LEFT JOIN 
             ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.SUSPEND_REASON} reasons 
             ON deactivation.suspension_reason_id = reasons.id
+        LEFT JOIN 
+            ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.FLEET_TABLE} AS f
+            ON b.fleet_id = f.id
         WHERE 
             b.driver_id = ?;
       `;
@@ -1899,6 +1904,8 @@ async function getDriverRides(driverId, startFrom, pageSize, responseData) {
     ? contactInfo[0].del_phone_no
     : contactInfo[0].phone_no;
   responseData['Suspended'] = contactInfo[0].driver_suspended;
+  responseData['fleet_name'] = contactInfo[0].fleet_name || '';
+  responseData['fleet_id'] = contactInfo[0].fleet_id || '';
   responseData['deactivation_reason'] = contactInfo[0].deactivation_reason;
   responseData['app_version'] = contactInfo[0].app_versioncode;
   responseData['Vehicle Number'] = contactInfo[0].driver_car_no;

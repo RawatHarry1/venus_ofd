@@ -57,7 +57,8 @@ exports.LIVE_DB = {
   PACKAGE_SESSION: 'tb_requested_pkg_session',
   GEOFENCE_TOLL_TYPES: 'tb_geofenc_type',
   TOLL_TABLE: 'tb_toll',
-  REQUEST_RADIUS: 'tb_request_radius'
+  REQUEST_RADIUS: 'tb_request_radius',
+  FLEET_TABLE : 'tb_fleet'
 };
 
 exports.LIVE_LOGS = {

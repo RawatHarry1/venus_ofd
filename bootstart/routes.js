@@ -10,4 +10,5 @@ module.exports = {
   referral: require('../app/referral_program'),
   subscription: require('../app/subscription'),
   franchisee: require('../app/franchisee'),
+  fleet: require('../app/fleet')
 };
