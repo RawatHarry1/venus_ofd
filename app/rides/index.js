@@ -39,12 +39,12 @@ module.exports = function (app) {
   /**
    * VehicleTypes
    **/
-  app.get(
-    '/get_city_info_operator_wise',
-    AdminMiddlewares.admin.isLoggedIn,
-    AdminMiddlewares.admin.domainToken,
-    vehicleTypesController.get_city_info_operator_wise,
-  );
+  // app.get(
+  //   '/get_city_info_operator_wise',
+  //   AdminMiddlewares.admin.isLoggedIn,
+  //   AdminMiddlewares.admin.domainToken,
+  //   vehicleTypesController.get_city_info_operator_wise,
+  // );
   app.get(
     '/fetch_vehicle_make',
     AdminMiddlewares.admin.isLoggedIn,

@@ -76,7 +76,7 @@ exports.get_city_info_operator_wise = async function (req, res) {
         longitude_upper,
         show_venus_sharing
       FROM
-      ${dbConstants.LIVE_DB.CITY}
+      ${dbConstants.DBS.LIVE_LOGS}.${dbConstants.LIVE_LOGS.CITIES}
         where is_active = 1
         ${autos_str}
       ORDER BY

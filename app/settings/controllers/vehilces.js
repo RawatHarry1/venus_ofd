@@ -125,7 +125,7 @@ exports.operatorCityInfo = async function (req, res) {
     }
 
     if (cityIds.length > 0) {
-      autos_str += ' and autos_city_id in (?)';
+      autos_str += ` and autos_city_id in (${cityIds})`;
     }
     var get_query = `SELECT
 				  city_id,
@@ -146,9 +146,7 @@ exports.operatorCityInfo = async function (req, res) {
 				ORDER BY
 				  city_name ASC`;
 
-    var data = await db.RunQuery(dbConstants.DBS.LIVE_LOGS, get_query, [
-      cityIds.join(','),
-    ]);
+    var data = await db.RunQuery(dbConstants.DBS.LIVE_LOGS, get_query, []);
 
     var vehicle_extra = ' ';
     var ride_type = ' ';
@@ -157,11 +155,11 @@ exports.operatorCityInfo = async function (req, res) {
       vehicle_extra_value.push(operator_id);
       vehicle_extra = ' and operator_id = ? ';
     }
-    if (requestRideType == rideConstant.CLIENTS.MARS) {
-      vehicle_extra_value.push(rideConstant.CLIENTS_RIDE_TYPE.MARS);
+    if (requestRideType == rideConstants.CLIENTS.MARS) {
+      vehicle_extra_value.push(rideConstants.CLIENTS_RIDE_TYPE.MARS);
       ride_type = ' and ride_type = ? ';
     } else {
-      vehicle_extra_value.push(rideConstant.CLIENTS_RIDE_TYPE.VENUS_TAXI);
+      vehicle_extra_value.push(rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI);
       ride_type = ' and ride_type = ? ';
     }
     var vehicle_query = `SELECT
