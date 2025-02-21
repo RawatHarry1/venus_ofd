@@ -560,25 +560,30 @@ exports.getDriverDocumentDetails_v2 = async function (req, res) {
     }
 
     const query = `SELECT 
-                    driver_id, 
-                    name, 
-                    phone_no, 
-                    vehicle_no, 
-                    city_id, 
-                    vehicle_type, 
-                    app_versioncode, 
-                    device_type, 
-                    vehicle_year, 
-                    email, 
-                    date_of_birth, 
-                    vehicle_make_id, 
-                    iban_number, 
-                    access_token, 
-                    doc_visibility_status, 
-                    app_versioncode,
-                    driver_image 
+                    c.driver_id, 
+                    c.name, 
+                    c.phone_no, 
+                    c.vehicle_no, 
+                    c.city_id, 
+                    c.vehicle_type, 
+                    c.app_versioncode, 
+                    c.device_type, 
+                    c.vehicle_year, 
+                    c.email, 
+                    c.date_of_birth, 
+                    c.vehicle_make_id, 
+                    c.iban_number, 
+                    c.access_token, 
+                    c.doc_visibility_status, 
+                    c.app_versioncode,
+                    c.driver_image,
+                    f.name AS fleet_name 
                   FROM 
-                    ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS}
+                    ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} AS c
+                  LEFT JOIN 
+                    ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.FLEET_TABLE} AS f
+                  ON 
+                   c.fleet_id = f.id
                   WHERE 
                     driver_id = ?
                   `;
@@ -674,6 +679,7 @@ exports.getDriverDocumentDetails_v2 = async function (req, res) {
       dbs_checked: dbs_checked,
       license_checked: license_checked,
       updated_by: updated_by,
+      fleet_name: driver.fleet_name || ''
     };
 
     response.data.elm_registered = city[0].elm_verification_enabled;
