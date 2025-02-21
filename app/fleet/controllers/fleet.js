@@ -94,7 +94,7 @@ exports.fetchFleetList = async (req, res) => {
       SELECT ft.id, ft.name, ft.operator_id, ft.city_id, ft.description, ft.is_active, ft.service_type, ft.created_at,
       ft.email, COUNT(dr.driver_id) AS total_drivers
       FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.FLEET_TABLE} ft
-      LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} dr ON dr.fleet_id = ft.id
+      LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} dr ON dr.fleet_id = ft.id AND dr.verification_status = 1
     `;
 
     const queryConditions = [
