@@ -577,7 +577,8 @@ exports.getDriverDocumentDetails_v2 = async function (req, res) {
                     c.doc_visibility_status, 
                     c.app_versioncode,
                     c.driver_image,
-                    f.name AS fleet_name 
+                    f.name AS fleet_name,
+                    f.id AS fleet_id 
                   FROM 
                     ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS} AS c
                   LEFT JOIN 
@@ -679,7 +680,8 @@ exports.getDriverDocumentDetails_v2 = async function (req, res) {
       dbs_checked: dbs_checked,
       license_checked: license_checked,
       updated_by: updated_by,
-      fleet_name: driver.fleet_name || ''
+      fleet_name: driver.fleet_name || '',
+      fleet_id: driver.fleet_id || ''
     };
 
     response.data.elm_registered = city[0].elm_verification_enabled;
