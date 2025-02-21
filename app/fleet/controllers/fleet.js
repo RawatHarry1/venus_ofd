@@ -230,7 +230,7 @@ exports.deleteFleet = async (req, res) => {
     const checkDriversQuery = `
       SELECT COUNT(*) AS driver_count
       FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CAPTAINS}
-      WHERE fleet_id = ?
+      WHERE fleet_id = ? AND verification_status = 1
     `;
     const [driverCountResult] = await db.RunQuery(dbConstants.DBS.LIVE_DB, checkDriversQuery, [fleet_id]);
 
