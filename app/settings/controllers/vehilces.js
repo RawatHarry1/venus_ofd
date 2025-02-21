@@ -251,7 +251,7 @@ exports.operatorCityInfo = async function (req, res) {
       countries: countries,
     };
 
-    return responseHandler.success(req, res, response);
+    return responseHandler.success(req, res, '', response);
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }
