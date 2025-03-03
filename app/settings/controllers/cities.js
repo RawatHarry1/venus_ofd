@@ -471,6 +471,7 @@ const editableOprCityFieldsAutosSuperAdmin = [
   'package_delivery_restriction_enabled',
   'maximum_distance',
   'config',
+  'notification_timer'
 ];
 
 const editableOprCityFieldsAutos = [
@@ -492,6 +493,7 @@ const editableOprCityFieldsAutos = [
   'package_delivery_restriction_enabled',
   'maximum_distance',
   'config',
+  'notification_timer'
 ];
 
 const editableOprCityFieldsAuth = ['referral_data'];
