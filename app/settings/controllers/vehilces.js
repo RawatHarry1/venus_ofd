@@ -96,6 +96,7 @@ exports.operatorCityInfo = async function (req, res) {
         a.elm_verification_enabled,
         a.county_id AS country_id,
         a.operator_available,
+        c.distance_unit,
         a.vehicle_model_enabled,a.polygon_coordinates
         FROM  ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.O_CITY} a
         LEFT JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY} c on a.city_id = c.city_id
@@ -227,6 +228,7 @@ exports.operatorCityInfo = async function (req, res) {
         vehicle_model_enabled:
           operatorCities[data[i].city_id].vehicle_model_enabled,
         country_id: operatorCities[data[i].city_id].country_id || 1,
+        distance_unit: operatorCities[data[i].city_id].distance_unit || 'km',
       };
       info[i] = str;
     }
