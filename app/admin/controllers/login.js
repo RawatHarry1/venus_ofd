@@ -18,7 +18,6 @@ exports.adminLogin = async (req, res) => {
 
     if (!email || !password) {
       return responseHandler.error(
-        req,
         res,
         'Email and password are required',
         ResponseConstants.RESPONSE_STATUS.PARAMETER_MISSING,
@@ -50,12 +49,12 @@ exports.adminLogin = async (req, res) => {
 
     // Check if user exists
     if (!userDetails) {
-      return responseHandler.error(req, res, 'Invalid email or password', 401);
+      return responseHandler.error(res, 'Invalid email or password', 401);
     }
 
     // Check if password matches
     if (userDetails.password !== hashedPassword) {
-      return responseHandler.error(req, res, 'Invalid email or password', 401);
+      return responseHandler.error(res, 'Invalid email or password', 401);
     }
 
     // Check if user is active
@@ -93,6 +92,7 @@ exports.adminLogin = async (req, res) => {
     data.user_id = userDetails.id || 0;
     data.token = token;
     data.TTL = TTL;
+    data.operator_id = operatorId[0].operator_id
     data.access_menu = JSON.parse(userDetails.access_menu);
     (data.google_key = paramsWrapper.google_api_key || ''),
       (data.vehicles = finalVehicleList);

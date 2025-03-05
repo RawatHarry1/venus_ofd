@@ -58,7 +58,9 @@ exports.LIVE_DB = {
   GEOFENCE_TOLL_TYPES: 'tb_geofenc_type',
   TOLL_TABLE: 'tb_toll',
   REQUEST_RADIUS: 'tb_request_radius',
-  FLEET_TABLE : 'tb_fleet'
+  FLEET_TABLE : 'tb_fleet',
+  ROUTES_TABLE : 'tb_fr_routes',
+  STOPS_TABLE : 'tb_fr_stops',
 };
 
 exports.LIVE_LOGS = {
