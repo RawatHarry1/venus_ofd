@@ -360,7 +360,7 @@ exports.assignDriverToScheduleRide = async function (req, res) {
         if (incomingSchedulePickupTime.getTime() === oldSchedulePickupTime.getTime()) {
           return responseHandler.returnErrorMessage(
             res,
-            'Driver is already assigned to another scheduled ride at the same time.'
+            'Driver is already assigned to another schedule for same time.'
           );
         }
         let timeDifference = Math.abs(incomingSchedulePickupTime - oldSchedulePickupTime);
