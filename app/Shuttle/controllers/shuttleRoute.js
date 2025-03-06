@@ -21,6 +21,7 @@ exports.insertRoute = async function (req, res) {
       city_id: Joi.number().integer().required(),
       route_name: Joi.string().required(),
       start_location_name: Joi.string().required(),
+      route_description: Joi.string().required(),
       start_latitude: Joi.number().required(),
       start_longitude: Joi.number().required(),
       end_location_name: Joi.string().required(),
@@ -50,8 +51,8 @@ exports.insertRoute = async function (req, res) {
     }
 
     // **Insert Route into `tb_fr_routes`**
-    const routeQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.ROUTES_TABLE} (operator_id, city_id, route_name,  start_location_name, start_latitude, start_longitude, end_location_name, end_latitude, end_longitude, is_active, distance, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const routeValues = [operatorId, body.city_id, body.route_name, body.start_location_name, body.start_latitude, body.start_longitude, body.end_location_name, body.end_latitude, body.end_longitude, 1, body.end_distance, body.end_time];
+    const routeQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.ROUTES_TABLE} (operator_id, city_id, route_name,  start_location_name, start_latitude, start_longitude, end_location_name, end_latitude, end_longitude, is_active, distance, time, route_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const routeValues = [operatorId, body.city_id, body.route_name, body.start_location_name, body.start_latitude, body.start_longitude, body.end_location_name, body.end_latitude, body.end_longitude, 1, body.end_distance, body.end_time, body.route_description];
 
     const routeResult = await db.RunQuery(dbConstants.DBS.LIVE_DB, routeQuery, routeValues);
 
@@ -105,7 +106,7 @@ exports.fetchRouteList = async function (req, res) {
     const baseQuery = `
       SELECT r.id AS route_id, r.route_name, r.city_id, r.start_location_name, r.end_location_name, 
              r.start_latitude, r.start_longitude, r.end_latitude, r.end_longitude, 
-             r.distance AS end_distance, r.time AS end_time, r.is_active, r.created_at
+             r.distance AS end_distance, r.time AS end_time, r.is_active, r.created_at, r.route_description
       FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.ROUTES_TABLE} r
     `;
 
@@ -192,6 +193,7 @@ exports.editRoute = async function (req, res) {
       route_id: Joi.number().required(),
       city_id : Joi.number().required(),
       route_name: Joi.string().optional(),
+      route_description: Joi.string().optional(),
       start_location_name: Joi.string().optional(),
       start_latitude: Joi.number().optional(),
       start_longitude: Joi.number().optional(),

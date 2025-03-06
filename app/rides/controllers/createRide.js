@@ -341,6 +341,38 @@ exports.assignDriverToScheduleRide = async function (req, res) {
     var driverData = driverWrapper[0];
     pickupData = pickupData[0];
     var pickupStatus = pickupData.status;
+    var incomingSchedulePickupTime = new Date(pickupData.pickup_time); 
+
+    /* 
+    Fetch Driver's other schedule ride if any
+    */
+    let scheduleWrapper = await db.SelectFromTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.SCHEDULE_RIDE}`,
+      ['*'],
+      [{ key: 'driver_to_engage', value: driverId },{ key: 'status', value: rideConstants.SCHEDULE_STATUS.IN_QUEUE }],
+    );
+    if (scheduleWrapper.length) {
+      for (let schedule of scheduleWrapper) {
+        let oldSchedulePickupTime = new Date(schedule.pickup_time);
+
+        // If the scheduled ride pickup times are exactly the same
+        if (incomingSchedulePickupTime.getTime() === oldSchedulePickupTime.getTime()) {
+          return responseHandler.returnErrorMessage(
+            res,
+            'Driver is already assigned to another scheduled ride at the same time.'
+          );
+        }
+        let timeDifference = Math.abs(incomingSchedulePickupTime - oldSchedulePickupTime);
+
+        if (timeDifference < 24 * 60 * 60 * 1000) {
+          return responseHandler.returnErrorMessage(
+            res,
+            'Driver can only have multiple schedules if there is at least a 24-hour gap between them.'
+          );
+        }
+      }
+    }
 
     if (driverData.status == rideConstants.USER_STATUS.BUSY) {
       return responseHandler.returnErrorMessage(
