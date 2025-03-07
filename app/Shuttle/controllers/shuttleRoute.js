@@ -51,7 +51,7 @@ exports.insertRoute = async function (req, res) {
     }
 
     // **Insert Route into `tb_fr_routes`**
-    const routeQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.ROUTES_TABLE} (operator_id, city_id, route_name,  start_location_name, start_latitude, start_longitude, end_location_name, end_latitude, end_longitude, is_active, distance, time, route_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const routeQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.ROUTES_TABLE} (operator_id, city_id, route_name,  start_location_name, start_latitude, start_longitude, end_location_name, end_latitude, end_longitude, is_active, end_distance, end_time, route_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const routeValues = [operatorId, body.city_id, body.route_name, body.start_location_name, body.start_latitude, body.start_longitude, body.end_location_name, body.end_latitude, body.end_longitude, 1, body.end_distance, body.end_time, body.route_description];
 
     const routeResult = await db.RunQuery(dbConstants.DBS.LIVE_DB, routeQuery, routeValues);
