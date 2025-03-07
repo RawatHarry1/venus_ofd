@@ -212,9 +212,13 @@ exports.editRoute = async function (req, res) {
           time: Joi.number().required(),
           waiting_time: Joi.number().required()
         })
-      ).optional()
+      ).optional(),
+      id_to_delete: Joi.array().items(Joi.number()).optional()
     });
 
+    let idToDelete = body.id_to_delete;
+
+    delete body.id_to_delete;
     const { error } = schema.validate(body);
     if (error) return responseHandler.parameterMissingResponse(res, '');
 
@@ -267,6 +271,15 @@ exports.editRoute = async function (req, res) {
           await db.RunQuery(dbConstants.DBS.LIVE_DB, updateHaltQuery, updateHaltValues);
         }
       }
+    }
+
+    if(idToDelete && idToDelete.length > 0) {
+      const deleteHaltQuery = `
+        DELETE FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.STOPS_TABLE}
+        WHERE operator_id = ? AND id IN (${idToDelete.map(() => '?').join(", ")}) AND city_id = ?
+      `;
+      const deleteHaltValues = [operatorId, ...idToDelete, body.city_id];
+      await db.RunQuery(dbConstants.DBS.LIVE_DB, deleteHaltQuery, deleteHaltValues);
     }
 
     // **Insert New Halt Points**
