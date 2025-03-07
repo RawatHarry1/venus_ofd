@@ -106,7 +106,7 @@ exports.fetchRouteList = async function (req, res) {
     const baseQuery = `
       SELECT r.id AS route_id, r.route_name, r.city_id, r.start_location_name, r.end_location_name, 
              r.start_latitude, r.start_longitude, r.end_latitude, r.end_longitude, 
-             r.distance AS end_distance, r.time AS end_time, r.is_active, r.created_at, r.route_description
+             r.end_distance, r.end_time , r.is_active, r.created_at, r.route_description
       FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.ROUTES_TABLE} r
     `;
 
