@@ -952,6 +952,7 @@ exports.updateTbRequestRadius = async function (req, res) {
 exports.updateVehicleImagesNfares = async function (req, res) {
   try {
     var body = req.body;
+    var regionId = body.region_id;
     delete body['token'];
     delete body['$$hashKey'];
     delete body['operator_id'];
@@ -970,7 +971,7 @@ exports.updateVehicleImagesNfares = async function (req, res) {
 
     var params = {};
     var valuesToUpdate = {
-      images: images,
+      images: body.images
     };
 
     for (var key in valuesToUpdate) {
@@ -980,7 +981,7 @@ exports.updateVehicleImagesNfares = async function (req, res) {
     }
 
     var updateCriteria = [
-      { key: 'region_id', value: regionId },
+      { key: 'region_id', value: regionId},
       { key: 'operator_id', value: operatorId },
     ];
 
