@@ -36,6 +36,7 @@ exports.CLIENTS = {
 exports.CLIENTS_RIDE_TYPE = {
   VENUS_TAXI: 0,
   MARS: 10,
+  SHUTTLE: 11
 };
 
 exports.LOGIN_TYPE = {

@@ -61,6 +61,10 @@ exports.LIVE_DB = {
   FLEET_TABLE : 'tb_fleet',
   ROUTES_TABLE : 'tb_fr_routes',
   STOPS_TABLE : 'tb_fr_stops',
+  VEHICLE_COLOURS: 'tb_vehicle_colors',
+  VEHICLES_SEAT_BELTS: 'tb_vehicle_seat_belts',
+  VEHICLES_DOORS: 'tb_vehicle_doors',
+  VEHICLE_MAKE_CUSTOMISATION: 'tb_vehicle_make_customisations',
 };
 
 exports.LIVE_LOGS = {

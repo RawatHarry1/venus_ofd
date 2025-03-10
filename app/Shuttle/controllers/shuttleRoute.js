@@ -51,7 +51,7 @@ exports.insertRoute = async function (req, res) {
     }
 
     // **Insert Route into `tb_fr_routes`**
-    const routeQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.ROUTES_TABLE} (operator_id, city_id, route_name,  start_location_name, start_latitude, start_longitude, end_location_name, end_latitude, end_longitude, is_active, distance, time, route_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const routeQuery = `INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.ROUTES_TABLE} (operator_id, city_id, route_name,  start_location_name, start_latitude, start_longitude, end_location_name, end_latitude, end_longitude, is_active, end_distance, end_time, route_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const routeValues = [operatorId, body.city_id, body.route_name, body.start_location_name, body.start_latitude, body.start_longitude, body.end_location_name, body.end_latitude, body.end_longitude, 1, body.end_distance, body.end_time, body.route_description];
 
     const routeResult = await db.RunQuery(dbConstants.DBS.LIVE_DB, routeQuery, routeValues);
@@ -106,7 +106,7 @@ exports.fetchRouteList = async function (req, res) {
     const baseQuery = `
       SELECT r.id AS route_id, r.route_name, r.city_id, r.start_location_name, r.end_location_name, 
              r.start_latitude, r.start_longitude, r.end_latitude, r.end_longitude, 
-             r.distance AS end_distance, r.time AS end_time, r.is_active, r.created_at, r.route_description
+             r.end_distance, r.end_time , r.is_active, r.created_at, r.route_description
       FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.ROUTES_TABLE} r
     `;
 
@@ -212,9 +212,13 @@ exports.editRoute = async function (req, res) {
           time: Joi.number().required(),
           waiting_time: Joi.number().required()
         })
-      ).optional()
+      ).optional(),
+      id_to_delete: Joi.array().items(Joi.number()).optional()
     });
 
+    let idToDelete = body.id_to_delete;
+
+    delete body.id_to_delete;
     const { error } = schema.validate(body);
     if (error) return responseHandler.parameterMissingResponse(res, '');
 
@@ -267,6 +271,15 @@ exports.editRoute = async function (req, res) {
           await db.RunQuery(dbConstants.DBS.LIVE_DB, updateHaltQuery, updateHaltValues);
         }
       }
+    }
+
+    if(idToDelete && idToDelete.length > 0) {
+      const deleteHaltQuery = `
+        DELETE FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.STOPS_TABLE}
+        WHERE operator_id = ? AND id IN (${idToDelete.map(() => '?').join(", ")}) AND city_id = ?
+      `;
+      const deleteHaltValues = [operatorId, ...idToDelete, body.city_id];
+      await db.RunQuery(dbConstants.DBS.LIVE_DB, deleteHaltQuery, deleteHaltValues);
     }
 
     // **Insert New Halt Points**
