@@ -28,8 +28,9 @@ exports.fetchOperatorVehicleType = async function (req, res) {
       queryToFetchOperatorVehicleType += ' AND ride_type = ?';
       values.push(rideConstants.CLIENTS_RIDE_TYPE.MARS);
     } else {
-      queryToFetchOperatorVehicleType += ' AND ride_type = ?';
+      queryToFetchOperatorVehicleType += ' AND ride_type In (?, ?)';
       values.push(rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI);
+      values.push(rideConstants.CLIENTS_RIDE_TYPE.SHUTTLE);
     }
     queryToFetchOperatorVehicleType += ' ORDER BY is_active DESC';
     var result = await db.RunQuery(
@@ -943,6 +944,58 @@ exports.updateTbRequestRadius = async function (req, res) {
 
     await db.RunQuery(dbConstants.DBS.LIVE_DB, queryToUpdate, [latitudeConstraint, longitudeConstraint, requestRadius, id]);
     return responseHandler.success(req, res, 'Radius Updated SuccussFully.', {});
+  } catch (error) {
+    errorHandler.errorHandler(error, req, res);
+  }
+};
+
+exports.updateVehicleImagesNfares = async function (req, res) {
+  try {
+    var body = req.body;
+    delete body['token'];
+    delete body['$$hashKey'];
+    delete body['operator_id'];
+
+    var schema = Joi.object({
+      region_id: Joi.number().integer().positive().required(),
+      images: Joi.string().required(),
+    })
+
+    var result = schema.validate(body);
+    if (result.error) {
+      return responseHandler.parameterMissingResponse(res, '');
+    }
+
+    var operatorId = req.operator_id;
+
+    var params = {};
+    var valuesToUpdate = {
+      images: images,
+    };
+
+    for (var key in valuesToUpdate) {
+      if (valuesToUpdate[key] || valuesToUpdate[key] === 0) {
+        params[key] = valuesToUpdate[key];
+      }
+    }
+
+    var updateCriteria = [
+      { key: 'region_id', value: regionId },
+      { key: 'operator_id', value: operatorId },
+    ];
+
+    await db.updateTable(
+      dbConstants.DBS.LIVE_DB,
+      `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.CITY_REGIONS}`,
+      params,
+      updateCriteria,
+    );
+    return responseHandler.success(
+      req,
+      res,
+      'Vehicle edited successfully.',
+      '',
+    );
   } catch (error) {
     errorHandler.errorHandler(error, req, res);
   }

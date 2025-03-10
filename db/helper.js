@@ -66,9 +66,14 @@ exports.selectFromTable = async function (
   if (criteria.length) {
     const whereClause = criteria
       .map((field) => {
-        const operator = Array.isArray(field.value) ? 'IN (?)' : '= ?';
-        values.push(field.value);
-        return `${field.key} ${operator}`;
+        if (Array.isArray(field.value)) {
+          const placeholders = field.value.map(() => '?').join(', ');
+          values.push(...field.value);
+          return `${field.key} IN (${placeholders})`;
+        } else {
+          values.push(field.value);
+          return `${field.key} = ?`;
+        }
       })
       .join(' AND ');
     stmt += ` WHERE ${whereClause}`;
