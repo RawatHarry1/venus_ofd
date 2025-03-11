@@ -37,7 +37,6 @@ module.exports = function (app) {
   /* 
   Vehicles Buses Routes
   */
-
   app.get(
     '/internal/vehicle_make_details',
     AdminMiddlewares.admin.domainToken,
@@ -52,4 +51,20 @@ module.exports = function (app) {
     busesRoutes.fetchVehicleBuses,
   );
 
+  /* 
+  Bus Assigning to Driver Routes
+  */
+  app.post(
+    '/internal/assign_bus_to_driver',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    busesRoutes.assignBusToDriver,
+  );
+
+  app.get(
+    '/internal/fetch_booked_buses',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    busesRoutes.fetchBookedBuses,
+  );
 };

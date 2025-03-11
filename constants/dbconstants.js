@@ -65,6 +65,7 @@ exports.LIVE_DB = {
   VEHICLES_SEAT_BELTS: 'tb_vehicle_seat_belts',
   VEHICLES_DOORS: 'tb_vehicle_doors',
   VEHICLE_MAKE_CUSTOMISATION: 'tb_vehicle_make_customisations',
+  BUS_DRIVER_ASSIGN_TABLE: 'tb_bus_route_management'
 };
 
 exports.LIVE_LOGS = {
