@@ -311,7 +311,7 @@ exports.fetchVehicleMake = async function (req, res) {
     if (requestRideType == rideConstant.CLIENTS.MARS) {
       vehicleMakeQuery += ' AND cr.ride_type = 10';
     } else {
-      vehicleMakeQuery += ' AND cr.ride_type = 0';
+      vehicleMakeQuery += ' AND cr.ride_type IN (0,11)';
     }
     vehicleMakeQuery += `
             ORDER BY 
