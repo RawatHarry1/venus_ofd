@@ -274,7 +274,7 @@ exports.addVehicleMake = async function (req, res) {
       vehicle_name: Joi.string().optional(),
       vehicle_number: Joi.string().optional(),
       vehicle_type: Joi.number().optional(),
-      fleet_id: Joi.number().optional().allow(null)  
+      fleet_id: Joi.string().optional().allow(null)  
     });
 
     var result = schema.validate(options);
