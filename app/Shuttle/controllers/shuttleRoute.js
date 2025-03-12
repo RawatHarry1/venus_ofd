@@ -36,7 +36,8 @@ exports.insertRoute = async function (req, res) {
           longitude: Joi.number().required(),
           distance: Joi.number().required(),
           time: Joi.number().required(),
-          waiting_time: Joi.number().required()
+          waiting_time: Joi.number().required(),
+          stop_order: Joi.number().integer().required()
         })
       ).min(0).optional()
     });
@@ -58,21 +59,20 @@ exports.insertRoute = async function (req, res) {
 
     const routeId = routeResult.insertId;
 
-    // **Insert Halt Points into `tb_fr_stops`**
+    // **Insert Halt Points into `tb_fr_stops` (Maintaining Order)**
     if (body.halt_points && body.halt_points.length > 0) {
       const haltQuery = `
         INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.STOPS_TABLE} 
-        (operator_id, city_id, is_active, route_id, location_name, latitude, longitude, distance, time, waiting_time)
-        VALUES ${body.halt_points.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
+        (operator_id, city_id, is_active, route_id, location_name, latitude, longitude, distance, time, waiting_time, stop_order) 
+        VALUES ${body.halt_points.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
       `;
-    
-      const haltValues = body.halt_points.flatMap(halt => [
-        operatorId, body.city_id, 1, routeId, halt.location_name, halt.latitude, halt.longitude, halt.distance, halt.time, halt.waiting_time
+     const haltValues = body.halt_points.flatMap((halt, index) => [
+        operatorId, body.city_id, 1, routeId, halt.location_name, halt.latitude, halt.longitude,halt.distance, halt.time, halt.waiting_time, halt.stop_order || index + 1
       ]);
     
       await db.RunQuery(dbConstants.DBS.LIVE_DB, haltQuery, haltValues);
     }
-    
+
 
     return responseHandler.success(req, res, 'Route inserted successfully', { route_id: routeId });
   } catch (error) {
@@ -191,7 +191,7 @@ exports.editRoute = async function (req, res) {
     // **Validation Schema**
     const schema = Joi.object({
       route_id: Joi.number().required(),
-      city_id : Joi.number().required(),
+      city_id: Joi.number().required(),
       route_name: Joi.string().optional(),
       route_description: Joi.string().optional(),
       start_location_name: Joi.string().optional(),
@@ -204,7 +204,7 @@ exports.editRoute = async function (req, res) {
       end_time: Joi.number().optional(),
       halt_points: Joi.array().items(
         Joi.object({
-          stop_id: Joi.number().optional(),  // Only present for existing stops
+          stop_id: Joi.number().optional(), // Only present for existing stops
           location_name: Joi.string().required(),
           latitude: Joi.number().required(),
           longitude: Joi.number().required(),
@@ -222,7 +222,7 @@ exports.editRoute = async function (req, res) {
     const { error } = schema.validate(body);
     if (error) return responseHandler.parameterMissingResponse(res, '');
 
-    // **Build Dynamic Query for Route Update**
+    // **Update Route Details**
     let updateFields = [];
     let updateValues = [];
 
@@ -243,22 +243,44 @@ exports.editRoute = async function (req, res) {
       await db.RunQuery(dbConstants.DBS.LIVE_DB, routeUpdateQuery, updateValues);
     }
 
-    // // **Fetch Existing Halt Points**
-    // const existingHaltQuery = `
-    //   SELECT id FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.STOPS_TABLE}
-    //   WHERE operator_id = ? AND route_id = ?
-    // `;
-    // const existingHalts = await db.RunQuery(dbConstants.DBS.LIVE_DB, existingHaltQuery, [operatorId, body.route_id]);
-    // const existingHaltIds = existingHalts.map(halt => halt.stop_id);
+    // **Fetch Existing Halt Points in Order**
+    const existingHaltQuery = `
+        SELECT id, stop_order FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.STOPS_TABLE}
+        WHERE operator_id = ? AND route_id = ? AND city_id = ?
+        ORDER BY stop_order ASC
+      `;
+    const existingHaltPoints = await db.RunQuery(dbConstants.DBS.LIVE_DB, existingHaltQuery, [operatorId, body.route_id, body.city_id]);
 
-    // **Prepare Halt Points for Update, Insert, and Delete**
-    // let newHaltIds = body.halt_points?.map(halt => halt.stop_id).filter(id => id) || [];
-    // let haltPointsToDelete = existingHaltIds.filter(id => !newHaltIds.includes(id));
+    let existingHaltIds = existingHaltPoints.map(halt => halt.id);
 
-    // **Update Existing Halt Points**
+    
+    // **Delete Halt Points if Needed**
+    if (idToDelete && idToDelete.length > 0) {
+      const deleteHaltQuery = `
+        DELETE FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.STOPS_TABLE}
+        WHERE operator_id = ? AND id IN (${idToDelete.map(() => '?').join(", ")}) AND city_id = ?
+      `;
+      await db.RunQuery(dbConstants.DBS.LIVE_DB, deleteHaltQuery, [operatorId, ...idToDelete, body.city_id]);
+
+      // **Reorder Remaining Halt Points**
+      let newSequence = 1;
+      for (let halt of existingHaltPoints) {
+        if (!idToDelete.includes(halt.id)) {
+          const updateSeqQuery = `
+            UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.STOPS_TABLE}
+            SET stop_order = ?
+            WHERE operator_id = ? AND id = ? AND city_id = ?
+          `;
+          await db.RunQuery(dbConstants.DBS.LIVE_DB, updateSeqQuery, [newSequence, operatorId, halt.id, body.city_id]);
+          newSequence++;
+        }
+      }
+    }
+
+    // **Update Existing Halt Points (Details Only, No stop_order Change)**
     if (body.halt_points) {
       for (const halt of body.halt_points) {
-        if (halt.stop_id) {
+        if (halt.stop_id && existingHaltIds.includes(halt.stop_id)) {
           const updateHaltQuery = `
             UPDATE ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.STOPS_TABLE}
             SET location_name = ?, latitude = ?, longitude = ?, distance = ?, time = ?, waiting_time = ?
@@ -273,25 +295,17 @@ exports.editRoute = async function (req, res) {
       }
     }
 
-    if(idToDelete && idToDelete.length > 0) {
-      const deleteHaltQuery = `
-        DELETE FROM ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.STOPS_TABLE}
-        WHERE operator_id = ? AND id IN (${idToDelete.map(() => '?').join(", ")}) AND city_id = ?
-      `;
-      const deleteHaltValues = [operatorId, ...idToDelete, body.city_id];
-      await db.RunQuery(dbConstants.DBS.LIVE_DB, deleteHaltQuery, deleteHaltValues);
-    }
-
-    // **Insert New Halt Points**
+    // **Insert New Halt Points at the End of the stop_order**
     const newHaltPoints = body.halt_points?.filter(halt => !halt.stop_id) || [];
     if (newHaltPoints.length > 0) {
+      let currentMaxSequence = existingHaltPoints.length - (idToDelete?.length || 0);
       const insertHaltQuery = `
         INSERT INTO ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.STOPS_TABLE}
-        (operator_id, city_id, is_active,location_name, route_id, latitude, longitude, distance, time, waiting_time)
-        VALUES ${newHaltPoints.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
+        (operator_id, city_id, is_active, location_name, route_id, latitude, longitude, distance, time, waiting_time, stop_order)
+        VALUES ${newHaltPoints.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
       `;
       const insertHaltValues = newHaltPoints.flatMap(halt => [
-        operatorId, body.city_id, 1, halt.location_name, body.route_id, halt.latitude, halt.longitude, halt.distance, halt.time, halt.waiting_time
+        operatorId, body.city_id, 1, halt.location_name, body.route_id,halt.latitude, halt.longitude, halt.distance, halt.time, halt.waiting_time,++currentMaxSequence // Append at the end
       ]);
       await db.RunQuery(dbConstants.DBS.LIVE_DB, insertHaltQuery, insertHaltValues);
     }

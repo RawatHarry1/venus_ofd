@@ -75,6 +75,7 @@ exports.fetchVehicleBuses = async function (req, res) {
                         WHERE 
                           vh.operator_id = ? AND 
                           vh.status = ? AND
+                          vm.is_active = 1 AND
                           vh.vehicle_type = ? AND
                           vh.vehicle_name IS NOT NULL
                         `;
@@ -238,6 +239,7 @@ exports.fetchBookedBuses = async function (req, res) {
                             bd.operator_id = ? 
                             AND bd.is_active = 1
                             AND vm.city_id = ?
+                            AND vm.is_active = 1
                             AND vh.vehicle_type = ?
                             AND (
                                 (bd.start_time >= ? AND bd.start_time <= ?) OR  -- Start time within range
