@@ -275,7 +275,6 @@ exports.fetchVehicles = async function (req, res) {
 exports.fetchVehicleMake = async function (req, res) {
   try {
     let options = req.query;
-    var requestRideType = req.request_ride_type;
     let response = {};
 
     delete req.query.token;
@@ -292,40 +291,41 @@ exports.fetchVehicleMake = async function (req, res) {
       return;
     }
 
-    var cityId = req.query.city_id;
-    var operatorId = req.operator_id;
-    var requestRideType = req.request_ride_type;
+    let cityId = req.query.city_id;
+    let operatorId = req.operator_id;
+    let requestRideType = req.request_ride_type;
 
-    var vehicleMakeQuery = `
-            SELECT 
-                vm.*,
-                cr.region_name 
-            FROM
-                tb_vehicle_make vm
-            JOIN
-                 tb_city_sub_regions cr ON cr.vehicle_type = vm.vehicle_type AND cr.operator_id = vm.operator_id AND cr.ride_type = ? AND cr.city_id = ? AND cr.is_active = 1
-            WHERE 
-                vm.city_id = ? AND 
-                vm.operator_id = ?`;
-
+    let rideTypeValues = [];
     if (requestRideType == rideConstant.CLIENTS.MARS) {
-      vehicleMakeQuery += ' AND cr.ride_type = 10';
+      rideTypeValues = [rideConstant.CLIENTS_RIDE_TYPE.MARS]; // Single ride type for MARS
     } else {
-      vehicleMakeQuery += ' AND cr.ride_type IN (0,11)';
+      rideTypeValues = [
+        rideConstant.CLIENTS_RIDE_TYPE.VENUS_TAXI,
+        rideConstant.CLIENTS_RIDE_TYPE.SHUTTLE,
+      ];
     }
-    vehicleMakeQuery += `
-            ORDER BY 
+
+    let vehicleMakeQuery = `
+        SELECT 
+            vm.*,
+            cr.region_name 
+        FROM
+            tb_vehicle_make vm
+        JOIN
+            tb_city_sub_regions cr ON cr.vehicle_type = vm.vehicle_type 
+            AND cr.operator_id = vm.operator_id 
+            AND cr.ride_type IN (${rideTypeValues.map(() => '?').join(',')}) 
+            AND cr.city_id = ? 
+            AND cr.is_active = 1
+        WHERE 
+            vm.city_id = ? 
+            AND vm.operator_id = ?
+        ORDER BY 
             vm.updated_at DESC`;
 
-    const values = [];
+    const values = [...rideTypeValues, cityId, cityId, operatorId];
 
-    if (requestRideType == rideConstant.CLIENTS.MARS) {
-      values.push(rideConstant.CLIENTS_RIDE_TYPE.MARS);
-    } else {
-      values.push(rideConstant.CLIENTS_RIDE_TYPE.VENUS_TAXI);
-    }
-    values.push(cityId, cityId, operatorId);
-    var vehicleMakeResult = await db.RunQuery(
+    let vehicleMakeResult = await db.RunQuery(
       dbConstants.DBS.LIVE_DB,
       vehicleMakeQuery,
       values,
