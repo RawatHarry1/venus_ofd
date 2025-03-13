@@ -227,7 +227,8 @@ exports.fetchBookedBuses = async function (req, res) {
                             bd.driver_id,
                             bd.route_id,
                             bd.start_time,
-                            bd.drop_time
+                            bd.drop_time,
+                            bd.route_end_time
                         FROM 
                             ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.BUS_DRIVER_ASSIGN_TABLE} bd
                         JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLES} vh
