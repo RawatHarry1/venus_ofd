@@ -275,11 +275,11 @@ exports.editAssignedBus = async function (req, res) {
         const schema = Joi.object({
             assignment_id: Joi.number().required(),
             vehicle_id: Joi.number().required(),
-            driver_id: Joi.number().required(),
-            start_time: Joi.string().required(), // Format: "YYYY-MM-DD HH:mm:ss"
-            route_end_time: Joi.string().required(), // Format: "YYYY-MM-DD HH:mm:ss"
+            driver_id: Joi.number().optional(),
+            start_time: Joi.string().optional(), // Format: "YYYY-MM-DD HH:mm:ss"
+            route_end_time: Joi.string().optional(), // Format: "YYYY-MM-DD HH:mm:ss"
             city_id: Joi.number().required(),
-            route_id: Joi.number().required()
+            route_id: Joi.number().optional()
         });
 
         delete req.body.token;
