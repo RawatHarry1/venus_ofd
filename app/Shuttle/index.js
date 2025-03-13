@@ -67,4 +67,11 @@ module.exports = function (app) {
     AdminMiddlewares.admin.isLoggedIn,
     busesRoutes.fetchBookedBuses,
   );
+
+  app.post(
+    '/internal/edit_assigned_bus_to_driver',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    busesRoutes.editAssignedBus,
+  );
 };

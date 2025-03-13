@@ -265,3 +265,131 @@ exports.fetchBookedBuses = async function (req, res) {
         errorHandler.errorHandler(error, req, res);
     }
 };
+
+exports.editAssignedBus = async function (req, res) {
+    try {
+        const { assignment_id, vehicle_id, driver_id, start_time, route_id, city_id, route_end_time } = req.body;
+        const { operator_id: operatorId, request_ride_type: requestRideType } = req;
+
+        // **Validation Schema**
+        const schema = Joi.object({
+            assignment_id: Joi.number().required(),
+            vehicle_id: Joi.number().required(),
+            driver_id: Joi.number().required(),
+            start_time: Joi.string().required(), // Format: "YYYY-MM-DD HH:mm:ss"
+            route_end_time: Joi.string().required(), // Format: "YYYY-MM-DD HH:mm:ss"
+            city_id: Joi.number().required(),
+            route_id: Joi.number().required()
+        });
+
+        delete req.body.token;
+        const { error } = schema.validate(req.body);
+        if (error) return responseHandler.parameterMissingResponse(res, '');
+
+        // Database Constants
+        const { LIVE_DB } = dbConstants.DBS;
+        const { STOPS_TABLE, ROUTES_TABLE, BUS_DRIVER_ASSIGN_TABLE, CAPTAINS, VEHICLES } = dbConstants.LIVE_DB;
+
+        // **Check if Assignment Exists**
+        const existingAssignmentQuery = `
+            SELECT * FROM ${LIVE_DB}.${BUS_DRIVER_ASSIGN_TABLE}
+            WHERE id = ? AND operator_id = ? AND city_id = ?
+        `;
+        const existingAssignment = await db.RunQuery(LIVE_DB, existingAssignmentQuery, [assignment_id, operatorId, city_id]);
+        if (existingAssignment.length == 0) {
+            return responseHandler.returnErrorMessage(res, `Assignment not found`);
+        }
+
+        // **Fetch Driver Details**
+        const driverQuery = `SELECT vehicle_type FROM ${LIVE_DB}.${CAPTAINS} WHERE driver_id = ?`;
+        const driverResult = await db.RunQuery(LIVE_DB, driverQuery, [driver_id]);
+        if (driverResult.length == 0) {
+            return responseHandler.returnErrorMessage(res, `Driver not found`);
+        }
+        const driverVehicleType = driverResult[0]?.vehicle_type;
+
+        // **Fetch Vehicle Details**
+        const vehicleQuery = `SELECT vehicle_type FROM ${LIVE_DB}.${VEHICLES} WHERE vehicle_id = ?`;
+        const vehicleResult = await db.RunQuery(LIVE_DB, vehicleQuery, [vehicle_id]);
+        if (vehicleResult.length == 0) {
+            return responseHandler.returnErrorMessage(res, `Vehicle not found`);
+        }
+        const vehicleType = vehicleResult[0]?.vehicle_type;
+
+        // **Check if Driver and Vehicle Type Matches**
+        if (driverVehicleType !== vehicleType) {
+            return responseHandler.returnErrorMessage(res, `Driver does not match the selected vehicle`);
+        }
+
+        // **Fetch Total Travel Time from Stops Table**
+        const travelTimeQuery = `SELECT SUM(time) AS total_travel_time FROM ${LIVE_DB}.${STOPS_TABLE} WHERE route_id = ?`;
+        const travelTimeResult = await db.RunQuery(LIVE_DB, travelTimeQuery, [route_id]);
+        const totalTravelTime = parseFloat(travelTimeResult[0]?.total_travel_time) || 0;
+
+        // **Fetch Additional End Time from Routes Table**
+        const routeQuery = `SELECT end_time FROM ${LIVE_DB}.${ROUTES_TABLE} WHERE id = ?`;
+        const routeResult = await db.RunQuery(LIVE_DB, routeQuery, [route_id]);
+        const additionalEndTime = parseFloat(routeResult[0]?.end_time) || 0;
+
+        // **Calculate New `drop_time`**
+        const totalMinutesToAdd = totalTravelTime + additionalEndTime;
+        const drop_time = moment(start_time, "YYYY-MM-DD HH:mm:ss")
+            .add(totalMinutesToAdd, 'minutes')
+            .format("YYYY-MM-DD HH:mm:ss");
+
+        // **Check for Schedule Conflicts**
+        const conflictCheckQuery = `
+            SELECT 1 FROM ${LIVE_DB}.${BUS_DRIVER_ASSIGN_TABLE}
+            WHERE operator_id = ? 
+            AND (vehicle_id = ? OR driver_id = ?) 
+            AND is_active = 1
+            AND id != ?  -- Exclude current assignment
+            AND NOT (drop_time <= ? OR start_time >= ?)
+            AND service_type = ?
+            LIMIT 1
+        `;
+        const conflictExists = await db.RunQuery(LIVE_DB, conflictCheckQuery, [operatorId, vehicle_id, driver_id, assignment_id, start_time, drop_time, requestRideType]);
+        if (conflictExists.length > 0) {
+            return responseHandler.returnErrorMessage(res, `Bus or Driver is already assigned during the selected period.`);
+        }
+
+        // **Update the Assignment**
+        const updateFields = [];
+        const updateValues = [];
+
+        if (route_id) {
+            updateFields.push("route_id = ?");
+            updateValues.push(route_id);
+        }
+        if (driver_id) {
+            updateFields.push("driver_id = ?");
+            updateValues.push(driver_id);
+        }
+        if (start_time) {
+            updateFields.push("start_time = ?");
+            updateValues.push(start_time);
+        }
+        if (drop_time) {
+            updateFields.push("drop_time = ?");
+            updateValues.push(drop_time);
+        }
+        if (route_end_time) {
+            updateFields.push("route_end_time = ?");
+            updateValues.push(route_end_time);
+        }
+
+        if (updateFields.length > 0) {
+            const updateQuery = `
+                UPDATE ${LIVE_DB}.${BUS_DRIVER_ASSIGN_TABLE}
+                SET ${updateFields.join(", ")}
+                WHERE id = ? AND operator_id = ? AND city_id = ?
+            `;
+            updateValues.push(assignment_id, operatorId, city_id);
+            await db.RunQuery(LIVE_DB, updateQuery, updateValues);
+        }
+
+        return responseHandler.success(req, res, 'Bus assignment updated successfully', { assignment_id, route_id, start_time, drop_time });
+    } catch (error) {
+        errorHandler.errorHandler(error, req, res);
+    }
+};
