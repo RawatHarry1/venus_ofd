@@ -101,14 +101,15 @@ exports.fetchVehicleBuses = async function (req, res) {
 
 exports.assignBusToDriver = async function (req, res) {
     try {
-        const { vehicle_id, driver_id, start_time, route_id, city_id } = req.body;
+        const { vehicle_id, driver_id, start_time, route_id, city_id, route_end_time } = req.body;
         const { operator_id: operatorId, request_ride_type: requestRideType } = req;
 
         // Validation Schema
         const schema = Joi.object({
             vehicle_id: Joi.number().required(),
             driver_id: Joi.number().required(),
-            start_time: Joi.string().required(), // Format: "YYYY-MM-DD HH:mm:ss"
+            start_time: Joi.string().required(), // Format: "YYYY-MM-DD HH:mm:ss",
+            route_end_time: Joi.string().required(), // Format: "YYYY-MM-DD HH:mm:ss",
             city_id: Joi.number().required(),
             route_id: Joi.number().required()
         });
@@ -181,10 +182,10 @@ exports.assignBusToDriver = async function (req, res) {
         // Insert into Bus Route Management Table
         const insertQuery = `
             INSERT INTO ${LIVE_DB}.${BUS_DRIVER_ASSIGN_TABLE} 
-            (operator_id, city_id, vehicle_id, driver_id, route_id, start_time, drop_time, service_type, is_active, vehicle_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (operator_id, city_id, vehicle_id, driver_id, route_id, start_time, drop_time, service_type, is_active, vehicle_type, route_end_time)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        await db.RunQuery(LIVE_DB, insertQuery, [operatorId, city_id, vehicle_id, driver_id, route_id, start_time, end_time, requestRideType, 1, vehicleType]);
+        await db.RunQuery(LIVE_DB, insertQuery, [operatorId, city_id, vehicle_id, driver_id, route_id, start_time, end_time, requestRideType, 1, vehicleType, route_end_time]);
 
         return responseHandler.success(req, res, 'Bus assigned successfully', { route_id, start_time, end_time });
     } catch (error) {
