@@ -37,7 +37,7 @@ exports.insertRoute = async function (req, res) {
           distance: Joi.number().required(),
           time: Joi.number().required(),
           waiting_time: Joi.number().required(),
-          stop_order: Joi.number().integer().required()
+          stop_order: Joi.number().integer().optional()
         })
       ).min(0).optional()
     });
