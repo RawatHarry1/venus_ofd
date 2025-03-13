@@ -204,9 +204,9 @@ exports.fetchBookedBuses = async function (req, res) {
         // Validation Schema
         const schema = Joi.object({
             city_id: Joi.number().required(),
-            vehicle_type: Joi.number().required(),
+            vehicle_type: Joi.string().required(),
             start_date: Joi.string().required(), // Format: "YYYY-MM-DD HH:mm:ss"
-            end_date: Joi.string().required(),   // Format: "YYYY-MM-DD HH:mm:ss"
+            end_date: Joi.string().optional().allow(null, ''), // Optional
             sSearch: Joi.string().allow('').optional(),
             iDisplayLength: Joi.number().integer().optional(),
             iDisplayStart: Joi.number().integer().optional()
@@ -228,7 +228,13 @@ exports.fetchBookedBuses = async function (req, res) {
                             bd.route_id,
                             bd.start_time,
                             bd.drop_time,
-                            bd.route_end_time
+                            bd.route_end_time,
+                            vr.start_location_name,
+                            vr.end_location_name,
+                            vh.vehicle_name,
+                            vh.vehicle_no AS vehicle_number,
+                            vh.vehicle_image,
+                            vr.end_location_name
                         FROM 
                             ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.BUS_DRIVER_ASSIGN_TABLE} bd
                         JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLES} vh
@@ -237,19 +243,27 @@ exports.fetchBookedBuses = async function (req, res) {
                             ON vh.vehicle_make_id = vc.id
                         JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_MAKE} vm
                             ON vc.model_id = vm.id
+                        JOIN ${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.ROUTES_TABLE} vr
+                            ON bd.route_id = vr.id
                         WHERE 
                             bd.operator_id = ? 
                             AND bd.is_active = 1
                             AND vm.city_id = ?
                             AND vm.is_active = 1
-                            AND vh.vehicle_type = ?
-                            AND (
-                                (bd.start_time >= ? AND bd.start_time <= ?) OR  -- Start time within range
+                            AND vh.vehicle_type IN (${vehicle_type})
+                            AND bd.start_time >= ?`; // Fetch all starting from start_date
+
+        let params = [operatorId, city_id, start_date];
+
+        // Apply `end_date` filter only if provided
+        if (end_date) {
+            baseQuery += ` AND (
+                                (bd.start_time <= ?) OR  -- Start time within range
                                 (bd.drop_time >= ? AND bd.drop_time <= ?) OR  -- Drop time within range
                                 (bd.start_time <= ? AND bd.drop_time >= ?)    -- Booking spans entire period
                             )`;
-
-        let params = [operatorId, city_id, vehicle_type, start_date, end_date, start_date, end_date, start_date, end_date];
+         params.push(end_date, start_date, end_date, start_date, end_date);
+        }
 
         if (sSearch) {
             baseQuery += ` AND (vh.vehicle_name LIKE ? OR vm.model_name LIKE ? OR bd.route_id LIKE ?)`;
