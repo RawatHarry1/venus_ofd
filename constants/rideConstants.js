@@ -36,6 +36,7 @@ exports.CLIENTS = {
 exports.CLIENTS_RIDE_TYPE = {
   VENUS_TAXI: 0,
   MARS: 10,
+  SHUTTLE: 11
 };
 
 exports.LOGIN_TYPE = {
@@ -54,6 +55,7 @@ exports.RIDE_TYPE = {
   OUTSTATION: 7,
   SHUTTLE: 8,
   DELIVERYV8: 10,
+  SHUTTLEV8: 11,
 };
 
 exports.ALLOWED_RIDE_TYPES_FOR_VEHICLE_SET = [
@@ -61,6 +63,7 @@ exports.ALLOWED_RIDE_TYPES_FOR_VEHICLE_SET = [
   exports.RIDE_TYPE.OUTSTATION,
   exports.RIDE_TYPE.RENTAL,
   exports.RIDE_TYPE.DELIVERYV8,
+  exports.RIDE_TYPE.SHUTTLEV8,
 ];
 
 exports.FARE_TYPE = {

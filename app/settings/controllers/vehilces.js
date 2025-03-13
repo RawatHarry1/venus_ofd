@@ -41,7 +41,7 @@ exports.fetchVehicles = async function (req, res) {
     } else {
       vehicleCriteria.push({
         key: 'ride_type',
-        value: rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI,
+        value: [rideConstants.CLIENTS_RIDE_TYPE.VENUS_TAXI, rideConstants.CLIENTS_RIDE_TYPE.SHUTTLE],
       });
     }
     var vehicleValues = await db.SelectFromTable(

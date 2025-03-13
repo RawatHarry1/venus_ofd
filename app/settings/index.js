@@ -118,6 +118,13 @@ module.exports = function (app) {
   );
 
   app.post(
+    '/internal/update_vehicle_images_fares',
+    AdminMiddlewares.admin.domainToken,
+    AdminMiddlewares.admin.isLoggedIn,
+    fareSettingsController.updateVehicleImagesNfares,
+  );
+
+  app.post(
     '/internal/update_operator_fares',
     AdminMiddlewares.admin.domainToken,
     AdminMiddlewares.admin.isLoggedIn,

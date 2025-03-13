@@ -5,6 +5,7 @@ const {
   responseHandler,
   ResponseConstants,
   generalConstants,
+  rideConstants
 } = require('../../../bootstart/header');
 var moment = require('moment');
 var Joi = require('joi');
@@ -252,6 +253,7 @@ exports.addVehicleMake = async function (req, res) {
 
     delete req.body.token;
     delete req.body.operator_id;
+    var requestRideType = req.request_ride_type;
 
     var schema = Joi.object({
       city_id: Joi.number().required(),
@@ -264,6 +266,15 @@ exports.addVehicleMake = async function (req, res) {
           no_of_doors: Joi.number().required(),
         }),
       ),
+      vehicle_image: Joi.string().optional(),
+      vehicle_colour_id: Joi.number().optional(),
+      vehicle_year: Joi.string().optional(),
+      vehicle_seat_belt_id: Joi.number().optional(),
+      vehicle_door_id: Joi.number().optional(),
+      vehicle_name: Joi.string().optional(),
+      vehicle_number: Joi.string().optional(),
+      vehicle_type: Joi.number().optional(),
+      fleet_id: Joi.string().optional().allow(null)  
     });
 
     var result = schema.validate(options);
@@ -303,6 +314,7 @@ exports.addVehicleMake = async function (req, res) {
       }
     }
     options.operator_id = req.operator_id;
+    options.service_type = requestRideType;
     var operatorId = options.operator_id;
     var cityId = options.city_id;
     var vehicleMakeData = options.vehicle_make_data;
@@ -333,10 +345,50 @@ exports.addVehicleMake = async function (req, res) {
         query,
         flattenedParams,
       );
+       /* 
+       For Shuttle
+       */
+      if(options.vehicle_name && options.vehicle_number && options.vehicle_type && options.vehicle_colour_id && options.vehicle_seat_belt_id && options.vehicle_door_id){
+
+        /* 
+        Insert entry for vehicle make customisation
+        */
+        var vehicleData = {
+          model_id: result.insertId,
+          door_id: options.vehicle_door_id,
+          color_id: options.vehicle_colour_id,
+          seat_belt_id: options.vehicle_seat_belt_id,
+        };
+        var result = await db.InsertIntoTable(
+          dbConstants.DBS.LIVE_DB,
+          `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLE_MAKE_CUSTOMISATION}`,
+          vehicleData,
+        );
+
+        /* 
+        Insert entry for tb_vehicles
+        */
+        var vehicleData = {
+          operator_id: operatorId,
+          vehicle_no: options.vehicle_number,
+          vehicle_image: options.vehicle_image,
+          vehicle_name: options.vehicle_name,
+          vehicle_year: options.vehicle_year,
+          vehicle_type: options.vehicle_type,
+          vehicle_make_id: result.insertId,
+          vehicle_fleet_id: options.fleet_id,
+          status: 1
+        };
+
+        var result = await db.InsertIntoTable(
+          dbConstants.DBS.LIVE_DB,
+          `${dbConstants.DBS.LIVE_DB}.${dbConstants.LIVE_DB.VEHICLES}`,
+          vehicleData,
+        );
+      }
     }
     return responseHandler.success(req, res, 'Data Inserted Successfully', '');
   } catch (error) {
-    console.log(error);
 
     errorHandler.errorHandler(error, req, res);
   }
