@@ -259,8 +259,8 @@ exports.fetchBookedBuses = async function (req, res) {
         if (end_date) {
             baseQuery += ` AND (
                                 (bd.start_time <= ?) OR  -- Start time within range
-                                (bd.drop_time >= ? AND bd.drop_time <= ?) OR  -- Drop time within range
-                                (bd.start_time <= ? AND bd.drop_time >= ?)    -- Booking spans entire period
+                                (bd.route_end_time >= ? AND bd.route_end_time <= ?) OR  -- Drop time within range
+                                (bd.start_time <= ? AND bd.route_end_time >= ?)    -- Booking spans entire period
                             )`;
          params.push(end_date, start_date, end_date, start_date, end_date);
         }
